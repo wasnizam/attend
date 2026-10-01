@@ -39,11 +39,25 @@ Emulator data is wiped when the emulators stop.
 | `VITE_PUBLIC_URL` | no | Base URL encoded in the QR. Defaults to the origin the lecturer is on. |
 | `VITE_USE_EMULATORS` | no | `true` to use the local emulators. |
 
-## Deploy
+## Live deployment
+
+- **Site:** https://attend-psi-blush.vercel.app (Vercel project `attend`, deploys automatically on every push to `main`)
+- **Code:** https://github.com/wasnizam/attend
+- **Firebase project:** `attend-d2744` (Firestore in `asia-southeast1`, Singapore). Its web config is in
+  `.env.production`; those values are public by design, and access is controlled by `firestore.rules`.
+
+To change the app: commit and push to `main`; Vercel rebuilds and publishes it.
+
+To change the security rules or indexes, either paste `firestore.rules` into the Firebase console
+(Firestore → Rules → Publish), or use the CLI once:
 
 ```bash
-npm run deploy   # builds, then deploys Hosting + Firestore rules + indexes
+npx firebase login
+npx firebase deploy --only firestore
 ```
+
+Pushing to GitHub does **not** update the rules. If a change touches `firestore.rules`, publish
+the rules as well, or the live site and its rules will disagree.
 
 ## Sample data for the emulator
 
