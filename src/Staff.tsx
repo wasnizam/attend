@@ -18,6 +18,7 @@ import { Roster } from './pages/Roster'
 import { SessionDetail } from './pages/SessionDetail'
 import { Signup } from './pages/Signup'
 import { Students } from './pages/Students'
+import { SubjectReport } from './pages/SubjectReport'
 import { Timetable } from './pages/Timetable'
 
 function RequireAuth({ admin = false }: { admin?: boolean }) {
@@ -64,6 +65,7 @@ export default function Staff() {
             <Route path="/app/calendar" element={<Calendar />} />
             <Route path="/app/students" element={<Students />} />
             <Route path="/app/reports" element={<Reports />} />
+            <Route path="/app/reports/subject/:subjectKey" element={<SubjectReport />} />
             <Route path="/app/history" element={<History />} />
             <Route path="/app/session/:id" element={<SessionDetail />} />
           </Route>

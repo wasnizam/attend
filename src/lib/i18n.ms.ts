@@ -542,4 +542,13 @@ export const ms: Record<string, string> = {
   "Class average": "Purata kelas",
   "A month in red is below {n}% for that month’s classes. Excused and MC absences are left out.": "Bulan berwarna merah adalah di bawah {n}% bagi kelas bulan itu. Ketidakhadiran yang dikecualikan dan MC tidak diambil kira.",
   "{n} class": "{n} kelas",
+  "Subject not found": "Subjek tidak ditemui",
+  "A subject is made of classes that share the same course code.": "Subjek terdiri daripada kelas yang berkongsi kod kursus yang sama.",
+  "Subject report by class type": "Laporan subjek mengikut jenis kelas",
+  "{n} classes held": "{n} kelas diadakan",
+  "Students appear here once a class has a list or a session has been held.": "Pelajar akan muncul di sini apabila kelas mempunyai senarai atau sesi telah diadakan.",
+  "Not on this class’s list": "Tiada dalam senarai kelas ini",
+  "{n} students are below {p}% in at least one class type. Each type is counted on its own; a dot means the student is not in that class. Excused and MC absences are left out.": "{n} pelajar berada di bawah {p}% dalam sekurang-kurangnya satu jenis kelas. Setiap jenis dikira secara berasingan; titik bermaksud pelajar tiada dalam kelas itu. Ketidakhadiran yang dikecualikan dan MC tidak diambil kira.",
+  "By subject": "Mengikut subjek",
+  "Each student by class type": "Setiap pelajar mengikut jenis kelas",
 }

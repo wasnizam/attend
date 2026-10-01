@@ -87,6 +87,7 @@ npm run typecheck
 | `/app/session/:id` | lecturer | Start → live QR + live list → ended record + export |
 | `/app/timetable/:id/students` | lecturer | Class student list: upload Excel (.xlsx), CSV or PDF, or paste; preview, then save |
 | `/app/reports` | lecturer | Every class at a glance: classes held, average attendance, students on track / warning due / barring due |
+| `/app/reports/subject/:code` | lecturer | Subject report: classes sharing a course code, one row per student with Lecture / Tutorial / Lab attendance side by side |
 | `/app/timetable/:id/report` | lecturer | Class report: attendance-by-session chart, warning and barring list with "can still miss", each student's full record, the dates × students attendance sheet, CSV export and print |
 | `/app/account` | lecturer | Name, password, organisation name (admin), language, log out |
 | `/app/calendar` | lecturer | Month calendar of sessions and class meetings (held, running, scheduled, not held). Today also shows a week summary |

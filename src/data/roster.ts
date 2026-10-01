@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, increment, onSnapshot, query, where, writeBatch } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, increment, onSnapshot, query, where, writeBatch } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { studentKey } from '../lib/format'
 import type { RosterEntry } from '../lib/rosterImport'
@@ -27,6 +27,14 @@ export function subscribeRoster(
       ),
     onError,
   )
+}
+
+/** One-off read of a class list, for reports that cover several classes at once. */
+export async function fetchRoster(rosterId: string, organisationId: string, viewer: UserProfile): Promise<RosterEntry[]> {
+  const constraints = [where('organisationId', '==', organisationId)]
+  if (viewer.role !== 'admin') constraints.push(where('ownerId', '==', viewer.id))
+  const snap = await getDocs(query(students(rosterId), ...constraints))
+  return snap.docs.map((d) => d.data() as RosterEntry)
 }
 
 const BATCH = 400

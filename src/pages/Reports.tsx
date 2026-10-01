@@ -5,6 +5,7 @@ import { useClassReport } from '../hooks/useClassReport'
 import { useMyClasses } from '../hooks/useClasses'
 import { KINDS, KIND_LABEL, courseLine, formatPercent, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
+import { subjectsOf } from '../lib/subject'
 import type { WeeklyClass } from '../lib/types'
 
 /** One class at a glance: how far in, how well attended, and who needs attention. */
@@ -59,6 +60,8 @@ export function Reports() {
   const all = data ?? []
   const current = all.filter((c) => !c.endDate || c.endDate >= today)
   const past = all.filter((c) => c.endDate && c.endDate < today)
+  // A subject report is worth having once a course code covers more than one class.
+  const subjects = subjectsOf(current).filter((s) => s.classes.length > 1)
 
   return (
     <div className="space-y-6">
@@ -84,6 +87,23 @@ export function Reports() {
         />
       ) : (
         <>
+          {subjects.length > 0 && (
+            <section>
+              <h2 className="mb-2 text-sm font-semibold text-muted">{t('By subject')}</h2>
+              <Card className="divide-y divide-line">
+                {subjects.map((s) => (
+                  <Link key={s.key} to={`/app/reports/subject/${s.key}`} className="flex items-center justify-between gap-3 px-5 py-3.5 hover:bg-slate-50">
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold">{s.code}</span>
+                      <span className="block truncate text-sm text-muted">{s.kinds.map((k) => t(KIND_LABEL[k])).join(' · ')}</span>
+                    </span>
+                    <span className="shrink-0 text-sm font-medium text-accent">{t('Each student by class type')} ›</span>
+                  </Link>
+                ))}
+              </Card>
+            </section>
+          )}
+
           {/* Lectures, tutorials and labs are reported separately. */}
           {KINDS.map((kind) => {
             const ofKind = current.filter((c) => (c.kind ?? 'lecture') === kind)
