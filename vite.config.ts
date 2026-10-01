@@ -9,6 +9,8 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registered from src/lib/updates.ts, which also reloads when a new version arrives.
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Attend',
@@ -28,6 +30,12 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
+        // A request for a script or style must never be answered with the app's HTML page.
+        navigateFallbackDenylist: [/^\/assets\//],
+        cleanupOutdatedCaches: true,
+        // The PDF reader is about 1.2 MB; keep it in the saved copy so every part of an
+        // installed version comes from the same release.
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
       },
     }),
