@@ -45,12 +45,20 @@ export function plannedCount(cls: WeeklyClass): number {
   if (!cls.startDate || !cls.endDate || cls.endDate < cls.startDate) return 0
   const perDay = new Map<number, number>()
   for (const slot of classSlots(cls)) perDay.set(slot.day, (perDay.get(slot.day) ?? 0) + 1)
+  const called = new Set(Object.keys(cls.cancelled ?? {}))
   let total = 0
   // A semester is a few months: walking it day by day is cheap and obviously right.
   for (let d = cls.startDate; d <= cls.endDate && total < 2000; d = addDays(d, 1)) {
     total += perDay.get(parseDate(d).getDay()) ?? 0
   }
-  return total
+  // Cancelled meetings are not classes a student could have attended.
+  for (const slot of classSlots(cls)) {
+    for (const key of called) {
+      const [date, time] = key.split('_')
+      if (time === slot.startTime.replace(':', '') && date >= cls.startDate && date <= cls.endDate && parseDate(date).getDay() === slot.day) total -= 1
+    }
+  }
+  return Math.max(0, total)
 }
 
 /**

@@ -36,10 +36,14 @@ export function Dashboard() {
   // The headline: whatever is running; otherwise the next thing that can still be started.
   const hero = todays.find((i) => i.state === 'active') ?? todays.find((i) => i.state === 'scheduled' || i.state === 'planned')
   const done = todays.filter((i) => i.state === 'ended').length
+  const cancelled = todays.filter((i) => i.state === 'cancelled').length
   const running = todays.filter((i) => i.state === 'active').length
 
   // The next few days, including class meetings that are not sessions yet.
-  const upcoming = Array.from({ length: 7 }, (_, i) => agendaFor(addDays(today, i + 1), sessions, myClasses, today)).flat().slice(0, 5)
+  const upcoming = Array.from({ length: 7 }, (_, i) => agendaFor(addDays(today, i + 1), sessions, myClasses, today))
+    .flat()
+    .filter((i) => i.state !== 'cancelled')
+    .slice(0, 5)
 
   const isNew = sessions.length + myClasses.length === 0
   const guide = (
@@ -54,9 +58,10 @@ export function Dashboard() {
     todays.length === 0
       ? t('Nothing scheduled today')
       : [
-          t(todays.length === 1 ? '{n} session today' : '{n} sessions today', { n: todays.length }),
+          t(todays.length - cancelled === 1 ? '{n} session today' : '{n} sessions today', { n: todays.length - cancelled }),
           running > 0 && t('{n} running', { n: running }),
           done > 0 && t('{n} done', { n: done }),
+          cancelled > 0 && t('{n} cancelled', { n: cancelled }),
         ]
           .filter(Boolean)
           .join(' · ')
@@ -89,7 +94,7 @@ export function Dashboard() {
             ) : todays.length > 0 ? (
               <Card className="p-6 text-center">
                 <p className="text-lg font-semibold tracking-tight">{t('All done for today')}</p>
-                <p className="mt-1 text-sm text-muted">{t('Every session today has been held. The records are in the schedule below.')}</p>
+                <p className="mt-1 text-sm text-muted">{t('Nothing is left to start today. The records are in the schedule below.')}</p>
               </Card>
             ) : (
               <EmptyState

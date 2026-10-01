@@ -126,17 +126,30 @@ export function parseText(text: string): ImportGrid {
 }
 
 async function pdfLines(file: File): Promise<string[]> {
-  const pdfjs = await import('pdfjs-dist')
-  const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
-  pdfjs.GlobalWorkerOptions.workerSrc = worker.default
+  // The "legacy" build carries the polyfills that Safari on iPhone needs.
+  await import('./streamPolyfill')
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+  // Our own worker file wraps the library's, so the same fix applies inside the worker.
+  const { default: PdfWorker } = await import('./pdfWorker?worker')
+  pdfjs.GlobalWorkerOptions.workerPort ??= new PdfWorker()
   const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise
   const lines: string[] = []
   for (let p = 1; p <= pdf.numPages; p++) {
-    const content = await (await pdf.getPage(p)).getTextContent()
+    // Read the page's text with a plain reader. The library's own getTextContent() loops
+    // over the stream with `for await`, which Safari does not support and fails with
+    // "undefined is not a function".
+    const reader = (await pdf.getPage(p)).streamTextContent().getReader()
+    const content: { items: unknown[] } = { items: [] }
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      content.items.push(...value.items)
+    }
     // Text comes back as loose fragments; rebuild lines from fragments that share a baseline.
     const byLine = new Map<number, { x: number; end: number; size: number; text: string }[]>()
-    for (const item of content.items) {
-      if (!('str' in item) || !item.str.trim()) continue
+    for (const raw of content.items) {
+      const item = raw as { str?: string; transform: number[]; width: number; height: number }
+      if (typeof item.str !== 'string' || !item.str.trim()) continue
       const y = Math.round(item.transform[5] / 3)
       const x = item.transform[4]
       const size = Math.abs(item.transform[0]) || item.height || 10

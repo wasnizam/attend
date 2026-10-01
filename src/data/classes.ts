@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   onSnapshot,
@@ -12,7 +13,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import { classSessionId } from '../lib/format'
+import { classSessionId, meetingKey } from '../lib/format'
 import type { Delivery, Session, Slot, UserProfile, WeeklyClass } from '../lib/types'
 import { newSessionData, startSession } from './sessions'
 
@@ -66,6 +67,13 @@ export const updateClass = (id: string, input: ClassInput) => updateDoc(doc(clas
 /** The report's warning and barring levels, as percentages of the semester's classes. */
 export const setThresholds = (id: string, warnPct: number, barPct: number) =>
   updateDoc(doc(classes, id), { warnPct, barPct })
+
+/** Calls off one meeting of a class (it will not count towards the semester total), or puts it back. */
+export const cancelMeeting = (cls: WeeklyClass, date: string, slot: Slot, reason: string) =>
+  updateDoc(doc(classes, cls.id), { [`cancelled.${meetingKey(date, slot)}`]: reason.trim() || '-' })
+
+export const restoreMeeting = (cls: WeeklyClass, date: string, slot: Slot) =>
+  updateDoc(doc(classes, cls.id), { [`cancelled.${meetingKey(date, slot)}`]: deleteField() })
 
 /** Removes the class from the timetable. Sessions already held keep their records. */
 export const deleteClass = (id: string) => deleteDoc(doc(classes, id))

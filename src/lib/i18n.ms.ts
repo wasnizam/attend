@@ -523,4 +523,11 @@ export const ms: Record<string, string> = {
   "All done for today": "Semua selesai untuk hari ini",
   "Every session today has been held. The records are in the schedule below.": "Semua sesi hari ini telah diadakan. Rekodnya ada dalam jadual di bawah.",
   "Tomorrow": "Esok",
+  "Undo cancel": "Batal pembatalan",
+  "Cancel {name} on this day? You can add a reason (optional).": "Batalkan {name} pada hari ini? Anda boleh menambah sebab (pilihan).",
+  "Mark as cancelled": "Tanda sebagai dibatalkan",
+  "Cancel class": "Batal kelas",
+  "Cancelled": "Dibatalkan",
+  "{n} cancelled": "{n} dibatalkan",
+  "Nothing is left to start today. The records are in the schedule below.": "Tiada lagi sesi untuk dimulakan hari ini. Rekodnya ada dalam jadual di bawah.",
 }

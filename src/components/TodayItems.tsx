@@ -10,6 +10,7 @@ import { t } from '../lib/i18n'
 import { rotatePref } from '../lib/prefs'
 import type { Session } from '../lib/types'
 import { STATE_DOT } from './DayAgenda'
+import { MeetingActions } from './MeetingActions'
 import { RemoteLine } from './SessionCard'
 import { Button, Card, ErrorNote, buttonClass, friendlyError } from './ui'
 
@@ -145,8 +146,12 @@ function ScheduleRow({ item, isLast }: { item: AgendaItem; isLast: boolean }) {
       <div className="min-w-0 flex-1 pb-4">
         <div className="flex flex-col gap-2 rounded-lg px-3 py-2.5 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <Link to={hrefOf(item)} className="min-w-0 sm:flex-1">
-            <p className={`font-medium sm:truncate ${item.state === 'missed' ? 'text-muted' : ''}`}>{item.name}</p>
-            <p className="truncate text-sm text-muted">{courseLine(detailsOf(item)) || (item.due || item.session?.classId ? t('Semester class') : t('One-off'))}</p>
+            <p className={`font-medium sm:truncate ${item.state === 'missed' ? 'text-muted' : ''} ${item.state === 'cancelled' ? 'text-muted line-through' : ''}`}>{item.name}</p>
+            <p className="truncate text-sm text-muted">
+              {item.state === 'cancelled'
+                ? `${t('Cancelled')}${item.reason && item.reason !== '-' ? ` · ${item.reason}` : ''}`
+                : courseLine(detailsOf(item)) || (item.due || item.session?.classId ? t('Semester class') : t('One-off'))}
+            </p>
           </Link>
           <div className="shrink-0">
             {item.state === 'active' && s ? (
@@ -163,9 +168,14 @@ function ScheduleRow({ item, isLast }: { item: AgendaItem; isLast: boolean }) {
                 <span className="ml-2 text-muted">{s.expected ? formatPercent(percent(s.presentCount, s.expected)) : t('Present')}</span>
               </Link>
             ) : startable ? (
-              <Button variant="secondary" busy={busy} onClick={start} className={small}>
-                {t('Start')}
-              </Button>
+              <span className="flex items-center gap-3">
+                <MeetingActions item={item} />
+                <Button variant="secondary" busy={busy} onClick={start} className={small}>
+                  {t('Start')}
+                </Button>
+              </span>
+            ) : item.state === 'cancelled' ? (
+              <MeetingActions item={item} />
             ) : (
               <span className="text-sm text-muted">{t('Not held')}</span>
             )}

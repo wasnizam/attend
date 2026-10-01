@@ -1,4 +1,4 @@
-import { classSessionId, classSlots, effectiveStatus, inSemester, parseDate } from './format'
+import { classSessionId, classSlots, effectiveStatus, inSemester, meetingKey, parseDate } from './format'
 import type { Session, Slot, WeeklyClass } from './types'
 
 /**
@@ -11,8 +11,13 @@ export interface AgendaItem {
   name: string
   startTime: string
   endTime: string
-  /** active / ended / scheduled come from a real session; planned and missed are class meetings without one. */
-  state: 'active' | 'ended' | 'scheduled' | 'planned' | 'missed'
+  /**
+   * active / ended / scheduled come from a real session; planned, missed and cancelled
+   * are class meetings without one.
+   */
+  state: 'active' | 'ended' | 'scheduled' | 'planned' | 'missed' | 'cancelled'
+  /** Why a cancelled meeting was called off. */
+  reason?: string
   session?: Session
   due?: { cls: WeeklyClass; slot: Slot }
 }
@@ -43,7 +48,12 @@ export function agendaFor(date: string, sessions: Session[], classes: WeeklyClas
           name: cls.name,
           startTime: slot.startTime,
           endTime: slot.endTime,
-          state: date < today ? ('missed' as const) : ('planned' as const),
+          state: cls.cancelled?.[meetingKey(date, slot)]
+            ? ('cancelled' as const)
+            : date < today
+              ? ('missed' as const)
+              : ('planned' as const),
+          reason: cls.cancelled?.[meetingKey(date, slot)],
           due: { cls, slot },
         })),
     )

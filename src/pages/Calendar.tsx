@@ -90,7 +90,7 @@ export function Calendar() {
                 </span>
                 <span className="hidden flex-col gap-0.5 sm:flex">
                   {items.slice(0, 3).map((item) => (
-                    <span key={item.key} className={`flex items-center gap-1 truncate rounded px-1 text-[11px] leading-5 ${item.state === 'missed' ? 'text-slate-400' : 'bg-white text-ink shadow-card'}`}>
+                    <span key={item.key} className={`flex items-center gap-1 truncate rounded px-1 text-[11px] leading-5 ${item.state === 'missed' ? 'text-slate-400' : item.state === 'cancelled' ? 'text-slate-400 line-through' : 'bg-white text-ink shadow-card'}`}>
                       <span className={`size-1.5 shrink-0 rounded-full ${STATE_DOT[item.state]}`} />
                       <span className="tabular shrink-0 text-muted">{formatTime(item.startTime).replace(':00', '').replace(' ', '').toLowerCase()}</span>
                       <span className="truncate">{item.name}</span>
@@ -105,7 +105,7 @@ export function Calendar() {
       </Card>
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-        {([['active', 'Session Active'], ['ended', 'Held'], ['planned', 'Scheduled'], ['missed', 'Not held']] as const).map(([state, label]) => (
+        {([['active', 'Session Active'], ['ended', 'Held'], ['planned', 'Scheduled'], ['missed', 'Not held'], ['cancelled', 'Cancelled']] as const).map(([state, label]) => (
           <span key={state} className="flex items-center gap-1.5">
             <span className={`size-2 rounded-full ${STATE_DOT[state]}`} />
             {t(label)}

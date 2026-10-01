@@ -32,6 +32,8 @@ export default defineConfig({
       },
     }),
   ],
+  // The PDF worker is an ES module (it uses top-level await).
+  worker: { format: 'es' },
   test: {
     include: ['tests/**/*.test.ts'],
     testTimeout: 20000,

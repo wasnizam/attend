@@ -159,5 +159,7 @@ export interface WeeklyClass extends CourseDetails, Geofence {
   /** Share of the semester's classes a student may miss before a warning, and before barring. */
   warnPct?: number
   barPct?: number
+  /** Meetings that were called off: key is meetingKey(date, slot), value is the reason. */
+  cancelled?: Record<string, string>
   createdAt: Timestamp | null
 }

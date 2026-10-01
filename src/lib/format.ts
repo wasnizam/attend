@@ -131,6 +131,9 @@ export const countPresent = (records: { status: string }[]) => records.filter((r
 export const classSessionId = (classId: string, date: string, slot: Slot) =>
   `${classId}_${date}_${slot.startTime.replace(':', '')}`
 
+/** Identifies one meeting of a class: a date and a start time. */
+export const meetingKey = (date: string, slot: Pick<Slot, 'startTime'>) => `${date}_${slot.startTime.replace(':', '')}`
+
 /** Monday of the week that contains the given date. */
 export function weekStart(iso: string): string {
   const day = parseDate(iso).getDay()

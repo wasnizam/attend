@@ -18,7 +18,8 @@ export function WeekSummary({ sessions, classes, today }: { sessions: Session[];
     const date = addDays(monday, i)
     return { date, items: agendaFor(date, sessions, classes, today) }
   })
-  const all = days.flatMap((d) => d.items)
+  // A cancelled meeting is not a session any more.
+  const all = days.flatMap((d) => d.items).filter((i) => i.state !== 'cancelled')
   const held = all.filter((i) => i.session && i.state !== 'scheduled')
   // The rate only counts finished sessions with a known headcount.
   const counted = held.filter((i) => i.state === 'ended' && i.session!.expected)
