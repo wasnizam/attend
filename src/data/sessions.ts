@@ -17,6 +17,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { getPurpose } from '../lib/purpose'
 import { isAway, parseDate, randomToken } from '../lib/format'
 import type { ClassKind, Delivery, GeoMode, Geofence, Session, SessionLink, UserProfile } from '../lib/types'
 
@@ -180,6 +181,7 @@ export async function startSession(session: Session, rotatingPref = false): Prom
       rosterId: session.rosterId ?? null,
       needsCode: rotating,
       checkpoint: null,
+      purpose: getPurpose(),
       geo: session.geoPoint ? (session.geoMode ?? null) : null,
     })
     batch.update(doc(db, 'sessions', session.id), {

@@ -8,6 +8,7 @@ import { getSessionLink, subscribeSessionLink } from '../data/sessions'
 import { formatClock, formatRange } from '../lib/format'
 import { type Position, getPosition } from '../lib/geo'
 import { t } from '../lib/i18n'
+import { setPurpose } from '../lib/purpose'
 import type { SessionLink } from '../lib/types'
 
 const REMEMBER_KEY = 'attend.me'
@@ -124,7 +125,14 @@ export default function Attend() {
   useEffect(() => {
     setLink(undefined)
     setLoadError(false)
-    getSessionLink(token).then(setLink, () => setLoadError(true))
+    getSessionLink(token).then(
+      (found) => {
+        // The session says what kind of organisation runs it, which picks the wording here.
+        setPurpose(found?.purpose)
+        setLink(found)
+      },
+      () => setLoadError(true),
+    )
   }, [token])
 
   useEffect(() => {

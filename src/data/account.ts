@@ -25,6 +25,7 @@ import {
 import { auth } from '../lib/auth'
 import { db } from '../lib/firebase'
 import { randomToken } from '../lib/format'
+import type { Purpose } from '../lib/purpose'
 import type { Organisation, Role, UserProfile, UserStatus } from '../lib/types'
 
 export const signIn = (email: string, password: string) =>
@@ -64,6 +65,17 @@ export async function changePassword(current: string, next: string) {
   await updatePassword(user, next)
 }
 
+/** Live view of the organisation, so a change of purpose reaches every member's screen. */
+export function subscribeOrganisation(id: string, onData: (org: Organisation | null) => void) {
+  return onSnapshot(
+    doc(db, 'organisations', id),
+    (snap) => onData(snap.exists() ? ({ id: snap.id, ...snap.data() } as Organisation) : null),
+    () => onData(null),
+  )
+}
+
+export const setOrganisationPurpose = (id: string, purpose: Purpose) => updateDoc(doc(db, 'organisations', id), { purpose })
+
 export async function renameOrganisation(org: Organisation, name: string) {
   await updateDoc(doc(db, 'organisations', org.id), { name: name.trim() })
   // Keeps the name shown to people joining with the invite link in step.
@@ -71,7 +83,7 @@ export async function renameOrganisation(org: Organisation, name: string) {
 }
 
 /** Creates a new organisation and makes the signed-in user its admin. */
-export async function createOrganisationProfile(name: string, organisationName: string) {
+export async function createOrganisationProfile(name: string, organisationName: string, purpose: Purpose = 'education') {
   const user = auth.currentUser
   if (!user) throw new Error('Not signed in')
   const orgRef = doc(collection(db, 'organisations'))
@@ -79,6 +91,7 @@ export async function createOrganisationProfile(name: string, organisationName: 
   await setDoc(orgRef, {
     name: organisationName.trim(),
     ownerId: user.uid,
+    purpose,
     inviteCode,
     createdAt: serverTimestamp(),
   })

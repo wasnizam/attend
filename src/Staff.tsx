@@ -1,7 +1,9 @@
+import { type ReactNode, useEffect, useState } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { Button, PageLoader } from './components/ui'
-import { signOut } from './data/account'
+import { signOut, subscribeOrganisation } from './data/account'
+import { type Purpose, setPurpose } from './lib/purpose'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { MySessionsProvider } from './hooks/useSessions'
 import { t } from './lib/i18n'
@@ -20,6 +22,24 @@ import { Signup } from './pages/Signup'
 import { Students } from './pages/Students'
 import { SubjectReport } from './pages/SubjectReport'
 import { Timetable } from './pages/Timetable'
+
+/**
+ * Finds out what the organisation uses Attend for before any screen is drawn, and
+ * redraws everything if an admin changes it. The purpose picks the words and features.
+ */
+function PurposeGate({ organisationId, children }: { organisationId: string; children: ReactNode }) {
+  const [purpose, setLoaded] = useState<Purpose | null>(null)
+  useEffect(
+    () =>
+      subscribeOrganisation(organisationId, (org) => {
+        setPurpose(org?.purpose)
+        setLoaded(org?.purpose ?? 'education')
+      }),
+    [organisationId],
+  )
+  if (!purpose) return <PageLoader />
+  return <div key={purpose}>{children}</div>
+}
 
 function RequireAuth({ admin = false }: { admin?: boolean }) {
   const { loading, user, profile } = useAuth()
@@ -40,9 +60,11 @@ function RequireAuth({ admin = false }: { admin?: boolean }) {
   }
   if (admin && profile.role !== 'admin') return <Navigate to="/app" replace />
   return (
-    <MySessionsProvider>
-      <Outlet />
-    </MySessionsProvider>
+    <PurposeGate organisationId={profile.organisationId}>
+      <MySessionsProvider>
+        <Outlet />
+      </MySessionsProvider>
+    </PurposeGate>
   )
 }
 

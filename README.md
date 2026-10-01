@@ -115,6 +115,22 @@ like any lecturer). Colleagues join with the invite link under **Admin → Users
 | `sessionLinks` | QR token | Public summary of a live session. The only thing a participant can read |
 | `attendance` | `{sessionId}_{studentKey}` | `studentId`, `studentName`, `timestamp`, `status` (`present` / `late` / `excused`), `method` (`qr` / `manual`), plus `organisationId`, `ownerId`, `sessionName`, `date` for filtering |
 
+### One engine, several purposes
+
+An organisation has a `purpose` (`education`, `training` or `events`; missing means education),
+chosen at sign-up and changeable by an admin under Account. It decides two things, both in
+`src/lib/purpose.ts`:
+
+- **Words.** Interface text is written for education and passed through `t()`; for other purposes
+  `applyTerms()` swaps the vocabulary (student → participant / attendee, lecturer → trainer /
+  organiser, semester class → course).
+- **Features.** `has('recurring' | 'classKind' | 'barring' | 'mc')` hides what a purpose does not
+  need: events have no timetable, class reports, class type, 80% rule or MC; training keeps
+  repeating courses and MC but not class type or the barring ladder.
+
+The data model and the security rules are the same for every purpose. To add a purpose, add it
+to `PURPOSES`, `FEATURES` and `TERMS` in that file and to the allowed values in `firestore.rules`.
+
 ### Guarantees enforced by the rules
 
 - **No duplicates.** The attendance document ID is the session plus the normalised student ID,

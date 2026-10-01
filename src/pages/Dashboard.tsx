@@ -9,6 +9,7 @@ import { useMySessions, useNow } from '../hooks/useSessions'
 import { type AgendaItem, agendaFor } from '../lib/agenda'
 import { addDays, dayName, effectiveStatus, formatDate, formatRange, isoDate, parseDate } from '../lib/format'
 import { locale, t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 
 function greeting(hour: number): string {
   return hour < 12 ? t('Good morning') : hour < 18 ? t('Good afternoon') : t('Good evening')
@@ -99,7 +100,7 @@ export function Dashboard() {
             ) : (
               <EmptyState
                 title={t('Nothing scheduled today')}
-                text={t('Create a one-off session, or add your semester classes once and they will appear here by themselves.')}
+                text={has('recurring') ? t('Create a one-off session, or add your semester classes once and they will appear here by themselves.') : t('Create a session and you can start taking attendance in seconds.')}
                 action={
                   <Link to="/app/new" className={buttonClass({ size: 'lg' })}>
                     {t('Create a session')}

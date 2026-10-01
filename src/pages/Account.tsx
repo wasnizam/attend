@@ -1,7 +1,8 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, ErrorNote, Field, friendlyError, inputClass } from '../components/ui'
-import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, signOut } from '../data/account'
+import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, setOrganisationPurpose, signOut } from '../data/account'
+import { PURPOSES, type Purpose, getPurpose } from '../lib/purpose'
 import { useAuth, useProfile } from '../hooks/useAuth'
 import { LANGS, getLang, setLang, t } from '../lib/i18n'
 import type { Organisation } from '../lib/types'
@@ -55,6 +56,7 @@ export function Account() {
   }, [profile.organisationId])
 
   const verifySave = useSave()
+  const purposeSave = useSave()
 
   const submitPassword = (e: FormEvent) => {
     e.preventDefault()
@@ -141,6 +143,24 @@ export function Account() {
           </form>
         ) : (
           <p className="mt-2 text-muted">{org?.name ?? '—'}</p>
+        )}
+        {profile.role === 'admin' && org && (
+          <label className="mt-5 block border-t border-line pt-4">
+            <span className="mb-1.5 block text-sm font-medium">{t('What you use Attend for')}</span>
+            <select
+              value={getPurpose()}
+              onChange={(e) => purposeSave.run(() => setOrganisationPurpose(org.id, e.target.value as Purpose), '')}
+              className={inputClass}
+            >
+              {PURPOSES.map((p) => (
+                <option key={p.id} value={p.id}>{t(p.label)}</option>
+              ))}
+            </select>
+            <span className="mt-1.5 block text-xs text-muted">
+              {t('This changes the words and the features everyone in your organisation sees. Nothing is deleted.')}
+            </span>
+            <ErrorNote>{purposeSave.error}</ErrorNote>
+          </label>
         )}
         <p className="mt-3 text-sm text-muted">
           {t('Your role')}: <span className="font-medium text-ink">{profile.role === 'admin' ? t('Admin') : t('Lecturer')}</span>

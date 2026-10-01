@@ -1,5 +1,6 @@
 import { formatClock24 } from '../lib/format'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import type { AttendanceRecord, AttendanceStatus } from '../lib/types'
 
 interface Props {
@@ -61,7 +62,7 @@ export function AttendanceList({ records, live = false, onRemove, onStatus, miss
                       onChange={(e) => onStatus(r, e.target.value as AttendanceStatus)}
                       className={`h-8 rounded-md border border-line bg-white px-2 !text-sm font-medium ${STATUS_COLOR[status]}`}
                     >
-                      {(Object.keys(STATUS_LABEL) as AttendanceStatus[]).map((s) => (
+                      {(Object.keys(STATUS_LABEL) as AttendanceStatus[]).filter((s) => s !== 'mc' || has('mc') || status === 'mc').map((s) => (
                         <option key={s} value={s}>{t(STATUS_LABEL[s])}</option>
                       ))}
                     </select>

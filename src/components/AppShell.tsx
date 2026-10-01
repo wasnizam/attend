@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom'
 import { resendVerification } from '../data/account'
 import { useAuth, useProfile } from '../hooks/useAuth'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import { Logo, buttonClass } from './ui'
 
 const icons = {
@@ -63,23 +64,21 @@ function Avatar({ name }: { name: string }) {
  */
 export function AppShell() {
   const profile = useProfile()
-  const tabs = [
-    { to: '/app', label: t('Today'), icon: icons.today, end: true },
-    { to: '/app/timetable', label: t('Timetable'), icon: icons.timetable, end: false },
-    { to: '/app/students', label: t('Students'), icon: icons.students, end: false },
-    { to: '/app/reports', label: t('Reports'), icon: icons.reports, end: false },
-    ...(profile.role === 'admin' ? [{ to: '/admin', label: t('Admin'), icon: icons.admin, end: false }] : []),
-  ]
+  const item = (to: string, label: string, icon: string, end = false) => ({ to, label, icon, end })
+  const today = item('/app', t('Today'), icons.today, true)
+  const students = item('/app/students', t('Students'), icons.students)
+  const history = item('/app/history', t('History'), icons.history)
+  const calendar = item('/app/calendar', t('Calendar'), icons.calendar)
+  const adminItem = profile.role === 'admin' ? [item('/admin', t('Admin'), icons.admin)] : []
+  // Timetable and class reports only exist for organisations that run repeating classes.
+  const recurring = has('recurring')
+    ? { timetable: [item('/app/timetable', t('Timetable'), icons.timetable)], reports: [item('/app/reports', t('Reports'), icons.reports)] }
+    : { timetable: [], reports: [] }
 
-  // The phone tab bar has room for five, so Calendar lives in the sidebar and is one tap from Today.
-  // History (the plain list of past sessions) is in the sidebar, and one tap from Reports on a phone.
-  const sidebar = [
-    tabs[0],
-    { to: '/app/calendar', label: t('Calendar'), icon: icons.calendar, end: false },
-    ...tabs.slice(1, 4),
-    { to: '/app/history', label: t('History'), icon: icons.history, end: false },
-    ...tabs.slice(4),
-  ]
+  // The phone tab bar has room for five; Calendar (and History, when Reports is shown)
+  // live in the sidebar and are one tap from Today or Reports on a phone.
+  const tabs = [today, ...recurring.timetable, students, ...(recurring.reports.length ? recurring.reports : [history]), ...adminItem]
+  const sidebar = [today, calendar, ...recurring.timetable, students, ...recurring.reports, history, ...adminItem]
 
   return (
     <div className="min-h-dvh md:pl-60 print:!pl-0">

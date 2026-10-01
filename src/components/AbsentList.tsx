@@ -1,5 +1,6 @@
 import type { Absentee } from '../lib/csv'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import type { AttendanceStatus } from '../lib/types'
 
 interface Props {
@@ -32,9 +33,11 @@ export function AbsentList({ absent, open = false, onMark, busy }: Props) {
                 <button disabled={busy} className={`${pill} text-muted`} onClick={() => onMark(a, 'excused')}>
                   {t('Excused')}
                 </button>
-                <button disabled={busy} className={`${pill} text-sky-700`} title={t('Medical certificate')} onClick={() => onMark(a, 'mc')}>
-                  {t('MC')}
-                </button>
+                {has('mc') && (
+                  <button disabled={busy} className={`${pill} text-sky-700`} title={t('Medical certificate')} onClick={() => onMark(a, 'mc')}>
+                    {t('MC')}
+                  </button>
+                )}
               </span>
             )}
           </li>

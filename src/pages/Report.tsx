@@ -9,6 +9,7 @@ import { useMyClasses } from '../hooks/useClasses'
 import { downloadCsv, slug } from '../lib/csv'
 import { courseLine, effectiveStatus, formatDate, formatPercent } from '../lib/format'
 import { locale, t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import { type ClassReport, DEFAULT_BAR, DEFAULT_WARN, type StudentRow } from '../lib/report'
 import type { AttendanceStatus, WeeklyClass } from '../lib/types'
 
@@ -62,6 +63,8 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
   if (failed || !report) return <ErrorNote>{t('The report could not be loaded. Check your connection and reload.')}</ErrorNote>
 
   const { held, planned, rows, trend, average, warnAfter, barAfter, months } = report
+  // The warning / barring ladder is a university rule; other organisations just see the figures.
+  const rule = has('barring')
   const warnPct = cls.warnPct ?? DEFAULT_WARN
   const barPct = cls.barPct ?? DEFAULT_BAR
   const due = (level: StudentRow['level']) => rows.filter((r) => r.level === level).length
@@ -128,14 +131,14 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
         <EmptyState title={t('No sessions held yet')} text={t('The report fills in after the first session of this class.')} />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          <div className={`grid grid-cols-2 gap-2 ${rule ? 'lg:grid-cols-4' : ''}`}>
             <Stat label={t('Classes held')} value={planned > held.length ? `${held.length} / ${planned}` : held.length} />
             <Stat label={t('Average attendance')} value={formatPercent(average)} />
-            <Stat label={t('Warning due')} value={due('warning')} />
-            <Stat label={t('Barring due')} value={due('barring')} />
+            {rule && <Stat label={t('Warning due')} value={due('warning')} />}
+            {rule && <Stat label={t('Barring due')} value={due('barring')} />}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className={`grid gap-4 ${rule ? 'lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]' : ''}`}>
             <Card className="p-5">
               <h2 className="font-semibold">{t('Attendance by session')}</h2>
               <p className="text-sm text-muted">{t('Share of the class present each time it met.')}</p>
@@ -143,7 +146,7 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
                 <AttendanceTrend trend={trend} />
               </div>
             </Card>
-            <Card className="p-5">
+            {rule && <Card className="p-5">
               <h2 className="font-semibold">{t('Where students stand')}</h2>
               <p className="text-sm text-muted">{t('Against the 80% rule, going by absences without a reason.')}</p>
               <div className="mt-5">
@@ -171,7 +174,7 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
                   </label>
                 ))}
               </div>
-            </Card>
+            </Card>}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
@@ -232,6 +235,8 @@ const levelText = (level: StudentRow['level']) => (level === 'barring' ? 'Barrin
 /** The working list: worst first, with what to tell each student. Tap a row for their full record. */
 function StudentsTable({ report, open, setOpen }: { report: ClassReport; open: string | null; setOpen: (key: string | null) => void }) {
   const { rows, held } = report
+  const rule = has('barring')
+  const mc = has('mc')
   return (
     <Card className="overflow-x-auto">
       <table className="w-full min-w-[44rem] text-left text-sm">
@@ -239,13 +244,13 @@ function StudentsTable({ report, open, setOpen }: { report: ClassReport; open: s
           <tr>
             <th className="py-2.5 pr-2 pl-5 font-medium">{t('Student ID')}</th>
             <th className="px-2 py-2.5 font-medium">{t('Name')}</th>
-            <th className="px-2 py-2.5 font-medium">{t('Status')}</th>
+            {rule && <th className="px-2 py-2.5 font-medium">{t('Status')}</th>}
             <th className="px-2 py-2.5 text-right font-medium">{t('Absent')}</th>
             <th className="px-2 py-2.5 text-right font-medium">{t('Late')}</th>
             <th className="px-2 py-2.5 text-right font-medium">{t('Excused')}</th>
-            <th className="px-2 py-2.5 text-right font-medium">{t('MC')}</th>
+            {mc && <th className="px-2 py-2.5 text-right font-medium">{t('MC')}</th>}
             <th className="px-2 py-2.5 text-right font-medium">%</th>
-            <th className="py-2.5 pr-5 pl-2 text-right font-medium">{t('Can still miss')}</th>
+            {rule && <th className="py-2.5 pr-5 pl-2 text-right font-medium">{t('Can still miss')}</th>}
           </tr>
         </thead>
         <tbody className="tabular divide-y divide-line">
@@ -254,13 +259,13 @@ function StudentsTable({ report, open, setOpen }: { report: ClassReport; open: s
               <tr onClick={() => setOpen(open === r.key ? null : r.key)} className="cursor-pointer hover:bg-slate-50" aria-expanded={open === r.key}>
                 <td className="py-2.5 pr-2 pl-5 font-medium whitespace-nowrap">{r.studentId}</td>
                 <td className="px-2 py-2.5 break-words">{r.studentName}</td>
-                <td className="px-2 py-2.5"><LevelTag level={r.level} /></td>
+                {rule && <td className="px-2 py-2.5"><LevelTag level={r.level} /></td>}
                 <td className="px-2 py-2.5 text-right font-semibold">{r.absent}</td>
                 <td className="px-2 py-2.5 text-right">{r.late}</td>
                 <td className="px-2 py-2.5 text-right">{r.excused}</td>
-                <td className="px-2 py-2.5 text-right">{r.mc}</td>
+                {mc && <td className="px-2 py-2.5 text-right">{r.mc}</td>}
                 <td className="px-2 py-2.5 text-right font-semibold">{formatPercent(r.rate)}</td>
-                <td className="py-2.5 pr-5 pl-2 text-right">{r.level === 'barring' ? '—' : r.canMiss}</td>
+                {rule && <td className="py-2.5 pr-5 pl-2 text-right">{r.level === 'barring' ? '—' : r.canMiss}</td>}
               </tr>
               {open === r.key && (
                 <tr className="bg-slate-50/70">

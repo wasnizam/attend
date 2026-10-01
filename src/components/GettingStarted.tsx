@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { effectiveStatus } from '../lib/format'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import type { Session, WeeklyClass } from '../lib/types'
 import { Card, buttonClass } from './ui'
 
@@ -54,10 +55,12 @@ export function GettingStarted({ userId, sessions, classes, readyToday }: {
 
   const steps: Step[] = [
     {
-      title: t('Add a class or session'),
-      text: t('Add the classes you teach this semester once, or create a one-off session for an extra class or event.'),
+      title: has('recurring') ? t('Add a class or session') : t('Create your first session'),
+      text: has('recurring')
+        ? t('Add the classes you teach this semester once, or create a one-off session for an extra class or event.')
+        : t('Give it a name, a date and a time. That is all it needs.'),
       done: hasAnything,
-      action: { label: t('Add your first class'), to: '/app/new?weekly=1' },
+      action: has('recurring') ? { label: t('Add your first class'), to: '/app/new?weekly=1' } : { label: t('Create a session'), to: '/app/new' },
     },
     {
       title: t('Upload your student list'),
@@ -86,6 +89,8 @@ export function GettingStarted({ userId, sessions, classes, readyToday }: {
     },
   ]
 
+  // Uploaded lists belong to repeating classes, so that step is skipped where there are none.
+  if (!has('recurring')) steps.splice(1, 1)
   const required = steps.filter((s) => !s.optional)
   const doneCount = required.filter((s) => s.done).length
   const allDone = doneCount === required.length

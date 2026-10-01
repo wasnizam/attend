@@ -2,6 +2,7 @@ import { type User, onAuthStateChanged } from 'firebase/auth'
 import { type ReactNode, createContext, useContext, useEffect, useState } from 'react'
 import { subscribeProfile } from '../data/account'
 import { auth } from '../lib/auth'
+import { setPurpose } from '../lib/purpose'
 import type { UserProfile } from '../lib/types'
 
 interface AuthState {
@@ -22,6 +23,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stopAuth = onAuthStateChanged(auth, (user) => {
       stopProfile()
       if (!user) {
+        // Signed out: public pages use the default wording again.
+        setPurpose('education')
         setState({ loading: false, user: null, profile: null })
         return
       }

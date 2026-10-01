@@ -41,7 +41,8 @@ service cloud.firestore {
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 100;
       allow update: if adminOf(orgId)
-        && onlyChanges(['name'])
+        && onlyChanges(['name', 'purpose'])
+        && request.resource.data.get('purpose', 'education') in ['education', 'training', 'events']
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 100;

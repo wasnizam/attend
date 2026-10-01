@@ -5,6 +5,7 @@ import { useClassReport } from '../hooks/useClassReport'
 import { useMyClasses } from '../hooks/useClasses'
 import { KINDS, KIND_LABEL, courseLine, formatPercent, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import { subjectsOf } from '../lib/subject'
 import type { WeeklyClass } from '../lib/types'
 
@@ -41,9 +42,11 @@ function ClassSummary({ cls }: { cls: WeeklyClass }) {
               <dd className="tabular text-xl font-semibold">{formatPercent(report.average)}</dd>
             </div>
           </dl>
-          <div className="mt-4">
-            <LevelBar rows={report.rows} />
-          </div>
+          {has('barring') && (
+            <div className="mt-4">
+              <LevelBar rows={report.rows} />
+            </div>
+          )}
         </>
       )}
     </Link>
@@ -61,7 +64,7 @@ export function Reports() {
   const current = all.filter((c) => !c.endDate || c.endDate >= today)
   const past = all.filter((c) => c.endDate && c.endDate < today)
   // A subject report is worth having once a course code covers more than one class.
-  const subjects = subjectsOf(current).filter((s) => s.classes.length > 1)
+  const subjects = has('classKind') ? subjectsOf(current).filter((s) => s.classes.length > 1) : []
 
   return (
     <div className="space-y-6">
@@ -105,7 +108,14 @@ export function Reports() {
           )}
 
           {/* Lectures, tutorials and labs are reported separately. */}
-          {KINDS.map((kind) => {
+          {!has('classKind') && (
+            <div className="grid gap-4 md:grid-cols-2">
+              {current.map((c) => (
+                <ClassSummary key={c.id} cls={c} />
+              ))}
+            </div>
+          )}
+          {has('classKind') && KINDS.map((kind) => {
             const ofKind = current.filter((c) => (c.kind ?? 'lecture') === kind)
             if (ofKind.length === 0) return null
             return (

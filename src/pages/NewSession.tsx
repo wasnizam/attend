@@ -7,6 +7,7 @@ import { useProfile } from '../hooks/useAuth'
 import { useMyClasses } from '../hooks/useClasses'
 import { KINDS, KIND_LABEL, WEEK, addDays, classSlots, dayName, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import type { ClassKind, Delivery, Slot, WeeklyClass } from '../lib/types'
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -44,7 +45,9 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
   const profile = useProfile()
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const [weekly, setWeekly] = useState(Boolean(editing) || params.has('weekly'))
+  // Organisations without repeating classes (events) only ever create one-off sessions.
+  const canRepeat = has('recurring')
+  const [weekly, setWeekly] = useState(canRepeat && (Boolean(editing) || params.has('weekly')))
   const [name, setName] = useState(editing?.name ?? '')
   const [description, setDescription] = useState(editing?.description ?? '')
   const [code, setCode] = useState(editing?.code ?? '')
@@ -162,7 +165,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
       </h1>
       <Card className="mt-6 p-6">
         <form onSubmit={submit} className="space-y-4">
-          {!editing && (
+          {!editing && canRepeat && (
             <div>
               <div role="tablist" aria-label={t('How often')} className="grid grid-cols-2 gap-1 rounded-md bg-canvas p-1">
                 {([[false, 'One-off'], [true, 'Semester class']] as const).map(([value, label]) => (
@@ -195,7 +198,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
             onChange={(e) => setName(e.target.value)}
           />
 
-          {weekly && (
+          {weekly && has('classKind') && (
             <div>
               <p className="mb-1.5 text-sm font-medium">{t('Class type')}</p>
               <div role="radiogroup" aria-label={t('Class type')} className="grid grid-cols-3 gap-1 rounded-md bg-canvas p-1">
@@ -340,10 +343,10 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
           {/* Everything a lecturer does not need to get started lives here. */}
           <details className="rounded-lg bg-canvas" open={Boolean(code || section || venue || description)}>
             <summary className="cursor-pointer px-4 py-3 text-sm font-medium select-none">
-              {t('More details')} <span className="font-normal text-muted">· {t('course code, section, venue')}</span>
+              {t('More details')} <span className="font-normal text-muted">· {has('classKind') ? t('course code, section, venue') : t('venue, description')}</span>
             </summary>
             <div className="space-y-3 px-4 pb-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className={has('classKind') ? 'grid grid-cols-2 gap-3' : 'hidden'}>
                 <Field label={t('Course code')} placeholder="SECJ3303" maxLength={20} value={code} onChange={(e) => setCode(e.target.value)} />
                 <Field label={t('Section')} placeholder="02" maxLength={10} value={section} onChange={(e) => setSection(e.target.value)} />
               </div>

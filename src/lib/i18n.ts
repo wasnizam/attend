@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { ms } from './i18n.ms'
+import { applyTerms } from './purpose'
 
 export type Lang = 'en' | 'ms'
 export const LANGS: { id: Lang; label: string }[] = [
@@ -51,7 +52,9 @@ export function useLang(): Lang {
  * stays English. `{name}` placeholders are filled from `vars`.
  */
 export function t(text: string, vars?: Record<string, string | number>): string {
-  const out = (lang === 'ms' && ms[text]) || text
+  // Translate, then switch to the organisation's vocabulary (participants, attendees…)
+  // before filling in names, so nobody's name is ever rewritten.
+  const out = applyTerms((lang === 'ms' && ms[text]) || text, lang)
   return vars ? out.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? '')) : out
 }
 

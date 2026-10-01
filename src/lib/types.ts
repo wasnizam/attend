@@ -62,6 +62,8 @@ export interface UserProfile {
 
 export interface Organisation {
   id: string
+  /** What the organisation uses Attend for. Missing means education. */
+  purpose?: 'education' | 'training' | 'events'
   name: string
   ownerId: string
   inviteCode: string
@@ -122,6 +124,8 @@ export interface SessionLink {
   checkpoint?: Checkpoint | null
   /** Set when the session checks location. The class's coordinates are never published. */
   geo?: GeoMode | null
+  /** The organisation's purpose, so the check-in page uses the right words. */
+  purpose?: 'education' | 'training' | 'events'
   rosterId?: string | null
 }
 
