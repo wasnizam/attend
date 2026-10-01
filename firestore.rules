@@ -1,0 +1,379 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Active member of the given organisation.
+    function memberOf(orgId) {
+      return signedIn() && me().organisationId == orgId && me().status == 'active';
+    }
+
+    function adminOf(orgId) {
+      return memberOf(orgId) && me().role == 'admin';
+    }
+
+    function unchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function onlyChanges(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    // ---------- organisations ----------
+
+    match /organisations/{orgId} {
+      allow get: if signedIn()
+        && (resource.data.ownerId == request.auth.uid || memberOf(orgId));
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100;
+      allow update: if adminOf(orgId)
+        && onlyChanges(['name'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100;
+    }
+
+    // Invite code -> organisation. Lets a new lecturer join an existing organisation.
+    match /invites/{code} {
+      allow get: if true;
+      allow create: if adminOf(request.resource.data.organisationId)
+        && request.resource.data.keys().hasOnly(['organisationId', 'organisationName', 'createdAt']);
+      allow update: if adminOf(resource.data.organisationId)
+        && onlyChanges(['organisationName'])
+        && request.resource.data.organisationName is string
+        && request.resource.data.organisationName.size() <= 100;
+      allow delete: if adminOf(resource.data.organisationId);
+    }
+
+    // ---------- users ----------
+
+    match /users/{userId} {
+      allow get: if signedIn()
+        && (request.auth.uid == userId || adminOf(resource.data.organisationId));
+      allow list: if adminOf(resource.data.organisationId);
+
+      // A user creates their own profile exactly once, either as the admin of an
+      // organisation they just created, or as a lecturer holding a valid invite code.
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(
+             ['name', 'email', 'role', 'status', 'organisationId', 'inviteCode', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.status == 'active'
+        && (
+          (request.resource.data.role == 'admin'
+            && get(/databases/$(database)/documents/organisations/$(request.resource.data.organisationId))
+                 .data.ownerId == request.auth.uid)
+          ||
+          (request.resource.data.role == 'lecturer'
+            && get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode))
+                 .data.organisationId == request.resource.data.organisationId)
+        );
+
+      allow update: if
+        // self: display name only
+        (signedIn() && request.auth.uid == userId
+          && onlyChanges(['name'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 80)
+        ||
+        // admin: role / status of other members of the same organisation
+        (adminOf(resource.data.organisationId)
+          && request.auth.uid != userId
+          && onlyChanges(['role', 'status'])
+          && request.resource.data.role in ['lecturer', 'admin']
+          && request.resource.data.status in ['active', 'disabled']);
+    }
+
+    // ---------- sessions ----------
+
+    match /sessions/{sessionId} {
+      allow read: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+
+      allow create: if memberOf(request.resource.data.organisationId)
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'scheduled'
+        && request.resource.data.token == null
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120;
+
+      // Owner runs the session; an admin may also end it. A token never changes while a
+      // session is open. The owner may reopen an ended session, but only with a brand-new
+      // token, so a QR that was closed stays dead.
+      allow update: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin')
+        && unchanged(['ownerId', 'organisationId', 'createdAt'])
+        && (
+          (resource.data.status == 'scheduled' && request.resource.data.status in ['scheduled', 'active']
+            && (resource.data.token == null || request.resource.data.token == resource.data.token))
+          || (resource.data.status == 'active' && request.resource.data.status in ['active', 'ended']
+            && request.resource.data.token == resource.data.token)
+          || (resource.data.status == 'ended' && request.resource.data.status == 'ended'
+            && request.resource.data.token == resource.data.token)
+          || (resource.data.status == 'ended' && request.resource.data.status == 'active'
+            && resource.data.ownerId == request.auth.uid
+            && request.resource.data.token != resource.data.token)
+        );
+
+      // Only sessions that never started can be deleted.
+      allow delete: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin')
+        && resource.data.status == 'scheduled';
+    }
+
+    // ---------- weekly timetable ----------
+
+    match /classes/{classId} {
+      allow read: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+
+      allow create: if memberOf(request.resource.data.organisationId)
+        && request.resource.data.ownerId == request.auth.uid
+        && validClass();
+
+      allow update: if memberOf(resource.data.organisationId)
+        && resource.data.ownerId == request.auth.uid
+        && unchanged(['ownerId', 'organisationId', 'createdAt'])
+        && validClass();
+
+      allow delete: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+    }
+
+    // A class's student list. Participants may look up one exact ID (to confirm their
+    // name); only the class owner or an admin can see or change the list.
+    match /rosters/{rosterId}/students/{key} {
+      allow get: if true;
+      allow list: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+
+      allow create, update: if memberOf(request.resource.data.organisationId)
+        && request.resource.data.ownerId == request.auth.uid
+        && get(/databases/$(database)/documents/classes/$(rosterId)).data.ownerId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['studentKey', 'studentId', 'studentName', 'organisationId', 'ownerId'])
+        && request.resource.data.studentKey == key
+        && key.matches('^[A-Z0-9._-]{1,40}$')
+        && request.resource.data.studentId is string && request.resource.data.studentId.size() <= 40
+        && request.resource.data.studentName is string
+        && request.resource.data.studentName.size() > 0 && request.resource.data.studentName.size() <= 80;
+
+      allow delete: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+    }
+
+    function validClass() {
+      let d = request.resource.data;
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 120
+        && d.slots is list && d.slots.size() >= 1 && d.slots.size() <= 14
+        && d.days is list && d.days.size() >= 1 && d.days.size() <= 7
+        && d.days.hasOnly([0, 1, 2, 3, 4, 5, 6]);
+    }
+
+    // Public lookup: QR token -> session summary. This is the only thing a
+    // participant can read about a session. Not listable.
+    match /sessionLinks/{token} {
+      allow get: if true;
+
+      allow create: if signedIn()
+        && token.matches('^[A-Z0-9]{6}$')
+        && request.resource.data.status == 'active'
+        && request.resource.data.ownerId == request.auth.uid
+        && get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
+             .data.ownerId == request.auth.uid
+        && memberOf(request.resource.data.organisationId);
+
+      // A link can be closed, but never re-opened or re-pointed. While it is open the owner
+      // may flag that a code is required and open a presence check.
+      allow update: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin')
+        && onlyChanges(['status', 'needsCode', 'checkpoint', 'geo'])
+        && (request.resource.data.status == resource.data.status
+            || request.resource.data.status == 'ended');
+    }
+
+    // ---------- attendance ----------
+
+    function validAttendance(attendanceId) {
+      let d = request.resource.data;
+      let s = get(/databases/$(database)/documents/sessions/$(d.sessionId)).data;
+      return d.keys().hasOnly(['sessionId', 'organisationId', 'ownerId', 'sessionName', 'date',
+                               'token', 'studentKey', 'studentId', 'studentName',
+                               'timestamp', 'status', 'method', 'code'])
+        && d.keys().hasAll(['sessionId', 'organisationId', 'ownerId', 'sessionName', 'date',
+                            'token', 'studentKey', 'studentId', 'studentName',
+                            'timestamp', 'status', 'method'])
+        // One record per student per session: the document ID is the dedupe key.
+        && attendanceId == d.sessionId + '_' + d.studentKey
+        && d.studentKey is string && d.studentKey.matches('^[A-Z0-9._-]{1,40}$')
+        && d.studentId is string && d.studentId.size() > 0 && d.studentId.size() <= 40
+        && d.studentName is string && d.studentName.size() > 0 && d.studentName.size() <= 80
+        && d.status == 'present'
+        && d.method == 'qr'
+        && d.timestamp == request.time
+        // The session must be live, and the caller must hold its QR token.
+        && s.status == 'active'
+        && s.token == d.token
+        && request.time < s.expiresAt
+        && d.organisationId == s.organisationId
+        && d.ownerId == s.ownerId
+        && d.sessionName == s.name
+        && d.date == s.date
+        // With a rotating QR, the scan must be fresh: the current code or the one before it.
+        && (s.get('qrCode', null) == null
+            || (d.get('code', '') is string && d.get('code', '').size() > 0
+                && (d.code == s.qrCode || d.code == s.get('qrCodePrev', null))))
+        // In "refuse check-in" mode the phone's location, written in the same batch, must be
+        // inside the class's radius.
+        && (s.get('geoMode', null) != 'block'
+            || withinFence(s, getAfter(/databases/$(database)/documents/locations/$(attendanceId)).data.point))
+        // If the session uses a class list, the ID must be on it, under its listed name.
+        && (s.get('rosterId', null) == null
+            || get(/databases/$(database)/documents/rosters/$(s.rosterId)/students/$(d.studentKey))
+                 .data.studentName == d.studentName);
+    }
+
+    // Distance worked out here in metres rather than with latlng.distance(), whose unit
+    // is not the same everywhere. Over a few hundred metres the earth is flat enough:
+    // one degree of latitude is about 110.5 km, and a degree of longitude shrinks with
+    // the cosine of the latitude, which the lecturer's device stores as geoCos.
+    function withinFence(s, point) {
+      let dy = (point.latitude() - s.geoPoint.latitude()) * 110540.0;
+      let dx = (point.longitude() - s.geoPoint.longitude()) * 111320.0 * float(s.geoCos);
+      return dx * dx + dy * dy <= float(s.geoRadius) * float(s.geoRadius);
+    }
+
+    // ---------- location shared at check-in ----------
+
+    // Kept apart from the attendance record, which a participant can read back by ID:
+    // a student's coordinates are visible only to the session's lecturer and their admin.
+    match /locations/{locationId} {
+      allow create: if request.resource.data.keys().hasOnly(
+                         ['sessionId', 'organisationId', 'ownerId', 'studentKey', 'point', 'accuracy', 'timestamp'])
+        && locationId == request.resource.data.sessionId + '_' + request.resource.data.studentKey
+        && request.resource.data.studentKey.matches('^[A-Z0-9._-]{1,40}$')
+        && request.resource.data.point is latlng
+        && request.resource.data.accuracy is number
+        && request.resource.data.timestamp == request.time
+        && get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.status == 'active'
+        && get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.organisationId
+             == request.resource.data.organisationId
+        && get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.ownerId
+             == request.resource.data.ownerId;
+      allow read: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+    }
+
+    // ---------- remarks and evidence for MC / excused absences ----------
+
+    // Medical certificates and reasons. Written and read only by the session's lecturer
+    // or their admin; never by participants.
+    match /evidence/{evidenceId} {
+      allow read, delete: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+      allow create, update: if memberOf(request.resource.data.organisationId)
+        && evidenceId == request.resource.data.sessionId + '_' + request.resource.data.studentKey
+        && get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.organisationId
+             == request.resource.data.organisationId
+        && get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.ownerId
+             == request.resource.data.ownerId
+        && (request.resource.data.ownerId == request.auth.uid || me().role == 'admin')
+        && request.resource.data.remarks is string && request.resource.data.remarks.size() <= 500
+        && request.resource.data.get('mcNumber', '').size() <= 40
+        && request.resource.data.get('clinic', '').size() <= 100
+        && (request.resource.data.get('dataUrl', null) == null || request.resource.data.dataUrl.size() <= 990000);
+    }
+
+    // ---------- presence checks ("still here?") ----------
+
+    // A participant who has already checked in confirms they are still present while the
+    // lecturer's check is open. One confirmation per student per check.
+    function validCheckin(checkinId) {
+      let d = request.resource.data;
+      let s = get(/databases/$(database)/documents/sessions/$(d.sessionId)).data;
+      return d.keys().hasOnly(['sessionId', 'organisationId', 'ownerId', 'n', 'studentKey', 'token', 'timestamp'])
+        && d.n is int
+        && d.studentKey is string && d.studentKey.matches('^[A-Z0-9._-]{1,40}$')
+        && checkinId == d.sessionId + '_' + string(d.n) + '_' + d.studentKey
+        && d.timestamp == request.time
+        && s.status == 'active'
+        && s.token == d.token
+        && s.get('checkpoint', null) != null
+        && s.checkpoint.n == d.n
+        && request.time < s.checkpoint.expiresAt
+        && d.organisationId == s.organisationId
+        && d.ownerId == s.ownerId
+        && exists(/databases/$(database)/documents/attendance/$(d.sessionId + '_' + d.studentKey));
+    }
+
+    match /checkins/{checkinId} {
+      allow create: if validCheckin(checkinId);
+      allow read: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+    }
+
+    // The session's owner (or an admin) records someone by hand: a dead phone, an excused
+    // absence. Allowed once the session has started, including after it has ended.
+    function validManualAttendance(attendanceId) {
+      let d = request.resource.data;
+      let s = get(/databases/$(database)/documents/sessions/$(d.sessionId)).data;
+      return memberOf(s.organisationId)
+        && (s.ownerId == request.auth.uid || me().role == 'admin')
+        && s.status in ['active', 'ended']
+        && d.keys().hasOnly(['sessionId', 'organisationId', 'ownerId', 'sessionName', 'date',
+                             'studentKey', 'studentId', 'studentName',
+                             'timestamp', 'status', 'method', 'markedBy'])
+        && attendanceId == d.sessionId + '_' + d.studentKey
+        && d.studentKey is string && d.studentKey.matches('^[A-Z0-9._-]{1,40}$')
+        && d.studentId is string && d.studentId.size() > 0 && d.studentId.size() <= 40
+        && d.studentName is string && d.studentName.size() > 0 && d.studentName.size() <= 80
+        && d.status in ['present', 'late', 'excused', 'mc']
+        && d.method == 'manual'
+        && d.markedBy == request.auth.uid
+        && d.timestamp == request.time
+        && d.organisationId == s.organisationId
+        && d.ownerId == s.ownerId
+        && d.sessionName == s.name
+        && d.date == s.date;
+    }
+
+    match /attendance/{attendanceId} {
+      // Participants have no account. They may create exactly one record for a live
+      // session (a second write to the same ID is an update, which is denied), and may
+      // read back a single record by its exact ID to see "already recorded".
+      allow create: if validAttendance(attendanceId) || validManualAttendance(attendanceId);
+      allow get: if true;
+
+      allow list: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+
+      allow delete: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+
+      // The only thing that can change on a record is its status, and only by the lecturer.
+      allow update: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin')
+        && onlyChanges(['status'])
+        && request.resource.data.status in ['present', 'late', 'excused', 'mc'];
+    }
+  }
+}

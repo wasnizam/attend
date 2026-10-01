@@ -1,0 +1,12 @@
+SENARAI PELAJAR SECJ3303
+
+No  Matric      Name                         Prog
+1   A21CS0040   AHMAD BIN ALI                SECJH 3
+2   A21CS0041   SITI AMINAH BINTI YUSOF      SECJH 3
+3   A21CS0042   KUMAR A/L RAJAN              SECJH 3
+4   A21CS0043   TAN MEI LING                 SECJH 3
+5   A21CS0044   NUR'AIN BT. HASSAN           SECJH 3
+6   A21CS0045   DANIEL O'CONNOR              SECJH 3
+7   A21CS0046   LIM WEI-JIE                  SECJH 3
+
+Page 1 of 1

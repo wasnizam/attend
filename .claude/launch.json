@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "attend-emulator",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:emulator"],
+      "port": 5173
+    }
+  ]
+}
