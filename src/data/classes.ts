@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { classSessionId, meetingKey } from '../lib/format'
-import type { Delivery, Session, Slot, UserProfile, WeeklyClass } from '../lib/types'
+import type { ClassKind, Delivery, Session, Slot, UserProfile, WeeklyClass } from '../lib/types'
 import { newSessionData, startSession } from './sessions'
 
 export interface ClassInput {
@@ -29,6 +29,7 @@ export interface ClassInput {
   venue: string
   delivery: Delivery
   meetingUrl: string
+  kind: ClassKind
 }
 
 const classes = collection(db, 'classes')
@@ -49,6 +50,7 @@ const clean = (input: ClassInput) => ({
   venue: input.venue.trim(),
   delivery: input.delivery,
   meetingUrl: input.meetingUrl.trim(),
+  kind: input.kind,
 })
 
 export async function createClass(profile: UserProfile, input: ClassInput): Promise<string> {
@@ -126,6 +128,7 @@ export async function startClassSession(
           venue: cls.venue,
           delivery: cls.delivery,
           meetingUrl: cls.meetingUrl,
+          kind: cls.kind ?? 'lecture',
           geofence: cls,
         },
         cls.id,

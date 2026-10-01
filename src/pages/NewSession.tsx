@@ -5,9 +5,9 @@ import { createClass, deleteClass, updateClass } from '../data/classes'
 import { createSession } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
 import { useMyClasses } from '../hooks/useClasses'
-import { WEEK, addDays, classSlots, dayName, isoDate } from '../lib/format'
+import { KINDS, KIND_LABEL, WEEK, addDays, classSlots, dayName, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
-import type { Delivery, Slot, WeeklyClass } from '../lib/types'
+import type { ClassKind, Delivery, Slot, WeeklyClass } from '../lib/types'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -52,6 +52,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
   const [venue, setVenue] = useState(editing?.venue ?? '')
   const [delivery, setDelivery] = useState<Delivery>(editing?.delivery ?? 'in_person')
   const [meetingUrl, setMeetingUrl] = useState(editing?.meetingUrl ?? '')
+  const [kind, setKind] = useState<ClassKind>(editing?.kind ?? 'lecture')
   const [date, setDate] = useState(isoDate())
   const [{ startTime, endTime }, setTimes] = useState(defaultTimes)
   const [slots, setSlots] = useState<Slot[]>(() =>
@@ -114,10 +115,10 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
     try {
       const details = { name, description, code, section, venue, expected: count, delivery, meetingUrl: delivery === 'in_person' ? '' : meetingUrl }
       if (editing) {
-        await updateClass(editing.id, { ...details, slots, startDate: semStart, endDate: semEnd })
+        await updateClass(editing.id, { ...details, kind, slots, startDate: semStart, endDate: semEnd })
         navigate('/app/timetable')
       } else if (weekly) {
-        const id = await createClass(profile, { ...details, slots, startDate: semStart, endDate: semEnd })
+        const id = await createClass(profile, { ...details, kind, slots, startDate: semStart, endDate: semEnd })
         navigate(`/app/timetable/${id}/students`)
       } else {
         const list = lists.find((c) => c.id === rosterId)
@@ -193,6 +194,27 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+
+          {weekly && (
+            <div>
+              <p className="mb-1.5 text-sm font-medium">{t('Class type')}</p>
+              <div role="radiogroup" aria-label={t('Class type')} className="grid grid-cols-3 gap-1 rounded-md bg-canvas p-1">
+                {KINDS.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={kind === value}
+                    onClick={() => setKind(value)}
+                    className={`h-10 rounded-md text-sm font-semibold transition ${kind === value ? 'bg-white text-ink shadow-sm' : 'text-muted'}`}
+                  >
+                    {t(KIND_LABEL[value])}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-muted">{t('Attendance is reported separately for lectures, tutorials and labs.')}</p>
+            </div>
+          )}
 
           {weekly ? (
             <fieldset className="space-y-2">

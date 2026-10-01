@@ -3,7 +3,7 @@ import { LevelBar } from '../components/charts'
 import { Card, EmptyState, ErrorNote, PageLoader, Spinner, buttonClass } from '../components/ui'
 import { useClassReport } from '../hooks/useClassReport'
 import { useMyClasses } from '../hooks/useClasses'
-import { courseLine, formatPercent, isoDate } from '../lib/format'
+import { KINDS, KIND_LABEL, courseLine, formatPercent, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import type { WeeklyClass } from '../lib/types'
 
@@ -84,11 +84,23 @@ export function Reports() {
         />
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2">
-            {current.map((c) => (
-              <ClassSummary key={c.id} cls={c} />
-            ))}
-          </div>
+          {/* Lectures, tutorials and labs are reported separately. */}
+          {KINDS.map((kind) => {
+            const ofKind = current.filter((c) => (c.kind ?? 'lecture') === kind)
+            if (ofKind.length === 0) return null
+            return (
+              <section key={kind}>
+                <h2 className="mb-2 text-sm font-semibold text-muted">
+                  {t(KIND_LABEL[kind])} <span className="font-normal">· {ofKind.length}</span>
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {ofKind.map((c) => (
+                    <ClassSummary key={c.id} cls={c} />
+                  ))}
+                </div>
+              </section>
+            )
+          })}
           {past.length > 0 && (
             <section>
               <h2 className="mb-2 text-sm font-semibold text-muted">{t('Past semesters')}</h2>

@@ -9,8 +9,12 @@ export type AttendanceStatus = 'present' | 'late' | 'excused' | 'mc'
 /** How a class is delivered. Online and hybrid sessions check in with a typed code. */
 export type Delivery = 'in_person' | 'online' | 'hybrid'
 
+/** What kind of class it is. Attendance is reported separately for each kind. */
+export type ClassKind = 'lecture' | 'tutorial' | 'lab'
+
 /** Optional labels a university uses to tell classes apart. */
 export interface CourseDetails {
+  kind?: ClassKind
   code?: string
   section?: string
   venue?: string

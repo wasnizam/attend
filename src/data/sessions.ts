@@ -18,7 +18,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { isAway, parseDate, randomToken } from '../lib/format'
-import type { Delivery, GeoMode, Geofence, Session, SessionLink, UserProfile } from '../lib/types'
+import type { ClassKind, Delivery, GeoMode, Geofence, Session, SessionLink, UserProfile } from '../lib/types'
 
 export interface NewSession {
   name: string
@@ -34,6 +34,7 @@ export interface NewSession {
   venue?: string
   delivery?: Delivery
   meetingUrl?: string
+  kind?: ClassKind
   /** Location check carried over from the class, if it has one. */
   geofence?: Geofence
 }
@@ -57,6 +58,7 @@ export function newSessionData(profile: UserProfile, input: NewSession, classId:
     section: (input.section ?? '').trim(),
     venue: (input.venue ?? '').trim(),
     delivery: input.delivery ?? 'in_person',
+    ...(input.kind ? { kind: input.kind } : {}),
     meetingUrl: (input.meetingUrl ?? '').trim(),
     geoPoint: input.geofence?.geoPoint ?? null,
     geoRadius: input.geofence?.geoRadius ?? null,

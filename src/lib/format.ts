@@ -113,9 +113,12 @@ export function classSlots(c: Pick<WeeklyClass, 'slots' | 'days' | 'startTime' |
   return [...slots].sort((a, b) => WEEK.indexOf(a.day) - WEEK.indexOf(b.day) || a.startTime.localeCompare(b.startTime))
 }
 
-/** "SECJ3303 · Section 02 · N28 Lab 3" — only the parts that were filled in. */
+export const KINDS = ['lecture', 'tutorial', 'lab'] as const
+export const KIND_LABEL = { lecture: 'Lecture', tutorial: 'Tutorial', lab: 'Lab' } as const
+
+/** "Lecture · SECJ3303 · Section 02 · N28 Lab 3" — only the parts that were filled in. */
 export function courseLine(c: CourseDetails): string {
-  return [c.code, c.section && `${t('Sec')} ${c.section}`, c.venue].filter(Boolean).join(' · ')
+  return [c.kind && t(KIND_LABEL[c.kind]), c.code, c.section && `${t('Sec')} ${c.section}`, c.venue].filter(Boolean).join(' · ')
 }
 
 export const dayName = (d: number) => t(DAY_NAMES[d])

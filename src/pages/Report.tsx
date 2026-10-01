@@ -8,13 +8,17 @@ import { useClassReport } from '../hooks/useClassReport'
 import { useMyClasses } from '../hooks/useClasses'
 import { downloadCsv, slug } from '../lib/csv'
 import { courseLine, effectiveStatus, formatDate, formatPercent } from '../lib/format'
-import { t } from '../lib/i18n'
+import { locale, t } from '../lib/i18n'
 import { type ClassReport, DEFAULT_BAR, DEFAULT_WARN, type StudentRow } from '../lib/report'
 import type { AttendanceStatus, WeeklyClass } from '../lib/types'
 
-const VIEWS = ['students', 'sheet', 'sessions'] as const
+const VIEWS = ['students', 'monthly', 'sheet', 'sessions'] as const
 type View = (typeof VIEWS)[number]
-const VIEW_LABEL: Record<View, string> = { students: 'Students', sheet: 'Attendance sheet', sessions: 'Sessions' }
+const VIEW_LABEL: Record<View, string> = { students: 'Students', monthly: 'Monthly', sheet: 'Attendance sheet', sessions: 'Sessions' }
+
+/** "2026-10" -> "Oct 2026" */
+const monthLabel = (key: string) =>
+  new Date(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1, 1).toLocaleDateString(locale(), { month: 'short', year: 'numeric' })
 
 // One letter per cell on the sheet; the legend under it spells them out.
 const MARK: Record<AttendanceStatus | 'absent', [string, string]> = {
@@ -57,7 +61,7 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
   if (loading) return <PageLoader />
   if (failed || !report) return <ErrorNote>{t('The report could not be loaded. Check your connection and reload.')}</ErrorNote>
 
-  const { held, planned, rows, trend, average, warnAfter, barAfter } = report
+  const { held, planned, rows, trend, average, warnAfter, barAfter, months } = report
   const warnPct = cls.warnPct ?? DEFAULT_WARN
   const barPct = cls.barPct ?? DEFAULT_BAR
   const due = (level: StudentRow['level']) => rows.filter((r) => r.level === level).length
@@ -69,6 +73,24 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
       toCsv([
         ['Student ID', 'Student Name', 'Present', 'Late', 'Excused', 'MC', 'Absent', 'Attendance %', 'Status', 'Can still miss'].map((h) => t(h)),
         ...rows.map((r) => [r.studentId, r.studentName, r.present, r.late, r.excused, r.mc, r.absent, r.rate === null ? '' : r.rate.toFixed(1), t(levelText(r.level)), r.canMiss]),
+      ]),
+      excel,
+    )
+
+  const exportMonthly = (excel: boolean) =>
+    downloadCsv(
+      `${file}-monthly-attendance${excel ? '-excel' : ''}.csv`,
+      toCsv([
+        [t('Student ID'), t('Student Name'), ...months.map((m) => `${monthLabel(m.key)} %`), `${t('Semester')} %`],
+        ...rows.map((r) => [
+          r.studentId,
+          r.studentName,
+          ...months.map((m) => {
+            const rate = r.monthly.get(m.key)?.rate
+            return rate === null || rate === undefined ? '' : rate.toFixed(1)
+          }),
+          r.rate === null ? '' : r.rate.toFixed(1),
+        ]),
       ]),
       excel,
     )
@@ -166,13 +188,14 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
             </div>
             {view !== 'sessions' && (
               <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => (view === 'sheet' ? exportSheet(false) : exportSummary(false))}>{t('Export CSV')}</Button>
-                <Button variant="secondary" onClick={() => (view === 'sheet' ? exportSheet(true) : exportSummary(true))}>{t('Export for Excel')}</Button>
+                <Button variant="secondary" onClick={() => (view === 'sheet' ? exportSheet : view === 'monthly' ? exportMonthly : exportSummary)(false)}>{t('Export CSV')}</Button>
+                <Button variant="secondary" onClick={() => (view === 'sheet' ? exportSheet : view === 'monthly' ? exportMonthly : exportSummary)(true)}>{t('Export for Excel')}</Button>
               </div>
             )}
           </div>
 
           {view === 'students' && <StudentsTable report={report} open={open} setOpen={setOpen} />}
+          {view === 'monthly' && <Monthly report={report} />}
           {view === 'sheet' && <Sheet report={report} />}
           {view === 'sessions' && (
             <Card className="overflow-hidden">
@@ -265,6 +288,73 @@ function StudentsTable({ report, open, setOpen }: { report: ClassReport; open: s
         </tbody>
       </table>
     </Card>
+  )
+}
+
+/**
+ * The 80% rule month by month: each student's attendance for every month's classes,
+ * with any month below the required level marked.
+ */
+function Monthly({ report }: { report: ClassReport }) {
+  const { rows, months, required } = report
+  return (
+    <>
+      <Card className="overflow-x-auto">
+        <table className="w-full border-separate border-spacing-0 text-left text-sm">
+          <thead className="bg-slate-50 text-xs text-muted">
+            <tr>
+              <th className="sticky left-0 z-10 bg-slate-50 py-2.5 pr-3 pl-5 font-medium">{t('Student')}</th>
+              {months.map((m) => (
+                <th key={m.key} className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
+                  {monthLabel(m.key)}
+                  <span className="block font-normal">{t(m.held === 1 ? '{n} class' : '{n} classes', { n: m.held })}</span>
+                </th>
+              ))}
+              <th className="py-2.5 pr-5 pl-3 text-right font-medium">{t('Semester')}</th>
+            </tr>
+          </thead>
+          <tbody className="tabular">
+            {rows.map((r) => (
+              <tr key={r.key}>
+                <td className="sticky left-0 z-10 border-t border-line bg-white py-2 pr-3 pl-5 whitespace-nowrap">
+                  <span className="font-medium">{r.studentId}</span>
+                  <span className="ml-2 text-muted">{r.studentName}</span>
+                </td>
+                {months.map((m) => {
+                  const cell = r.monthly.get(m.key)
+                  const low = cell?.rate !== null && cell?.rate !== undefined && cell.rate < required
+                  return (
+                    <td
+                      key={m.key}
+                      title={cell ? t('{a} of {c} classes attended', { a: cell.attended, c: cell.counted }) : undefined}
+                      className={`border-t border-line px-3 py-2 text-right ${low ? 'bg-bad-soft font-semibold text-bad' : ''}`}
+                    >
+                      {formatPercent(cell?.rate ?? null)}
+                      {low && <span className="sr-only"> ({t('below {n}%', { n: required })})</span>}
+                    </td>
+                  )
+                })}
+                <td className={`border-t border-line py-2 pr-5 pl-3 text-right font-semibold ${r.rate !== null && r.rate < required ? 'text-bad' : ''}`}>
+                  {formatPercent(r.rate)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="tabular text-sm">
+            <tr className="bg-slate-50">
+              <td className="sticky left-0 z-10 border-t border-line bg-slate-50 py-2.5 pr-3 pl-5 font-medium">{t('Class average')}</td>
+              {months.map((m) => (
+                <td key={m.key} className="border-t border-line px-3 py-2.5 text-right font-semibold">{formatPercent(m.average)}</td>
+              ))}
+              <td className="border-t border-line py-2.5 pr-5 pl-3 text-right font-semibold">{formatPercent(report.average)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </Card>
+      <p className="text-xs text-muted">
+        {t('A month in red is below {n}% for that month’s classes. Excused and MC absences are left out.', { n: required })}
+      </p>
+    </>
   )
 }
 

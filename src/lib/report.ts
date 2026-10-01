@@ -26,6 +26,17 @@ export interface StudentRow {
   canMiss: number
   /** Status in each held session, by session ID. Missing means absent. */
   marks: Map<string, AttendanceStatus>
+  /** Attendance for each calendar month, by month key (YYYY-MM). */
+  monthly: Map<string, { attended: number; counted: number; absent: number; rate: number | null }>
+}
+
+export interface ReportMonth {
+  /** YYYY-MM */
+  key: string
+  /** Classes held in that month. */
+  held: number
+  /** Share of the class present, averaged over the month's classes. */
+  average: number | null
 }
 
 export interface ClassReport {
@@ -38,6 +49,9 @@ export interface ClassReport {
   average: number | null
   warnAfter: number
   barAfter: number
+  months: ReportMonth[]
+  /** The attendance a student must keep: 100 minus the barring percentage (normally 80). */
+  required: number
 }
 
 /** How many times the class meets between its semester dates, going by the timetable. */
@@ -79,7 +93,7 @@ export function buildReport(
   const people = new Map<string, StudentRow>()
   const person = (key: string, studentId: string, studentName: string) => {
     if (!people.has(key)) {
-      people.set(key, { key, studentId, studentName, present: 0, late: 0, excused: 0, mc: 0, absent: 0, rate: null, level: 'ok', canMiss: 0, marks: new Map() })
+      people.set(key, { key, studentId, studentName, present: 0, late: 0, excused: 0, mc: 0, absent: 0, rate: null, level: 'ok', canMiss: 0, marks: new Map(), monthly: new Map() })
     }
     return people.get(key)!
   }
@@ -108,10 +122,33 @@ export function buildReport(
     // With a class list, the headcount is today's list; otherwise the expected number.
     return { session, present, rate: percent(present, roster.length || session.expected) }
   })
+  // Month by month: the same rule (excused and MC left out), applied to each month's classes.
+  const monthKeys = [...new Set(held.map((s) => s.date.slice(0, 7)))].sort()
+  const months: ReportMonth[] = monthKeys.map((key) => {
+    const inMonth = trend.filter((p) => p.session.date.startsWith(key))
+    const known = inMonth.map((p) => p.rate).filter((r): r is number => r !== null)
+    for (const row of rows) {
+      let attended = 0
+      let away = 0
+      for (const { session } of inMonth) {
+        const mark = row.marks.get(session.id)
+        if (mark === 'present' || mark === 'late') attended += 1
+        else if (mark === 'excused' || mark === 'mc') away += 1
+      }
+      const counted = inMonth.length - away
+      row.monthly.set(key, { attended, counted, absent: counted - attended, rate: percent(attended, counted) })
+    }
+    return {
+      key,
+      held: inMonth.length,
+      average: known.length ? Math.round((known.reduce((a, b) => a + b, 0) / known.length) * 10) / 10 : null,
+    }
+  })
+
   const rates = trend.map((p) => p.rate).filter((r): r is number => r !== null)
   const average = rates.length ? Math.round((rates.reduce((a, b) => a + b, 0) / rates.length) * 10) / 10 : null
 
-  return { held, planned, rows, trend, average, warnAfter, barAfter }
+  return { held, planned, rows, trend, average, warnAfter, barAfter, months, required: 100 - (cls.barPct ?? DEFAULT_BAR) }
 }
 
 export const todayIso = () => isoDate()
