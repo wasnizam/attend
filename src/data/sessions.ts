@@ -17,7 +17,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import { getPurpose } from '../lib/purpose'
+import { getPurpose, has } from '../lib/purpose'
 import { isAway, parseDate, randomToken } from '../lib/format'
 import type { ClassKind, Delivery, GeoMode, Geofence, Session, SessionLink, UserProfile } from '../lib/types'
 
@@ -148,7 +148,9 @@ function expiryFor(session: Session): Date {
   const start = parseDate(session.date, session.startTime)
   const end = parseDate(session.date, session.endTime)
   if (end <= start) end.setDate(end.getDate() + 1)
-  return new Date(Math.max(end.getTime(), Date.now() + MIN_OPEN_MS))
+  // Where people clock out, the QR must outlast the scheduled end: staff leave after it.
+  const grace = has('clock') ? 4 * 60 * 60 * 1000 : 0
+  return new Date(Math.max(end.getTime() + grace, Date.now() + MIN_OPEN_MS))
 }
 
 const newCode = () => randomToken(5)

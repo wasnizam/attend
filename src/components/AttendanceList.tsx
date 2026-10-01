@@ -1,4 +1,5 @@
-import { formatClock24 } from '../lib/format'
+import type { ClockOuts } from '../data/attendance'
+import { formatClock24, formatDuration } from '../lib/format'
 import { t } from '../lib/i18n'
 import { has } from '../lib/purpose'
 import type { AttendanceRecord, AttendanceStatus } from '../lib/types'
@@ -16,12 +17,14 @@ interface Props {
   notes?: Map<string, string>
   /** Record ID -> extra lines under the name, such as MC remarks and evidence. */
   details?: Map<string, React.ReactNode>
+  /** Workplace: clock-out times, with the manager's controls to clock someone out or undo it. */
+  clock?: { outs: ClockOuts; onOut: (record: AttendanceRecord) => void; onUndo: (record: AttendanceRecord) => void }
 }
 
 export const STATUS_LABEL: Record<AttendanceStatus, string> = { present: 'Present', late: 'Late', excused: 'Excused', mc: 'MC' }
 const STATUS_COLOR: Record<AttendanceStatus, string> = { present: 'text-good', late: 'text-[#b25e00]', excused: 'text-muted', mc: 'text-sky-700' }
 
-export function AttendanceList({ records, live = false, onRemove, onStatus, missed, notes, details }: Props) {
+export function AttendanceList({ records, live = false, onRemove, onStatus, missed, notes, details, clock }: Props) {
   const rows = live ? [...records].reverse() : records
   return (
     <div className="overflow-hidden rounded-lg border border-line">
@@ -30,7 +33,8 @@ export function AttendanceList({ records, live = false, onRemove, onStatus, miss
           <tr>
             <th className="py-2.5 pr-2 pl-4 font-medium">{t('Student ID')}</th>
             <th className="px-2 py-2.5 font-medium">{t('Name')}</th>
-            <th className="hidden px-2 py-2.5 font-medium sm:table-cell">{t('Time')}</th>
+            <th className="hidden px-2 py-2.5 font-medium sm:table-cell">{clock ? t('In') : t('Time')}</th>
+            {clock && <th className="px-2 py-2.5 font-medium">{t('Out')}</th>}
             <th className="px-2 py-2.5 font-medium">{t('Status')}</th>
             {onRemove && <th className="w-9" />}
           </tr>
@@ -54,6 +58,33 @@ export function AttendanceList({ records, live = false, onRemove, onStatus, miss
                   )}
                 </td>
                 <td className="tabular hidden px-2 py-3 align-top text-muted sm:table-cell">{formatClock24(r.timestamp)}</td>
+                {clock && (
+                  <td className="tabular px-2 py-2 align-top">
+                    {clock.outs.get(r.studentKey) ? (
+                      <span className="block py-1">
+                        {formatClock24(clock.outs.get(r.studentKey) as never)}
+                        {r.timestamp && (
+                          <span className="block text-xs text-muted">
+                            {formatDuration((clock.outs.get(r.studentKey)!.toMillis() - r.timestamp.toMillis()) / 60_000)}
+                          </span>
+                        )}
+                        <button type="button" className="text-xs font-medium text-accent hover:underline" onClick={() => clock.onUndo(r)}>
+                          {t('Undo')}
+                        </button>
+                      </span>
+                    ) : status === 'excused' || status === 'mc' ? (
+                      <span className="block py-1 text-muted">—</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="h-8 rounded-md border border-line bg-white px-2 text-xs font-semibold hover:bg-canvas"
+                        onClick={() => clock.onOut(r)}
+                      >
+                        {t('Clock out')}
+                      </button>
+                    )}
+                  </td>
+                )}
                 <td className="px-2 py-2 align-top">
                   {onStatus ? (
                     <select

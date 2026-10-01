@@ -7,7 +7,7 @@ import { setThresholds } from '../data/classes'
 import { useClassReport } from '../hooks/useClassReport'
 import { useMyClasses } from '../hooks/useClasses'
 import { downloadCsv, slug } from '../lib/csv'
-import { courseLine, effectiveStatus, formatDate, formatPercent } from '../lib/format'
+import { courseLine, effectiveStatus, formatDate, formatDuration, formatPercent } from '../lib/format'
 import { locale, t } from '../lib/i18n'
 import { has } from '../lib/purpose'
 import { type ClassReport, DEFAULT_BAR, DEFAULT_WARN, type StudentRow } from '../lib/report'
@@ -74,8 +74,8 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
     downloadCsv(
       `${file}-semester-report${excel ? '-excel' : ''}.csv`,
       toCsv([
-        ['Student ID', 'Student Name', 'Present', 'Late', 'Excused', 'MC', 'Absent', 'Attendance %', 'Status', 'Can still miss'].map((h) => t(h)),
-        ...rows.map((r) => [r.studentId, r.studentName, r.present, r.late, r.excused, r.mc, r.absent, r.rate === null ? '' : r.rate.toFixed(1), t(levelText(r.level)), r.canMiss]),
+        [...['Student ID', 'Student Name', 'Present', 'Late', 'Excused', 'MC', 'Absent', 'Attendance %', 'Status', 'Can still miss'], ...(has('clock') ? ['Hours'] : [])].map((h) => t(h)),
+        ...rows.map((r) => [r.studentId, r.studentName, r.present, r.late, r.excused, r.mc, r.absent, r.rate === null ? '' : r.rate.toFixed(1), t(levelText(r.level)), r.canMiss, ...(has('clock') ? [(r.minutes / 60).toFixed(2)] : [])]),
       ]),
       excel,
     )
@@ -237,6 +237,7 @@ function StudentsTable({ report, open, setOpen }: { report: ClassReport; open: s
   const { rows, held } = report
   const rule = has('barring')
   const mc = has('mc')
+  const clock = has('clock')
   return (
     <Card className="overflow-x-auto">
       <table className="w-full min-w-[44rem] text-left text-sm">
@@ -250,6 +251,7 @@ function StudentsTable({ report, open, setOpen }: { report: ClassReport; open: s
             <th className="px-2 py-2.5 text-right font-medium">{t('Excused')}</th>
             {mc && <th className="px-2 py-2.5 text-right font-medium">{t('MC')}</th>}
             <th className="px-2 py-2.5 text-right font-medium">%</th>
+            {clock && <th className="py-2.5 pr-5 pl-2 text-right font-medium">{t('Hours')}</th>}
             {rule && <th className="py-2.5 pr-5 pl-2 text-right font-medium">{t('Can still miss')}</th>}
           </tr>
         </thead>
@@ -265,6 +267,7 @@ function StudentsTable({ report, open, setOpen }: { report: ClassReport; open: s
                 <td className="px-2 py-2.5 text-right">{r.excused}</td>
                 {mc && <td className="px-2 py-2.5 text-right">{r.mc}</td>}
                 <td className="px-2 py-2.5 text-right font-semibold">{formatPercent(r.rate)}</td>
+                {clock && <td className="py-2.5 pr-5 pl-2 text-right whitespace-nowrap">{formatDuration(r.minutes)}</td>}
                 {rule && <td className="py-2.5 pr-5 pl-2 text-right">{r.level === 'barring' ? '—' : r.canMiss}</td>}
               </tr>
               {open === r.key && (

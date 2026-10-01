@@ -282,3 +282,85 @@ export function subscribeLocations(
     onError,
   )
 }
+
+// ---- clock-out (workplace) ----
+
+const clockouts = collection(db, 'clockouts')
+
+/** Participant side: when (if ever) this person clocked out of the session. */
+export async function getClockOut(link: SessionLink, rawStudentId: string): Promise<Date | null> {
+  const snap = await getDoc(doc(clockouts, `${link.sessionId}_${studentKey(rawStudentId)}`))
+  return snap.exists() ? ((snap.data().timestamp as { toDate(): Date } | null)?.toDate() ?? new Date()) : null
+}
+
+/** Participant side: clock out now. Returns the time recorded. */
+export async function clockOut(link: SessionLink, rawStudentId: string, code?: string): Promise<Date> {
+  const key = studentKey(rawStudentId)
+  const ref = doc(clockouts, `${link.sessionId}_${key}`)
+  try {
+    await setDoc(ref, {
+      sessionId: link.sessionId,
+      organisationId: link.organisationId,
+      ownerId: link.ownerId,
+      studentKey: key,
+      token: link.token,
+      by: 'self',
+      ...(code ? { code } : {}),
+      timestamp: serverTimestamp(),
+    })
+    return new Date()
+  } catch (e) {
+    // A second clock-out is refused; show the first one instead of an error.
+    const existing = await getClockOut(link, rawStudentId)
+    if (existing) return existing
+    throw e
+  }
+}
+
+/** Manager side: clock someone out now (they forgot, or their phone is dead). */
+export const clockOutFor = (session: Session, viewer: UserProfile, key: string) =>
+  setDoc(doc(clockouts, `${session.id}_${key}`), {
+    sessionId: session.id,
+    organisationId: session.organisationId,
+    ownerId: session.ownerId,
+    studentKey: key,
+    by: viewer.id,
+    timestamp: serverTimestamp(),
+  })
+
+export const undoClockOut = (session: Pick<Session, 'id'>, key: string) => deleteDoc(doc(clockouts, `${session.id}_${key}`))
+
+function clockoutQuery(session: Pick<Session, 'id' | 'organisationId'>, viewer: UserProfile) {
+  const constraints: QueryConstraint[] = [
+    where('organisationId', '==', session.organisationId),
+    where('sessionId', '==', session.id),
+  ]
+  if (viewer.role !== 'admin') constraints.push(where('ownerId', '==', viewer.id))
+  return query(clockouts, ...constraints)
+}
+
+type ClockOuts = Map<string, { toMillis(): number; toDate(): Date }>
+const toClockOuts = (docs: { data(): object }[]): ClockOuts =>
+  new Map(
+    docs
+      .map((d) => d.data() as { studentKey: string; timestamp: { toMillis(): number; toDate(): Date } | null })
+      .filter((d) => d.timestamp)
+      .map((d) => [d.studentKey, d.timestamp!]),
+  )
+
+/** Manager side: clock-out times for a session, by student key, live. */
+export function subscribeClockOuts(
+  session: Pick<Session, 'id' | 'organisationId'>,
+  viewer: UserProfile,
+  onData: (outs: ClockOuts) => void,
+  onError: (e: Error) => void,
+) {
+  return onSnapshot(clockoutQuery(session, viewer), (snap) => onData(toClockOuts(snap.docs)), onError)
+}
+
+/** One-off read, for reports. */
+export async function fetchClockOuts(session: Pick<Session, 'id' | 'organisationId'>, viewer: UserProfile): Promise<ClockOuts> {
+  return toClockOuts((await getDocs(clockoutQuery(session, viewer))).docs)
+}
+
+export type { ClockOuts }

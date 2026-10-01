@@ -117,7 +117,7 @@ like any lecturer). Colleagues join with the invite link under **Admin → Users
 
 ### One engine, several purposes
 
-An organisation has a `purpose` (`education`, `training` or `events`; missing means education),
+An organisation has a `purpose` (`education`, `training`, `events` or `workplace`; missing means education),
 chosen at sign-up and changeable by an admin under Account. It decides two things, both in
 `src/lib/purpose.ts`:
 
@@ -128,7 +128,12 @@ chosen at sign-up and changeable by an admin under Account. It decides two thing
   need: events have no timetable, class reports, class type, 80% rule or MC; training keeps
   repeating courses and MC but not class type or the barring ladder.
 
-The data model and the security rules are the same for every purpose. To add a purpose, add it
+**Workplace** adds one thing, behind `has('clock')`: clocking out. A second scan of the same QR
+writes `clockouts/{sessionId}_{studentKey}` (a manager can also clock someone out, or undo it).
+Hours are clock-out minus clock-in; lateness is worked out from the clock-in time (more than
+10 minutes after the start) instead of being set by hand; the report gains an Hours column.
+
+Apart from that, the data model and the security rules are the same for every purpose. To add a purpose, add it
 to `PURPOSES`, `FEATURES` and `TERMS` in that file and to the allowed values in `firestore.rules`.
 
 ### Guarantees enforced by the rules

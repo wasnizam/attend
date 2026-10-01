@@ -2,12 +2,13 @@
  * What an organisation uses Attend for. One engine serves all of them; the purpose only
  * decides which words are used and which features are shown.
  */
-export type Purpose = 'education' | 'training' | 'events'
+export type Purpose = 'education' | 'training' | 'events' | 'workplace'
 
 export const PURPOSES: { id: Purpose; label: string; text: string }[] = [
   { id: 'education', label: 'University or college', text: 'Semester classes, lectures, tutorials and labs, the 80% rule.' },
   { id: 'training', label: 'Training provider', text: 'Courses and workshops with a list of participants.' },
   { id: 'events', label: 'Events and conferences', text: 'One-off events. Guests check in at the door.' },
+  { id: 'workplace', label: 'Workplace', text: 'Staff clock in and out each day. Hours and lateness are worked out for you.' },
 ]
 
 /** Parts of the product that only some purposes need. */
@@ -20,11 +21,14 @@ export type Feature =
   | 'barring'
   /** Medical certificate as its own status, with number, clinic and evidence. */
   | 'mc'
+  /** Clock-out as well as clock-in: hours worked, and lateness worked out from the time. */
+  | 'clock'
 
 const FEATURES: Record<Purpose, Feature[]> = {
   education: ['recurring', 'classKind', 'barring', 'mc'],
   training: ['recurring', 'mc'],
   events: [],
+  workplace: ['recurring', 'mc', 'clock'],
 }
 
 let purpose: Purpose = 'education'
@@ -61,6 +65,23 @@ const TERMS: Record<'en' | 'ms', Partial<Record<Purpose, Swap[]>>> = {
       ['Session / class name', 'Event name'], ['New session', 'New event'], ['Create session', 'Create event'],
       ['Past sessions', 'Past events'], ['sessions', 'events'], ['Sessions', 'Events'], ['session', 'event'], ['Session', 'Event'],
     ]),
+    workplace: swaps([
+      ['Your classes this semester', 'Your shifts'],
+      ['Attendance for each class this semester', 'Attendance for each shift'],
+      ['Scan this QR to mark attendance', 'Scan to clock in or out'],
+      ['Start Attendance', 'Open clock-in'], ['End Attendance', 'Close for the day'],
+      ['Attendance Confirmed', 'Clocked in'], ['Confirm Attendance', 'Clock in or out'],
+      ['Semester starts', 'From'], ['Semester ends', 'Until'], ['Semester report', 'Shift report'],
+      ['Semester classes', 'Shifts'], ['semester classes', 'shifts'], ['Semester class', 'Shift'], ['semester class', 'shift'],
+      ['Past semesters', 'Past shifts'], ['this semester', 'this period'], ['the semester', 'the period'],
+      ['Semester', 'Period'], ['semester', 'period'],
+      ['Student list', 'Staff list'], ['student list', 'staff list'], ['class list', 'staff list'],
+      ['Student ID', 'Staff ID'], ['student ID', 'staff ID'],
+      ['Students', 'Staff'], ['students', 'staff'], ['Student', 'Employee'], ['student', 'employee'],
+      ['Lecturers', 'Managers'], ['lecturers', 'managers'], ['Lecturer', 'Manager'], ['lecturer', 'manager'],
+      ['Classes', 'Shifts'], ['classes', 'shifts'], ['Class', 'Shift'], ['class', 'shift'],
+      ['PRESENT', 'IN'], ['Session Active', 'Open'],
+    ]),
   },
   ms: {
     training: swaps([
@@ -75,6 +96,16 @@ const TERMS: Record<'en' | 'ms', Partial<Record<Purpose, Swap[]>>> = {
       ['Pelajar', 'Peserta'], ['pelajar', 'peserta'],
       ['Pensyarah', 'Penganjur'], ['pensyarah', 'penganjur'],
       ['Sesi', 'Acara'], ['sesi', 'acara'],
+    ]),
+    workplace: swaps([
+      ['Kehadiran Disahkan', 'Rekod masuk berjaya'], ['Sahkan Kehadiran', 'Rekod masuk atau keluar'],
+      ['Mula Kehadiran', 'Buka rekod masuk'], ['Tamat Kehadiran', 'Tutup untuk hari ini'],
+      ['Kelas semester', 'Syif'], ['kelas semester', 'syif'], ['Semester lepas', 'Syif lepas'],
+      ['Semester', 'Tempoh'], ['semester', 'tempoh'],
+      ['No\\. Matrik', 'No. Pekerja'], ['no\\. matrik', 'no. pekerja'],
+      ['Pelajar', 'Pekerja'], ['pelajar', 'pekerja'],
+      ['Pensyarah', 'Pengurus'], ['pensyarah', 'pengurus'],
+      ['Kelas', 'Syif'], ['kelas', 'syif'],
     ]),
   },
 }

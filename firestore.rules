@@ -42,7 +42,7 @@ service cloud.firestore {
         && request.resource.data.name.size() <= 100;
       allow update: if adminOf(orgId)
         && onlyChanges(['name', 'purpose'])
-        && request.resource.data.get('purpose', 'education') in ['education', 'training', 'events']
+        && request.resource.data.get('purpose', 'education') in ['education', 'training', 'events', 'workplace']
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 100;
@@ -302,6 +302,38 @@ service cloud.firestore {
         && request.resource.data.get('mcNumber', '').size() <= 40
         && request.resource.data.get('clinic', '').size() <= 100
         && (request.resource.data.get('dataUrl', null) == null || request.resource.data.dataUrl.size() <= 990000);
+    }
+
+    // ---------- clock-out (workplace) ----------
+
+    // The time someone left. Staff clock out themselves with the session's QR while it is
+    // open, once, and only if they clocked in. A manager can clock someone out, or undo it.
+    function validClockout(clockoutId) {
+      let d = request.resource.data;
+      let s = get(/databases/$(database)/documents/sessions/$(d.sessionId)).data;
+      return d.keys().hasOnly(['sessionId', 'organisationId', 'ownerId', 'studentKey', 'timestamp', 'token', 'by', 'code'])
+        && d.studentKey is string && d.studentKey.matches('^[A-Z0-9._-]{1,40}$')
+        && clockoutId == d.sessionId + '_' + d.studentKey
+        && d.timestamp == request.time
+        && d.organisationId == s.organisationId
+        && d.ownerId == s.ownerId
+        && exists(/databases/$(database)/documents/attendance/$(clockoutId))
+        && (
+          (d.by == 'self' && s.status == 'active' && s.token == d.get('token', null) && request.time < s.expiresAt
+              // With a rotating QR, leaving needs a fresh scan too, so nobody clocks out from home.
+              && (s.get('qrCode', null) == null
+                  || (d.get('code', null) is string && d.code.size() > 0
+                      && (d.code == s.qrCode || d.code == s.get('qrCodePrev', null)))))
+          || (d.by == request.auth.uid && s.status in ['active', 'ended']
+              && memberOf(s.organisationId) && (s.ownerId == request.auth.uid || me().role == 'admin'))
+        );
+    }
+
+    match /clockouts/{clockoutId} {
+      allow create: if validClockout(clockoutId);
+      allow get: if true;
+      allow list, delete: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
     }
 
     // ---------- presence checks ("still here?") ----------

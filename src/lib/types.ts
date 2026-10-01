@@ -1,4 +1,5 @@
 import type { GeoPoint, Timestamp } from 'firebase/firestore'
+import type { Purpose } from './purpose'
 
 export type Role = 'lecturer' | 'admin'
 export type UserStatus = 'active' | 'disabled'
@@ -63,7 +64,7 @@ export interface UserProfile {
 export interface Organisation {
   id: string
   /** What the organisation uses Attend for. Missing means education. */
-  purpose?: 'education' | 'training' | 'events'
+  purpose?: Purpose
   name: string
   ownerId: string
   inviteCode: string
@@ -125,7 +126,7 @@ export interface SessionLink {
   /** Set when the session checks location. The class's coordinates are never published. */
   geo?: GeoMode | null
   /** The organisation's purpose, so the check-in page uses the right words. */
-  purpose?: 'education' | 'training' | 'events'
+  purpose?: Purpose
   rosterId?: string | null
 }
 

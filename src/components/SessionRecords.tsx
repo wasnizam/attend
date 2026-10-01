@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react'
-import { markManually, removeAttendance, setAttendanceStatus, subscribeLocations } from '../data/attendance'
+import { type ClockOuts, clockOutFor, markManually, removeAttendance, setAttendanceStatus, subscribeClockOuts, subscribeLocations, undoClockOut } from '../data/attendance'
 import { type Evidence, saveEvidence, subscribeEvidence } from '../data/evidence'
 import { useProfile } from '../hooks/useAuth'
 import { missedChecks, useCheckins } from '../hooks/useCheckins'
@@ -7,7 +7,8 @@ import { useLive } from '../hooks/useLive'
 import { useAbsentees } from '../hooks/useRoster'
 import { useNow } from '../hooks/useSessions'
 import { openEvidence } from '../lib/evidenceFile'
-import { isAway, studentKey as studentKeyOf } from '../lib/format'
+import { isAway, minutesLate, studentKey as studentKeyOf } from '../lib/format'
+import { has } from '../lib/purpose'
 import { type Position, distanceMetres, formatDistance } from '../lib/geo'
 import { t } from '../lib/i18n'
 import type { AttendanceRecord, AttendanceStatus, Session } from '../lib/types'
@@ -41,15 +42,28 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
     fence ? (onData, onError) => subscribeLocations(session, viewer, onData, onError) : null,
     [session.id, session.organisationId, viewer.id, viewer.role, Boolean(fence)],
   )
+  // Workplace: when each person left, and how late each arrived (worked out from the time).
+  const clocking = has('clock')
+  const outs = useLive<ClockOuts>(
+    clocking ? (onData, onError) => subscribeClockOuts(session, viewer, onData, onError) : null,
+    [session.id, session.organisationId, viewer.id, viewer.role, clocking],
+  )
   const notes = new Map<string, string>()
+  if (clocking) {
+    for (const r of records) {
+      const late = r.method === 'manual' || isAway(r.status) ? 0 : minutesLate(r.timestamp, session)
+      if (late) notes.set(r.id, t('Late by {n} min', { n: late }))
+    }
+  }
   if (fence && locations.data) {
     for (const r of records) {
       if (r.method === 'manual') continue
       const at = locations.data.get(r.studentKey)
-      if (!at) notes.set(r.id, t('Location not shared'))
+      const add = (text: string) => notes.set(r.id, [notes.get(r.id), text].filter(Boolean).join(' · '))
+      if (!at) add(t('Location not shared'))
       else {
         const far = distanceMetres(at, { lat: fence.latitude, lng: fence.longitude })
-        if (far > (session.geoRadius ?? 0)) notes.set(r.id, t('Far from class: {d} away', { d: formatDistance(far) }))
+        if (far > (session.geoRadius ?? 0)) add(t('Far from class: {d} away', { d: formatDistance(far) }))
       }
     }
   }
@@ -129,6 +143,15 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
           missed={missed}
           notes={notes}
           details={details}
+          clock={
+            clocking && outs.data
+              ? {
+                  outs: outs.data,
+                  onOut: (r) => run(() => clockOutFor(session, viewer, r.studentKey)),
+                  onUndo: (r) => run(() => undoClockOut(session, r.studentKey)),
+                }
+              : undefined
+          }
           onStatus={(r, status) =>
             run(async () => {
               await setAttendanceStatus(r.id, status)

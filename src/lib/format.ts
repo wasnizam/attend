@@ -142,3 +142,19 @@ export function weekStart(iso: string): string {
   const day = parseDate(iso).getDay()
   return addDays(iso, -((day + 6) % 7))
 }
+
+/** After this many minutes past the start, a clock-in counts as late. */
+export const LATE_GRACE_MIN = 10
+
+/** Minutes late for a clock-in, or 0 when it was on time (within the grace period). */
+export function minutesLate(clockIn: Timestamp | null | undefined, session: Pick<Session, 'date' | 'startTime'>): number {
+  if (!clockIn) return 0
+  const late = Math.floor((clockIn.toMillis() - parseDate(session.date, session.startTime).getTime()) / 60_000)
+  return late > LATE_GRACE_MIN ? late : 0
+}
+
+/** 545 -> "9 h 05 min" */
+export function formatDuration(minutes: number): string {
+  const m = Math.max(0, Math.round(minutes))
+  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min`
+}

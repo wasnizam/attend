@@ -2,10 +2,10 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { LanguageSwitch } from '../components/LanguageSwitch'
 import { Button, Card, ErrorNote, Field, PageLoader, friendlyError } from '../components/ui'
-import { type SubmitResult, confirmPresence, submitAttendance } from '../data/attendance'
+import { type SubmitResult, clockOut, confirmPresence, getClockOut, submitAttendance } from '../data/attendance'
 import { lookupStudent } from '../data/roster'
 import { getSessionLink, subscribeSessionLink } from '../data/sessions'
-import { formatClock, formatRange } from '../lib/format'
+import { formatClock, formatDuration, formatRange } from '../lib/format'
 import { type Position, getPosition } from '../lib/geo'
 import { t } from '../lib/i18n'
 import { setPurpose } from '../lib/purpose'
@@ -109,6 +109,61 @@ function PresencePrompt({ token, studentId }: { token: string; studentId: string
   )
 }
 
+/**
+ * Workplace: shown once someone is clocked in. Scanning again at the end of the day
+ * brings them here, where one tap clocks them out.
+ */
+function ClockOutCard({ link, studentId, since, justIn, code }: { link: SessionLink; studentId: string; since: Date | null; justIn?: boolean; code?: string }) {
+  const [out, setOut] = useState<Date | null | undefined>(undefined)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    getClockOut(link, studentId).then(setOut, () => setOut(null))
+  }, [link, studentId])
+
+  if (out === undefined) return null
+  if (out) {
+    return (
+      <Card className="mt-4 p-5 text-center">
+        <p className="font-semibold text-good">✓ {t('Clocked out at {time}', { time: formatClock(out) })}</p>
+        {since && <p className="tabular mt-1 text-sm text-muted">{t('Time at work: {d}', { d: formatDuration((out.getTime() - since.getTime()) / 60_000) })}</p>}
+      </Card>
+    )
+  }
+  if (link.status !== 'active') return null
+  // Straight after clocking in, a button would only invite a slip of the thumb.
+  if (justIn) return <p className="mt-4 text-center text-sm text-muted">{t('When you leave, scan the QR again to clock out.')}</p>
+  return (
+    <Card className="mt-4 p-5 text-center">
+      <p className="font-semibold tracking-tight">{t('Leaving now?')}</p>
+      <p className="mt-1 text-sm text-muted">{t('Tap the button to record the time you leave.')}</p>
+      <div className="mt-4 space-y-3">
+        <ErrorNote>{error}</ErrorNote>
+        <Button
+          size="lg"
+          variant="secondary"
+          block
+          busy={busy}
+          onClick={async () => {
+            setBusy(true)
+            setError('')
+            try {
+              setOut(await clockOut(link, studentId, code))
+            } catch {
+              setError(t('We could not clock you out. The code may have changed: scan the QR again.'))
+            } finally {
+              setBusy(false)
+            }
+          }}
+        >
+          {t('Clock out')}
+        </Button>
+      </div>
+    </Card>
+  )
+}
+
 /** What a participant sees after scanning the QR or opening the link. No account, no install. */
 export default function Attend() {
   const { token = '' } = useParams()
@@ -118,6 +173,7 @@ export default function Attend() {
   const [loadError, setLoadError] = useState(false)
   const [{ studentId, name }, setForm] = useState(remembered)
   const [typedCode, setTypedCode] = useState('')
+  const [usedCode, setUsedCode] = useState<string | undefined>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState<SubmitResult | null>(null)
@@ -145,9 +201,18 @@ export default function Attend() {
     return <Message title={t('QR not recognised')} text={t('This attendance link is not valid. Please scan the QR shown by your lecturer.')} />
   }
 
+  const workplace = link.purpose === 'workplace'
+
   if (result?.kind === 'recorded') {
     return (
-      <Shell below={<PresencePrompt token={link.token} studentId={studentId} />}>
+      <Shell
+        below={
+          <>
+            {workplace && <ClockOutCard link={link} studentId={studentId} since={result.time} justIn />}
+            <PresencePrompt token={link.token} studentId={studentId} />
+          </>
+        }
+      >
         <div className="text-center">
           <div className="animate-pop mx-auto flex size-20 items-center justify-center rounded-full bg-good text-4xl text-white">✓</div>
           <h1 className="mt-5 text-2xl font-semibold tracking-tight">{t('Attendance Confirmed')}</h1>
@@ -162,10 +227,17 @@ export default function Attend() {
 
   if (result?.kind === 'duplicate') {
     return (
-      <Shell below={<PresencePrompt token={link.token} studentId={studentId} />}>
+      <Shell
+        below={
+          <>
+            {workplace && <ClockOutCard link={link} studentId={studentId} since={result.time} code={usedCode} />}
+            <PresencePrompt token={link.token} studentId={studentId} />
+          </>
+        }
+      >
         <div className="text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">{t('Already Recorded')}</h1>
-          <p className="mt-2 text-muted">{t('Your attendance for this session has already been recorded.')}</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{workplace ? t('You are clocked in') : t('Already Recorded')}</h1>
+          <p className="mt-2 text-muted">{workplace ? t('To leave, use the Clock out button below.') : t('Your attendance for this session has already been recorded.')}</p>
           <dl className="mt-6 space-y-2 rounded-lg bg-canvas p-4 text-left text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted">{t('Session')}</dt>
@@ -228,6 +300,7 @@ export default function Attend() {
         }
       }
       const code = scannedCode ?? (asksCode ? typedCode.trim().toUpperCase() : undefined)
+      setUsedCode(code)
       const outcome = await submitAttendance(link, studentId, listedName, code, position)
       if (outcome.kind === 'stale' && link.geo === 'block') {
         // Refused while the session is open: too far away, or an old code.

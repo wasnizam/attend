@@ -1,4 +1,4 @@
-import { addDays, classSlots, countPresent, isoDate, parseDate, percent } from './format'
+import { addDays, classSlots, countPresent, isoDate, minutesLate, parseDate, percent } from './format'
 import type { RosterEntry } from './rosterImport'
 import type { AttendanceRecord, AttendanceStatus, Session, WeeklyClass } from './types'
 
@@ -19,6 +19,8 @@ export interface StudentRow {
   mc: number
   /** Absences without a reason: the number the 80% rule is about. */
   absent: number
+  /** Workplace: minutes between clock-in and clock-out, added up. */
+  minutes: number
   /** Share of sessions attended so far, leaving excused and MC ones out. Null when nothing counts yet. */
   rate: number | null
   level: Level
@@ -85,6 +87,8 @@ export function buildReport(
   held: Session[],
   recordsBySession: Map<string, AttendanceRecord[]>,
   roster: RosterEntry[],
+  /** Workplace: clock-out times by session, then by person. Lateness then comes from the clock-in time. */
+  outsBySession?: Map<string, Map<string, { toMillis(): number }>>,
 ): ClassReport {
   const planned = Math.max(plannedCount(cls), held.length)
   const warnAfter = Math.max(1, Math.ceil(((cls.warnPct ?? DEFAULT_WARN) / 100) * planned))
@@ -93,7 +97,7 @@ export function buildReport(
   const people = new Map<string, StudentRow>()
   const person = (key: string, studentId: string, studentName: string) => {
     if (!people.has(key)) {
-      people.set(key, { key, studentId, studentName, present: 0, late: 0, excused: 0, mc: 0, absent: 0, rate: null, level: 'ok', canMiss: 0, marks: new Map(), monthly: new Map() })
+      people.set(key, { key, studentId, studentName, present: 0, late: 0, excused: 0, mc: 0, absent: 0, minutes: 0, rate: null, level: 'ok', canMiss: 0, marks: new Map(), monthly: new Map() })
     }
     return people.get(key)!
   }
@@ -101,7 +105,12 @@ export function buildReport(
   for (const session of held) {
     for (const r of recordsBySession.get(session.id) ?? []) {
       const row = person(r.studentKey, r.studentId, r.studentName)
-      const status = r.status ?? 'present'
+      let status = r.status ?? 'present'
+      if (outsBySession) {
+        if (status === 'present' && r.method !== 'manual' && minutesLate(r.timestamp, session)) status = 'late'
+        const out = outsBySession.get(session.id)?.get(r.studentKey)
+        if (out && r.timestamp) row.minutes += Math.max(0, (out.toMillis() - r.timestamp.toMillis()) / 60_000)
+      }
       row[status] += 1
       row.marks.set(session.id, status)
     }
