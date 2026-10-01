@@ -29,6 +29,11 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // A new version takes over straight away instead of waiting for every tab and
+        // installed copy to be closed first. Without these two, phones stay on an old
+        // version indefinitely.
+        skipWaiting: true,
+        clientsClaim: true,
         navigateFallback: '/index.html',
         // A request for a script or style must never be answered with the app's HTML page.
         navigateFallbackDenylist: [/^\/assets\//],
