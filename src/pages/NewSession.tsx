@@ -1,7 +1,8 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button, Card, EmptyState, ErrorNote, Field, PageLoader, friendlyError, inputClass } from '../components/ui'
-import { createClass, deleteClass, updateClass } from '../data/classes'
+import { type Fence, LocationPicker } from '../components/LocationPicker'
+import { createClass, deleteClass, setClassGeofence, updateClass } from '../data/classes'
 import { createSession } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
 import { useMyClasses } from '../hooks/useClasses'
@@ -78,6 +79,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
   const [rotating, setRotating] = useState(Boolean(editing?.rotating))
   const [daysPerWeek, setDaysPerWeek] = useState(String(editing?.daysPerWeek ?? 6))
   const [minStaff, setMinStaff] = useState(editing?.minStaff ? String(editing.minStaff) : '')
+  const [fence, setFence] = useState<Fence>(undefined)
   const myClasses = useMyClasses().data
   const lists = (myClasses ?? []).filter((c) => (c.rosterCount ?? 0) > 0)
   // Semester dates: default to 14 weeks from today, or to the dates of the newest class
@@ -136,6 +138,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
       const work = clock ? { graceMin: grace === 'flex' ? null : Number(grace), flexible: grace === 'flex', rotating, rosterFrom: rosterFrom || null, daysPerWeek: rotating && !rosterFrom ? Number(daysPerWeek) : null, minStaff: Number(minStaff) > 0 ? Math.floor(Number(minStaff)) : null } : {}
       if (editing) {
         await updateClass(editing.id, { ...details, ...work, kind, slots, startDate: semStart, endDate: semEnd })
+        if (clock && fence !== undefined) await setClassGeofence(editing.id, fence)
         navigate('/app/timetable')
       } else if (weekly) {
         if (overLimit('classes', (myClasses?.length ?? 0) + 1)) {
@@ -143,6 +146,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
           return setError(t('The free plan includes 1 class. Upgrade to Pro to add more.'))
         }
         const id = await createClass(profile, { ...details, ...work, kind, slots, startDate: semStart, endDate: semEnd })
+        if (clock && fence) await setClassGeofence(id, fence)
         navigate(rosterFrom ? '/app/timetable' : `/app/timetable/${id}/students`)
       } else {
         const list = lists.find((c) => c.id === rosterId)
@@ -305,6 +309,16 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
             <div className="grid grid-cols-2 gap-3">
               <Field label={t('Semester starts')} type="date" required value={semStart} max={semEnd} onChange={(e) => { setSemStart(e.target.value); setDatesTouched(true) }} />
               <Field label={t('Semester ends')} type="date" required value={semEnd} min={semStart} onChange={(e) => { setSemEnd(e.target.value); setDatesTouched(true) }} />
+            </div>
+          )}
+
+          {weekly && clock && (
+            <div className="space-y-3 rounded-lg bg-canvas p-4">
+              <Field label={t('Office or branch')} hint={t('Optional')} placeholder={t('e.g. Main office')} maxLength={60} value={venue} onChange={(e) => setVenue(e.target.value)} />
+              <div>
+                <p className="mb-1.5 text-sm font-medium">{t('Where it is')}</p>
+                <LocationPicker stored={editing} onChange={setFence} />
+              </div>
             </div>
           )}
 

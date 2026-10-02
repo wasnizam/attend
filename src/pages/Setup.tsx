@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { type Fence, LocationPicker } from '../components/LocationPicker'
 import { ListUploader } from '../components/ListUploader'
 import { Button, Card, ErrorNote, Field, Logo, PageLoader, friendlyError, inputClass } from '../components/ui'
 import { getOrganisation, renameOrganisation, setShifts } from '../data/account'
@@ -8,10 +9,9 @@ import { useProfile } from '../hooks/useAuth'
 import { useMyClasses } from '../hooks/useClasses'
 import { useRoster } from '../hooks/useRoster'
 import { WEEK, addDays, classSlots, dayName, isoDate } from '../lib/format'
-import { DEFAULT_RADIUS, RADII, getPosition } from '../lib/geo'
 import { t } from '../lib/i18n'
 import { has } from '../lib/purpose'
-import type { GeoMode, Organisation, WeeklyClass } from '../lib/types'
+import type { Organisation, WeeklyClass } from '../lib/types'
 
 const STEP_KEY = 'attend.setup.step'
 const STEPS = ['Your company', 'Your people', 'Working rules', 'Clocking in']
@@ -27,7 +27,7 @@ const readStep = () => {
 }
 
 const inputOf = (cls: WeeklyClass | undefined, patch: Partial<ClassInput>): ClassInput => ({
-  name: cls?.name ?? t('Office hours'),
+  name: cls?.name ?? t('Main office'),
   description: cls?.description ?? '',
   slots: cls ? classSlots(cls) : [1, 2, 3, 4, 5].map((day) => ({ day, startTime: '09:00', endTime: '17:00' })),
   startDate: cls?.startDate ?? isoDate(),
@@ -35,7 +35,8 @@ const inputOf = (cls: WeeklyClass | undefined, patch: Partial<ClassInput>): Clas
   expected: cls?.expected ?? null,
   code: '',
   section: '',
-  venue: '',
+  // For a workplace the venue is the office (or branch) these hours belong to.
+  venue: cls?.venue ?? '',
   delivery: 'in_person',
   meetingUrl: '',
   kind: 'lecture',
@@ -85,8 +86,10 @@ export function Setup() {
 
   if (!has('clock')) return <Navigate to="/app" replace />
   if (classes.loading || !org) return <PageLoader />
-  // The working hours everything hangs on: made at the end of step one, with office defaults.
-  const hours = (classes.data ?? []).find((c) => !c.rosterFrom)
+  // Each office has its own working hours and its own staff list. They are made at the end of
+  // step one, with the usual office defaults.
+  const offices = (classes.data ?? []).filter((c) => !c.rosterFrom).sort((a, b) => (a.createdAt?.toMillis() ?? Infinity) - (b.createdAt?.toMillis() ?? Infinity))
+  const hours = offices[0]
 
   return (
     <div className="min-h-dvh bg-canvas">
@@ -110,31 +113,38 @@ export function Setup() {
           {step === 0 && (
             <Company
               org={org}
-              hours={hours}
+              offices={offices}
               busy={busy}
-              onNext={(name, fence) =>
+              onNext={(name, rows) =>
                 run(async () => {
                   if (name.trim() && name.trim() !== org.name) {
                     await renameOrganisation(org, name)
                     setOrg({ ...org, name: name.trim() })
                   }
-                  const id = hours?.id ?? (await createClass(profile, inputOf(undefined, {})))
-                  if (fence !== undefined) await setClassGeofence(id, fence)
+                  for (const row of rows) {
+                    const label = row.name.trim() || t('Main office')
+                    const existing = offices.find((c) => c.id === row.id)
+                    const id = existing?.id ?? (await createClass(profile, inputOf(hours, { name: label, venue: label })))
+                    if (existing && existing.name !== label) await updateClass(id, inputOf(existing, { name: label, venue: label }))
+                    if (row.fence !== undefined) await setClassGeofence(id, row.fence)
+                  }
                   setStep(1)
                 })
               }
             />
           )}
-          {step === 1 && hours && <People hours={hours} onBack={() => setStep(0)} onNext={() => setStep(2)} />}
+          {step === 1 && hours && <People offices={offices} onBack={() => setStep(0)} onNext={() => setStep(2)} />}
           {step === 2 && hours && (
             <Rules
               hours={hours}
+              many={offices.length > 1}
               shifts={Boolean(org.shifts)}
               busy={busy}
               onBack={() => setStep(1)}
               onNext={(patch, shifts) =>
                 run(async () => {
-                  await updateClass(hours.id, inputOf(hours, patch))
+                  // The same rules for every office; one office can be changed later.
+                  for (const office of offices) await updateClass(office.id, inputOf(office, patch))
                   if (shifts !== Boolean(org.shifts) && profile.role === 'admin') {
                     await setShifts(org.id, shifts)
                     setOrg({ ...org, shifts })
@@ -177,35 +187,19 @@ export function Setup() {
   )
 }
 
-type Fence = { lat: number; lng: number; radius: number; mode: GeoMode } | null
+interface OfficeRow {
+  /** Set once the office is saved. */
+  id?: string
+  name: string
+  fence: Fence
+}
 
-function Company({ org, hours, busy, onNext }: { org: Organisation; hours?: WeeklyClass; busy: boolean; onNext: (name: string, fence: Fence | undefined) => void }) {
+function Company({ org, offices, busy, onNext }: { org: Organisation; offices: WeeklyClass[]; busy: boolean; onNext: (name: string, rows: OfficeRow[]) => void }) {
   const [name, setName] = useState(org.name)
-  // undefined = leave the location as it is; null = no location check.
-  const [fence, setFence] = useState<Fence | undefined>(undefined)
-  const [radius, setRadius] = useState(hours?.geoRadius ?? DEFAULT_RADIUS)
-  const [mode, setMode] = useState<GeoMode>(hours?.geoMode ?? 'flag')
-  const [finding, setFinding] = useState(false)
-  const [geoError, setGeoError] = useState('')
-  const located = fence ? true : fence === undefined && Boolean(hours?.geoPoint)
-
-  const locate = async () => {
-    setFinding(true)
-    setGeoError('')
-    try {
-      const here = await getPosition()
-      setFence({ lat: here.lat, lng: here.lng, radius, mode })
-    } catch (e) {
-      setGeoError((e as Error).message)
-    } finally {
-      setFinding(false)
-    }
-  }
-  const next = () =>
-    onNext(
-      name,
-      fence ? { ...fence, radius, mode } : fence === undefined && hours?.geoPoint ? { lat: hours.geoPoint.latitude, lng: hours.geoPoint.longitude, radius, mode } : fence,
-    )
+  const [rows, setRows] = useState<OfficeRow[]>(() =>
+    offices.length ? offices.map((c) => ({ id: c.id, name: c.venue || c.name, fence: undefined })) : [{ name: t('Main office'), fence: undefined }],
+  )
+  const patch = (i: number, change: Partial<OfficeRow>) => setRows((cur) => cur.map((r, j) => (j === i ? { ...r, ...change } : r)))
 
   return (
     <Card className="space-y-5 p-6">
@@ -215,41 +209,34 @@ function Company({ org, hours, busy, onNext }: { org: Organisation; hours?: Week
       </div>
       <Field label={t('Company name')} required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
       <div>
-        <p className="text-sm font-medium">{t('Where is the workplace?')} <span className="font-normal text-muted">· {t('Optional')}</span></p>
-        <p className="mt-1 text-xs text-muted">{t('Do this while you are at the workplace. A clock-in from somewhere else is then flagged, or refused.')}</p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button variant="secondary" busy={finding} onClick={locate}>{located ? t('Update to where I am now') : t('Use where I am now')}</Button>
-          {located && <span className="text-sm font-medium text-good">✓ {t('Location saved')}</span>}
-          {located && <button onClick={() => setFence(null)} className="text-sm font-medium text-muted hover:text-bad">{t('Remove')}</button>}
+        <p className="text-sm font-medium">{t('Your offices')}</p>
+        <p className="mt-1 text-xs text-muted">{t('One office or several branches. Set each location while you are standing in it; you can also do that later. A clock-in from somewhere else is then flagged, or refused.')}</p>
+        <div className="mt-3 space-y-3">
+          {rows.map((row, i) => (
+            <div key={row.id ?? `new-${i}`} className="space-y-3 rounded-lg bg-canvas p-4">
+              <div className="flex items-end gap-2">
+                <Field className="flex-1" label={rows.length > 1 ? t('Office {n}', { n: i + 1 }) : t('Office name')} maxLength={60} value={row.name} onChange={(e) => patch(i, { name: e.target.value })} />
+                {!row.id && rows.length > 1 && (
+                  <button type="button" aria-label={t('Remove')} onClick={() => setRows((cur) => cur.filter((_, j) => j !== i))} className="size-12 rounded-md text-muted hover:bg-bad-soft hover:text-bad">×</button>
+                )}
+              </div>
+              <LocationPicker stored={offices.find((c) => c.id === row.id)} onChange={(fence) => patch(i, { fence })} />
+            </div>
+          ))}
         </div>
-        {geoError && <p className="mt-2 text-sm text-bad">{geoError}</p>}
-        {located && (
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <label className="block text-xs font-medium text-muted">
-              {t('How far still counts')}
-              <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} className={`${inputClass} mt-1`}>
-                {RADII.map((r) => (
-                  <option key={r} value={r}>{r} m</option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-xs font-medium text-muted">
-              {t('From further away')}
-              <select value={mode} onChange={(e) => setMode(e.target.value as GeoMode)} className={`${inputClass} mt-1`}>
-                <option value="flag">{t('Flag it for me')}</option>
-                <option value="block">{t('Refuse check-in')}</option>
-              </select>
-            </label>
-          </div>
-        )}
+        <button type="button" onClick={() => setRows((cur) => [...cur, { name: '', fence: undefined }])} disabled={rows.length >= 20} className="mt-3 text-sm font-medium text-accent">
+          {t('+ Add another office')}
+        </button>
       </div>
-      <Button block size="lg" busy={busy} disabled={!name.trim()} onClick={next}>{t('Continue')}</Button>
+      <Button block size="lg" busy={busy} disabled={!name.trim() || rows.some((r) => !r.name.trim())} onClick={() => onNext(name, rows)}>{t('Continue')}</Button>
     </Card>
   )
 }
 
-function People({ hours, onBack, onNext }: { hours: WeeklyClass; onBack: () => void; onNext: () => void }) {
-  const roster = useRoster(hours.id, hours.organisationId)
+function People({ offices, onBack, onNext }: { offices: WeeklyClass[]; onBack: () => void; onNext: () => void }) {
+  const [officeId, setOfficeId] = useState(offices[0].id)
+  const office = offices.find((c) => c.id === officeId) ?? offices[0]
+  const roster = useRoster(office.id, office.organisationId)
   const people = roster.data ?? []
   return (
     <>
@@ -258,24 +245,34 @@ function People({ hours, onBack, onNext }: { hours: WeeklyClass; onBack: () => v
         <p className="mt-1 text-sm text-muted">
           {t('Upload your staff list: an ID, a name, and a department if you have one. People then type only their ID to clock in.')}
         </p>
+        {offices.length > 1 && (
+          <label className="mt-4 block text-xs font-medium text-muted">
+            {t('Which office are these people in?')}
+            <select value={office.id} onChange={(e) => setOfficeId(e.target.value)} className={`${inputClass} mt-1`}>
+              {offices.map((c) => (
+                <option key={c.id} value={c.id}>{`${c.venue || c.name}${c.rosterCount ? ` · ${c.rosterCount}` : ''}`}</option>
+              ))}
+            </select>
+          </label>
+        )}
         {people.length > 0 && (
           <p className="mt-4 rounded-lg bg-good-soft px-4 py-3 text-sm text-good">
             ✓ {t('{n} people on the list', { n: people.length })}: {people.slice(0, 3).map((p) => p.studentName).join(', ')}
             {people.length > 3 ? '…' : ''}{' '}
-            <Link to={`/app/timetable/${hours.id}/students`} className="font-semibold underline">{t('Edit list')}</Link>
+            <Link to={`/app/timetable/${office.id}/students`} className="font-semibold underline">{t('Edit list')}</Link>
           </p>
         )}
       </Card>
-      <ListUploader cls={hours} current={people} />
+      <ListUploader key={office.id} cls={office} current={people} />
       <div className="flex gap-2">
         <Button variant="secondary" onClick={onBack}>{t('Back')}</Button>
-        <Button block size="lg" onClick={onNext}>{people.length > 0 ? t('Continue') : t('Skip for now')}</Button>
+        <Button block size="lg" onClick={onNext}>{offices.some((c) => c.rosterCount) || people.length > 0 ? t('Continue') : t('Skip for now')}</Button>
       </div>
     </>
   )
 }
 
-function Rules({ hours, shifts, busy, onBack, onNext }: { hours: WeeklyClass; shifts: boolean; busy: boolean; onBack: () => void; onNext: (patch: Partial<ClassInput>, shifts: boolean) => void }) {
+function Rules({ hours, many, shifts, busy, onBack, onNext }: { hours: WeeklyClass; many: boolean; shifts: boolean; busy: boolean; onBack: () => void; onNext: (patch: Partial<ClassInput>, shifts: boolean) => void }) {
   const first = classSlots(hours)[0]
   const [days, setDays] = useState<number[]>(() => [...new Set(classSlots(hours).map((s) => s.day))])
   const [start, setStart] = useState(first.startTime)
@@ -289,6 +286,7 @@ function Rules({ hours, shifts, busy, onBack, onNext }: { hours: WeeklyClass; sh
       <div>
         <h1 className="text-xl font-semibold tracking-tight">{t('Working rules')}</h1>
         <p className="mt-1 text-sm text-muted">{t('The days and hours people work. Lateness, hours and overtime are worked out from these.')}</p>
+        {many && <p className="mt-2 rounded-lg bg-canvas px-3 py-2 text-xs text-slate-600">{t('These rules are set for every office. An office with different hours can be changed afterwards under Working hours.', undefined, true)}</p>}
       </div>
       <div>
         <p className="mb-1.5 text-sm font-medium">{t('Working days')}</p>

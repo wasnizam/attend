@@ -175,6 +175,12 @@ location), people (staff list with departments), working rules (days, hours, gra
 not), and how people clock in (the door screen; phone-only is shown as not available yet,
 because opening a day without a screen needs a server).
 
+**Several offices.** An office (or branch) is a set of working hours with its own name (`venue`),
+its own location check and its own staff list. Setup step one lists the offices; the working-hours
+form has "Office or branch" and "Where it is". On a door screen with more than one office the
+manager picks which office that screen is in (kept on the device), and it opens only that
+office's hours.
+
 **Office first, shifts as an extra.** A workplace starts as a plain office: the menu reads
 "Working hours", the form opens on Monday to Friday, nine to five, and nothing mentions shifts.
 An admin ticks "We work in shifts" on the Account page (`organisations.shifts`, `has('shifts')`)

@@ -13,6 +13,8 @@ import { attendUrl, countPresent, doorUrl, effectiveStatus, endOf, formatClock, 
 import { locale, t } from '../lib/i18n'
 import type { Session } from '../lib/types'
 
+const OFFICE_KEY = 'attend.doorOffice'
+
 /** How long before its start time something opens by itself. */
 const OPEN_EARLY_MS = 30 * 60_000
 const ROTATE_EVERY_MS = 45_000
@@ -29,12 +31,31 @@ export function Kiosk() {
   const now = useNow(15_000)
   const today = isoDate(new Date(now))
   const [failed, setFailed] = useState(false)
+  // With several offices, each screen belongs to one of them and only opens that office's hours.
+  const [office, setOfficeState] = useState(() => {
+    try {
+      return localStorage.getItem(OFFICE_KEY) ?? ''
+    } catch {
+      return ''
+    }
+  })
+  const setOffice = (name: string) => {
+    try {
+      localStorage.setItem(OFFICE_KEY, name)
+    } catch {
+      // Asked again next time.
+    }
+    setOfficeState(name)
+  }
+  const officeNames = [...new Set((classes.data ?? []).map((c) => c.venue ?? '').filter(Boolean))]
+  const here = officeNames.length > 1 && officeNames.includes(office) ? office : officeNames.length > 1 ? null : ''
+  const mine = (venue: string | undefined) => here === '' || (venue ?? '') === here
   const tried = useRef(new Set<string>())
 
   const items = sessions.data && classes.data ? agendaFor(today, sessions.data, classes.data, today) : []
   const opensAt = (i: AgendaItem) => parseDate(i.date, i.startTime).getTime() - OPEN_EARLY_MS
   const due = items.filter(
-    (i) => (i.state === 'planned' || i.state === 'scheduled') && now >= opensAt(i) && now < endOf(i).getTime(),
+    (i) => here !== null && mine(i.due?.cls.venue ?? i.session?.venue) && (i.state === 'planned' || i.state === 'scheduled') && now >= opensAt(i) && now < endOf(i).getTime(),
   )
   const dueKeys = due.map((i) => i.key).join(',')
 
@@ -70,7 +91,7 @@ export function Kiosk() {
 
   // Everything that is open, whatever day it started: a night shift is still open after midnight.
   const open = (sessions.data ?? [])
-    .filter((x) => effectiveStatus(x, now) === 'active' && x.token)
+    .filter((x) => effectiveStatus(x, now) === 'active' && x.token && here !== null && mine(x.venue))
     .sort((a, b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`))
   const next = items.find((i) => (i.state === 'planned' || i.state === 'scheduled') && now < opensAt(i))
   const clock = new Date(now)
@@ -86,7 +107,18 @@ export function Kiosk() {
       </header>
 
       <main className="flex min-h-0 flex-1 flex-col items-center justify-center gap-[2vh] p-5 text-center">
-        {open.length > 0 ? (
+        {here === null ? (
+          <>
+            <h1 className="text-[clamp(1.5rem,4vw,3rem)] font-semibold tracking-tight">{t('Which office is this screen in?')}</h1>
+            <div className="flex flex-wrap justify-center gap-3">
+              {officeNames.map((name) => (
+                <button key={name} onClick={() => setOffice(name)} className="rounded-xl bg-canvas px-6 py-4 text-lg font-semibold hover:bg-accent-soft">
+                  {name}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : open.length > 0 ? (
           <Door sessions={open} />
         ) : (
           <>
@@ -103,7 +135,11 @@ export function Kiosk() {
       </main>
 
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-3 text-sm">
-        <span />
+        {here ? (
+          <button onClick={() => setOffice('')} className="font-medium text-muted hover:text-ink">{here} · {t('Change')}</button>
+        ) : (
+          <span />
+        )}
         <ExitControl />
       </footer>
     </div>
