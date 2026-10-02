@@ -126,7 +126,7 @@ export const KIND_LABEL = { lecture: 'Lecture', tutorial: 'Tutorial', lab: 'Lab'
 /** "Lecture · SECJ3303 · Section 02 · N28 Lab 3" — only the parts that were filled in. */
 export function courseLine(c: CourseDetails): string {
   // Lecture / tutorial / lab only means something to a university.
-  return [has('classKind') && c.kind && t(KIND_LABEL[c.kind]), c.code, c.section && `${t('Sec')} ${c.section}`, c.venue].filter(Boolean).join(' · ')
+  return [has('classKind') && c.kind && t(KIND_LABEL[c.kind]), c.code, c.section && `${t('Sec')} ${c.section}`, c.venue !== (c as { name?: string }).name && c.venue].filter(Boolean).join(' · ')
 }
 
 export const dayName = (d: number) => t(DAY_NAMES[d])

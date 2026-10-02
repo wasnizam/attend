@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { buildPayroll } from '../src/lib/payroll'
+import { buildPayroll as build } from '../src/lib/payroll'
+
+// The figures are judged after the month is over.
+const LATER = new Date('2027-01-01T00:00:00').getTime()
+const buildPayroll = (sessions: never[], records: Map<string, never[]>, outs: Map<string, Map<string, never>>, rosters: Map<string, never[]>, plans: never[] = [], offices = new Map<string, string>()) =>
+  build(sessions, records, outs, rosters as never, plans, offices, LATER)
 
 const at = (date: string, time: string) => {
   const ms = new Date(`${date}T${time}:00`).getTime()
@@ -53,5 +58,39 @@ describe('monthly payroll figures', () => {
 
   it('carries the department from the staff list and sorts by it', () => {
     expect(rows.map((r) => r.department)).toEqual(['Sales', 'Store', 'Store'])
+  })
+})
+
+describe('a working day that is not over yet', () => {
+  it('counts nobody absent and nobody without a clock-out', () => {
+    const rows = build(
+      [session('d1', '2026-10-01')] as never,
+      new Map([['d1', [rec('E1', '2026-10-01', '08:55')]]]),
+      new Map([['d1', new Map()]]),
+      roster as never,
+      [],
+      new Map(),
+      new Date('2026-10-01T12:00:00').getTime(),
+    )
+    const by = Object.fromEntries(rows.map((r) => [r.key, r]))
+    expect(by.E1.days).toBe(1)
+    expect(by.E1.noClockOut).toBe(0)
+    expect(by.E2.absent).toBe(0)
+  })
+})
+
+describe('unpaid break', () => {
+  const withBreak = (id: string, date: string) => ({ ...(session(id, date) as object), breakMin: 60 }) as never
+  it('comes off a long day only, and never off overtime', () => {
+    const rows = buildPayroll(
+      [withBreak('d1', '2026-10-01'), withBreak('d2', '2026-10-02')],
+      new Map([['d1', [rec('E1', '2026-10-01', '09:00')]], ['d2', [rec('E1', '2026-10-02', '09:00')]]]),
+      new Map([['d1', new Map([['E1', at('2026-10-01', '19:00')]])], ['d2', new Map([['E1', at('2026-10-02', '13:00')]])]]),
+      roster,
+    )
+    const e1 = rows.find((r) => r.key === 'E1')!
+    // Day one: 10 h less 1 h break = 9 h, of which 1 h is overtime. Day two: 4 h, no break taken off.
+    expect(Math.round(e1.minutes)).toBe(540 + 240)
+    expect(Math.round(e1.overtime)).toBe(60)
   })
 })

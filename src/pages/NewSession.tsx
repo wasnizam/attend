@@ -83,6 +83,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
   const [daysPerWeek, setDaysPerWeek] = useState(String(editing?.daysPerWeek ?? 6))
   const [minStaff, setMinStaff] = useState(editing?.minStaff ? String(editing.minStaff) : '')
   const [fence, setFence] = useState<Fence>(undefined)
+  const [breakMin, setBreakMin] = useState(String(editing?.breakMin ?? 60))
   const myClasses = useMyClasses().data
   const lists = (myClasses ?? []).filter((c) => (c.rosterCount ?? 0) > 0)
   // Semester dates: default to 14 weeks from today, or to the dates of the newest class
@@ -138,7 +139,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
     setBusy(true)
     try {
       const details = { name, description, code, section, venue, expected: count, delivery, meetingUrl: delivery === 'in_person' ? '' : meetingUrl }
-      const work = clock ? { graceMin: grace === 'flex' ? null : Number(grace), flexible: grace === 'flex', rotating, rosterFrom: rosterFrom || null, daysPerWeek: rotating && !rosterFrom ? Number(daysPerWeek) : null, minStaff: Number(minStaff) > 0 ? Math.floor(Number(minStaff)) : null } : {}
+      const work = clock ? { graceMin: grace === 'flex' ? null : Number(grace), flexible: grace === 'flex', rotating, rosterFrom: rosterFrom || null, daysPerWeek: rotating && !rosterFrom ? Number(daysPerWeek) : null, minStaff: Number(minStaff) > 0 ? Math.floor(Number(minStaff)) : null, breakMin: Number(breakMin) } : {}
       if (editing) {
         await updateClass(editing.id, { ...details, ...work, kind, slots, startDate: semStart, endDate: semEnd })
         if (clock && fence !== undefined) await setClassGeofence(editing.id, fence)
@@ -335,6 +336,15 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
                     <option key={m} value={m}>{m === 0 ? t('The start time, no grace') : t('{n} minutes', { n: m })}</option>
                   ))}
                   <option value="flex">{t('Never: flexible hours, only hours are counted')}</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">{t('Unpaid break')}</span>
+                <select value={breakMin} onChange={(e) => setBreakMin(e.target.value)} className={inputClass}>
+                  <option value="0">{t('None: every minute between in and out counts')}</option>
+                  {[30, 45, 60, 90].map((m) => (
+                    <option key={m} value={m}>{t('{n} minutes', { n: m })}</option>
+                  ))}
                 </select>
               </label>
               {has('shifts') && (myClasses ?? []).some((c) => c.id !== editing?.id && !c.rosterFrom) && (

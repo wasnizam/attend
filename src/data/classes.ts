@@ -26,6 +26,7 @@ export interface ClassInput {
   rosterFrom?: string | null
   daysPerWeek?: number | null
   minStaff?: number | null
+  breakMin?: number | null
   name: string
   description: string
   slots: Slot[]
@@ -65,6 +66,7 @@ const clean = (input: ClassInput) => ({
   rosterFrom: input.rosterFrom || null,
   daysPerWeek: input.daysPerWeek || null,
   minStaff: input.minStaff || null,
+  breakMin: input.breakMin || null,
 })
 
 export async function createClass(profile: UserProfile, input: ClassInput): Promise<string> {
@@ -162,7 +164,7 @@ export async function startClassSession(
           meetingUrl: cls.meetingUrl,
           kind: cls.kind ?? 'lecture',
           geofence: cls,
-          work: { graceMin: cls.graceMin, flexible: cls.flexible, rotating: cls.rotating, daysPerWeek: source?.daysPerWeek ?? cls.daysPerWeek, minStaff: cls.minStaff },
+          work: { graceMin: cls.graceMin, flexible: cls.flexible, rotating: cls.rotating, daysPerWeek: source?.daysPerWeek ?? cls.daysPerWeek, minStaff: cls.minStaff, breakMin: cls.breakMin },
         },
         cls.id,
       ),

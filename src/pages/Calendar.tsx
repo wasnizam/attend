@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { DayAgenda, STATE_DOT } from '../components/DayAgenda'
-import { Button, Card, ErrorNote, PageLoader } from '../components/ui'
+import { Button, Card, ErrorNote, PageLoader, friendlyError } from '../components/ui'
+import { cancelMeeting } from '../data/classes'
+import { has } from '../lib/purpose'
 import { useMyClasses } from '../hooks/useClasses'
 import { useMySessions, useNow } from '../hooks/useSessions'
 import { agendaFor } from '../lib/agenda'
@@ -33,6 +35,7 @@ export function Calendar() {
   })
   const picked = days.find((d) => d.date === selected)
 
+  const dayItems = picked?.items ?? agendaFor(selected, sessions.data ?? [], classes.data ?? [], today)
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -118,7 +121,24 @@ export function Calendar() {
           {formatDate(selected)}
           {selected === today && <span className="ml-2 text-sm font-normal text-muted">{t('Today')}</span>}
         </h2>
-        <DayAgenda items={picked?.items ?? agendaFor(selected, sessions.data ?? [], classes.data ?? [], today)} empty={t('Nothing on this day.')} />
+        <DayAgenda items={dayItems} empty={t('Nothing on this day.')} />
+        {has('clock') && dayItems.some((i) => i.due && (i.state === 'planned' || i.state === 'missed')) && (
+          // A public holiday closes every office at once.
+          <button
+            onClick={async () => {
+              const reason = window.prompt(t('Give everyone the day off on {date}? Type the reason, for example the name of the public holiday.', { date: formatDate(selected) }), t('Public holiday'))
+              if (reason === null) return
+              try {
+                for (const i of dayItems) if (i.due && (i.state === 'planned' || i.state === 'missed')) await cancelMeeting(i.due.cls, i.date, i.due.slot, reason)
+              } catch (e) {
+                window.alert(friendlyError(e))
+              }
+            }}
+            className="mt-3 text-sm font-semibold text-accent hover:underline"
+          >
+            {t('Day off for everyone (public holiday)')}
+          </button>
+        )}
       </section>
     </div>
   )

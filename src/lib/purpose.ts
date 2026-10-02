@@ -79,6 +79,8 @@ const TERMS: Record<'en' | 'ms', Partial<Record<Purpose, Swap[]>>> = {
       ['Past sessions', 'Past events'], ['sessions', 'events'], ['Sessions', 'Events'], ['session', 'event'], ['Session', 'Event'],
     ]),
     workplace: swaps([
+      ['It uses where you are now as the class', 'It uses where you are now as the workplace'],
+      ['Reason for absence', 'Leave'], ['Cancel class', 'Day off'], ['Mark as cancelled', 'Mark as a day off'], ['Undo cancel', 'Working after all'], ['Cancelled', 'Day off'], ['By class and by event', 'By office'],
       // The menu, in a workplace's own words. (An office without shifts then reads "Working hours".)
       ['Add to timetable', 'Save'], ['Back to timetable', 'Back'], ['Timetable', 'Shifts'], ['New session', 'Add shift'],
       ['When it meets each week', 'Working days and hours'], ['Expected participants', 'Number of staff'],

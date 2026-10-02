@@ -39,7 +39,7 @@ export interface NewSession {
   /** Location check carried over from the class, if it has one. */
   geofence?: Geofence
   /** Workplace rules carried over from the shift. */
-  work?: { graceMin?: number | null; flexible?: boolean; rotating?: boolean; daysPerWeek?: number | null; minStaff?: number | null }
+  work?: { graceMin?: number | null; flexible?: boolean; rotating?: boolean; daysPerWeek?: number | null; minStaff?: number | null; breakMin?: number | null }
 }
 
 const sessions = collection(db, 'sessions')
@@ -72,6 +72,7 @@ export function newSessionData(profile: UserProfile, input: NewSession, classId:
     ...(input.work?.rotating ? { rotating: true } : {}),
     ...(input.work?.daysPerWeek ? { daysPerWeek: input.work.daysPerWeek } : {}),
     ...(input.work?.minStaff ? { minStaff: input.work.minStaff } : {}),
+    ...(input.work?.breakMin ? { breakMin: input.work.breakMin } : {}),
     mode: 'qr',
     classId,
     rosterId: input.rosterId ?? null,

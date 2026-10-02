@@ -4,6 +4,7 @@ import { endSession, rotateCode, setRotating } from '../data/sessions'
 import { useAbsentees } from '../hooks/useRoster'
 import { attendUrl, countPresent, courseLine, formatClock24, formatPercent, formatRange, percent } from '../lib/format'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import { setRotatePref } from '../lib/prefs'
 import type { AttendanceRecord, Session } from '../lib/types'
 import { GeofenceControl } from './GeofenceControl'
@@ -245,7 +246,8 @@ export function LiveSession({ session, records, owner }: Props) {
         </div>
         {owner && (
           <div className="mt-3">
-            <PresenceCheck session={session} records={records} />
+            {/* "Still here?" is for a class or an online session, not for a working day. */}
+            {!has('clock') && <PresenceCheck session={session} records={records} />}
           </div>
         )}
         <div className="mt-5">

@@ -88,6 +88,7 @@ export interface Session extends CourseDetails, Geofence {
   rotating?: boolean
   daysPerWeek?: number | null
   minStaff?: number | null
+  breakMin?: number | null
   id: string
   organisationId: string
   ownerId: string
@@ -212,5 +213,7 @@ export interface WeeklyClass extends CourseDetails, Geofence {
   daysPerWeek?: number | null
   /** Workplace: fewer people than this clocked in raises a warning. */
   minStaff?: number | null
+  /** Workplace: unpaid break in minutes, taken off any day longer than five hours. */
+  breakMin?: number | null
   createdAt: Timestamp | null
 }

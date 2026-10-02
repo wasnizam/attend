@@ -31,6 +31,9 @@ export interface PayrollRow {
   wrongShift: number
 }
 
+/** A break is only taken off a day longer than this. */
+export const BREAK_AFTER_MIN = 300
+
 type Outs = Map<string, { toMillis(): number }>
 
 /** Works out the month from the sessions held in it. Lateness and overtime come from the clock. */
@@ -43,6 +46,8 @@ export function buildPayroll(
   plans: ShiftPlan[] = [],
   /** Staff list ID -> the name of the office it belongs to. */
   offices: Map<string, string> = new Map(),
+  /** A day still in progress has nobody absent and nobody who "forgot" to clock out yet. */
+  now = Date.now(),
 ): PayrollRow[] {
   const people = new Map<string, PayrollRow>()
   const person = (key: string, staffId: string, name: string) => {
@@ -64,6 +69,7 @@ export function buildPayroll(
   for (const session of sessions) {
     const seen = new Set<string>()
     const end = endOf(session).getTime()
+    const over = end <= now
     for (const r of records.get(session.id) ?? []) {
       seen.add(r.studentKey)
       const row = person(r.studentKey, r.studentId, r.studentName)
@@ -81,12 +87,14 @@ export function buildPayroll(
         if (out && r.timestamp) {
           const from = r.timestamp.toMillis()
           const to = Math.max(from, out.toMillis())
-          row.minutes += (to - from) / 60_000
+          // An unpaid break comes off a day of more than five hours; overtime is not touched.
+          const worked = (to - from) / 60_000
+          row.minutes += worked > BREAK_AFTER_MIN ? Math.max(0, worked - (session.breakMin ?? 0)) : worked
           row.overtime += Math.max(0, to - Math.max(end, from)) / 60_000
-        } else row.noClockOut += 1
+        } else if (over) row.noClockOut += 1
       }
     }
-    for (const s of (session.rosterId && !pools.has(session.rosterId) && rosters.get(session.rosterId)) || []) {
+    for (const s of (over && session.rosterId && !pools.has(session.rosterId) && rosters.get(session.rosterId)) || []) {
       if (!seen.has(s.studentKey)) person(s.studentKey, s.studentId, s.studentName).absent += 1
     }
   }
@@ -109,14 +117,15 @@ export function buildPayroll(
           // Planned week: each day is checked against the shift the person was put on.
           for (const [date, shift] of Object.entries(cells[member.studentKey] ?? {})) {
             const due = mine.find((x) => x.date === date && x.classId === shift)
-            if (!due) continue
+            if (!due || endOf(due).getTime() > now) continue
             const theirs = mine.filter((x) => x.date === date).flatMap((x) => (records.get(x.id) ?? []).filter((r) => r.studentKey === member.studentKey).map((r) => ({ x, r })))
             if (theirs.length === 0) row.absent += 1
             else if (!theirs.some(({ x }) => x.id === due.id) && theirs.some(({ r }) => r.status !== 'mc' && r.status !== 'excused')) row.wrongShift += 1
           }
           continue
         }
-        if (!perWeek) continue
+        // A week is only judged once it is over.
+        if (!perWeek || parseDate(addDays(week, 7)).getTime() > now) continue
         // A part week (the month's first or last) expects its share of the days, rounded down.
         const expected = Math.min(openDates.size, Math.floor((perWeek * openDates.size) / Math.max(weekdays, perWeek)))
         const accounted = new Set<string>()

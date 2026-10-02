@@ -2,6 +2,7 @@ import { type FormEvent, useRef, useState } from 'react'
 import type { Evidence } from '../data/evidence'
 import { type PreparedFile, openEvidence, prepareEvidence } from '../lib/evidenceFile'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import type { AttendanceStatus } from '../lib/types'
 import { Button, ErrorNote, Field, friendlyError, inputClass } from './ui'
 
@@ -82,7 +83,7 @@ export function EvidenceDialog({ student, status, current, onCancel, onSave }: P
             autoFocus={!mc}
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
-            placeholder={mc ? t('e.g. Covers 9–10 Sept, fever') : t('e.g. Representing the university at a competition')}
+            placeholder={mc ? t('e.g. Covers 9–10 Sept, fever') : has('clock') ? t('e.g. Annual leave') : t('e.g. Representing the university at a competition')}
             className={`${inputClass} h-auto py-3`}
           />
         </label>

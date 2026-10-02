@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, inputClass } from '../components/ui'
+import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, buttonClass, inputClass } from '../components/ui'
 import { fetchClockOuts, fetchSessionAttendance } from '../data/attendance'
 import { fetchPlans } from '../data/plans'
 import { fetchRoster } from '../data/roster'
@@ -87,11 +87,13 @@ export function Payroll() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Link to="/app/reports" className="text-sm font-medium text-accent">‹ {t('Reports')}</Link>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{t('Monthly report')}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('Monthly report')}</h1>
           <p className="text-sm text-muted">{t('Days, hours, overtime and lateness for each person. Ready for payroll.')}</p>
         </div>
-        <Button variant="secondary" disabled={shown.length === 0} onClick={exportCsv}>{t('Export for Excel')}</Button>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/app/history" className={buttonClass({ variant: 'secondary' })}>{t('Day by day')}</Link>
+          <Button disabled={shown.length === 0} onClick={exportCsv}>{t('Export for Excel')}</Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -189,7 +191,7 @@ export function Payroll() {
             </table>
           </Card>
           <p className="text-sm text-muted">
-            {t('Overtime is the time worked after the shift’s end time. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.')}
+            {t('Hours are from clock-in to clock-out, less the unpaid break on a day of more than five hours. Overtime is the time worked after the shift’s end time. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.')}
           </p>
         </>
       )}

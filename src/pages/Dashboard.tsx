@@ -3,6 +3,7 @@ import { GettingStarted } from '../components/GettingStarted'
 import { ShiftAlerts } from '../components/ShiftAlerts'
 import { TodayHero, TodaySchedule } from '../components/TodayItems'
 import { WeekSummary } from '../components/WeekSummary'
+import { WorkToday } from '../components/WorkToday'
 import { Card, EmptyState, ErrorNote, PageLoader, buttonClass } from '../components/ui'
 import { useProfile } from '../hooks/useAuth'
 import { useMyClasses } from '../hooks/useClasses'
@@ -80,7 +81,7 @@ export function Dashboard() {
           <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
             {greeting(new Date().getHours())}, {profile.name}
           </h1>
-          <p className="mt-1 text-sm text-muted">{summary}</p>
+          {!has('clock') && <p className="mt-1 text-sm text-muted">{summary}</p>}
         </div>
         {has('clock') && (
           <Link to="/app/door" className={`${buttonClass()} self-start md:hidden`}>
@@ -88,12 +89,20 @@ export function Dashboard() {
           </Link>
         )}
         {/* On desktop the sidebar carries this button. */}
-        <Link to="/app/new" className={`${buttonClass({ variant: 'secondary' })} self-start md:hidden ${has('clock') ? 'hidden' : ''}`}>
-          {t('+ New session')}
-        </Link>
+        {!has('clock') && (
+          <Link to="/app/new" className={`${buttonClass({ variant: 'secondary' })} self-start md:hidden`}>
+            {t('+ New session')}
+          </Link>
+        )}
       </div>
 
-      {isNew ? (
+      {has('clock') ? (
+        // A workplace's day is about people: who is in, late, gone home, or missing.
+        <div className="mx-auto max-w-3xl space-y-4">
+          <ShiftAlerts sessions={sessions} now={now} />
+          <WorkToday items={todays} now={now} />
+        </div>
+      ) : isNew ? (
         guide
       ) : (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start">

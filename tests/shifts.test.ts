@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { endOf, minutesLate } from '../src/lib/format'
-import { buildPayroll } from '../src/lib/payroll'
+import { buildPayroll as build } from '../src/lib/payroll'
+
+// The figures are judged after the month is over.
+const LATER = new Date('2027-01-01T00:00:00').getTime()
+const buildPayroll = (sessions: never[], records: Map<string, never[]>, outs: Map<string, Map<string, never>>, rosters: Map<string, never[]>, plans: never[] = [], offices = new Map<string, string>()) =>
+  build(sessions, records, outs, rosters as never, plans, offices, LATER)
 
 const at = (date: string, time: string) => {
   const ms = new Date(`${date}T${time}:00`).getTime()

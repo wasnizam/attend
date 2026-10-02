@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { LevelBar } from '../components/charts'
 import { Card, EmptyState, ErrorNote, PageLoader, Spinner, buttonClass } from '../components/ui'
 import { useClassReport } from '../hooks/useClassReport'
+import { Payroll } from './Payroll'
 import { useMyClasses } from '../hooks/useClasses'
 import { KINDS, KIND_LABEL, courseLine, formatPercent, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
@@ -55,6 +56,12 @@ function ClassSummary({ cls }: { cls: WeeklyClass }) {
 
 /** The lecturer's reports home: every class, with who is due a warning or barring. */
 export function Reports() {
+  // A workplace's report is the month, for payroll: not a semester of classes.
+  if (has('clock')) return <Payroll />
+  return <ClassReports />
+}
+
+function ClassReports() {
   const { data, loading, error } = useMyClasses()
   if (loading) return <PageLoader />
   if (error) return <ErrorNote>{t('We could not load this data. Check your connection and reload.')}</ErrorNote>

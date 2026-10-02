@@ -43,6 +43,11 @@ const inputOf = (cls: WeeklyClass | undefined, patch: Partial<ClassInput>): Clas
   kind: 'lecture',
   graceMin: cls?.graceMin ?? 10,
   flexible: cls?.flexible,
+  rotating: cls?.rotating,
+  rosterFrom: cls?.rosterFrom,
+  daysPerWeek: cls?.daysPerWeek,
+  minStaff: cls?.minStaff,
+  breakMin: cls?.breakMin ?? 60,
   ...patch,
 })
 
@@ -313,6 +318,7 @@ function Rules({ hours, many, shifts, busy, onBack, onNext }: { hours: WeeklyCla
   const [end, setEnd] = useState(first.endTime)
   const [grace, setGrace] = useState(hours.flexible ? 'flex' : String(hours.graceMin ?? 10))
   const [useShifts, setUseShifts] = useState(shifts)
+  const [breakMin, setBreakMin] = useState(String(hours.breakMin ?? 60))
   const valid = days.length > 0 && start !== end
 
   return (
@@ -351,6 +357,16 @@ function Rules({ hours, many, shifts, busy, onBack, onNext }: { hours: WeeklyCla
           <option value="flex">{t('Never: flexible hours, only hours are counted')}</option>
         </select>
       </label>
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-medium">{t('Unpaid break')}</span>
+        <select value={breakMin} onChange={(e) => setBreakMin(e.target.value)} className={inputClass}>
+          <option value="0">{t('None: every minute between in and out counts')}</option>
+          {[30, 45, 60, 90].map((m) => (
+            <option key={m} value={m}>{t('{n} minutes', { n: m })}</option>
+          ))}
+        </select>
+        <span className="mt-1.5 block text-xs text-muted">{t('Taken off the hours of any day longer than five hours. Nobody has to clock out for lunch.')}</span>
+      </label>
       <p className="rounded-lg bg-canvas px-4 py-3 text-sm text-slate-600">{t('Overtime is counted by itself: any time worked after the end time.')}</p>
       <div>
         <p className="mb-1.5 text-sm font-medium">{t('Does your company work in shifts?', undefined, true)}</p>
@@ -383,6 +399,7 @@ function Rules({ hours, many, shifts, busy, onBack, onNext }: { hours: WeeklyCla
                 slots: WEEK.filter((d) => days.includes(d)).map((day) => ({ day, startTime: start, endTime: end })),
                 graceMin: grace === 'flex' ? null : Number(grace),
                 flexible: grace === 'flex',
+                breakMin: Number(breakMin),
               },
               useShifts,
             )
