@@ -143,6 +143,11 @@ landing page visited), so there is no picker, and the security rules refuse any 
 | Trainers | 1 course | RM39 a month or RM390 a year, unlimited courses |
 | Workplace | 5 staff | RM49 / RM99 / RM179 a month for 20 / 50 / 100 staff |
 
+Prices are shown in ringgit to visitors whose device is on a Malaysian time zone and in US
+dollars to everyone else (`src/lib/currency.ts`); the pricing section has an RM / USD switch.
+USD prices are round numbers of their own: $9 per semester, $9 a month or $90 a year, and
+$12 / $24 / $45 a month.
+
 An organisation stores `plan` (`early`, `trial`, `free`, `pro`), `trialStarted`, `paidUntil` and
 (workplace) `seats`. `activePlan()` works out what applies now: a trial is Pro for 14 days and
 then Free; Pro falls back to Free when `paidUntil` passes; nothing is ever deleted. Limits are

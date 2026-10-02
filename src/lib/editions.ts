@@ -1,3 +1,4 @@
+import type { Currency } from './currency'
 import type { Purpose } from './purpose'
 
 /**
@@ -30,11 +31,12 @@ interface ShotRow {
 
 export interface PlanCard {
   name: string
-  price: string
+  /** Round prices in each currency, not a conversion of one another. */
+  price: Record<Currency, string>
   /** What the price is for: "per semester", "a month"… */
   per: string
   /** A second way to pay, in small print. */
-  alt?: string
+  alt?: string | Record<Currency, string>
   items: string[]
   /** The one we would pick for most people. */
   best?: boolean
@@ -119,8 +121,8 @@ export const EDITIONS: Edition[] = [
     preview: { title: 'DATABASE SYSTEMS', time: '10:00 AM – 12:00 PM', counted: 'PRESENT', rows: [['ST003', 'Kumar', '10:07'], ['ST002', 'Siti', '10:05'], ['ST001', 'Ahmad', '10:03']] },
     orgPlaceholder: 'e.g. Faculty of Computing',
     plans: [
-      { name: 'Free', price: 'RM0', per: 'Free forever', items: ['1 class', 'Unlimited students', 'Every feature included'] },
-      { name: 'Pro', price: 'RM39', per: 'per semester', alt: 'Pay once a semester. No monthly bill.', items: ['Unlimited classes', 'Unlimited students', 'Every feature included'], best: true },
+      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 class', 'Unlimited students', 'Every feature included'] },
+      { name: 'Pro', price: { myr: 'RM39', usd: '$9' }, per: 'per semester', alt: 'Pay once a semester. No monthly bill.', items: ['Unlimited classes', 'Unlimited students', 'Every feature included'], best: true },
     ],
   },
   {
@@ -171,8 +173,8 @@ export const EDITIONS: Edition[] = [
     preview: { title: 'EXCEL FOR MANAGERS', time: '9:00 AM – 5:00 PM', counted: 'PRESENT', rows: [['P003', 'Kumar', '9:07'], ['P002', 'Siti', '9:05'], ['P001', 'Ahmad', '9:03']] },
     orgPlaceholder: 'e.g. Bright Training Sdn Bhd',
     plans: [
-      { name: 'Free', price: 'RM0', per: 'Free forever', items: ['1 course', 'Unlimited participants', 'Every feature included'] },
-      { name: 'Pro', price: 'RM39', per: 'a month', alt: 'Or RM390 a year: 12 months for the price of 10.', items: ['Unlimited courses', 'Unlimited participants', 'Every feature included'], best: true },
+      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 course', 'Unlimited participants', 'Every feature included'] },
+      { name: 'Pro', price: { myr: 'RM39', usd: '$9' }, per: 'a month', alt: { myr: 'Or RM390 a year: 12 months for the price of 10.', usd: 'Or $90 a year: 12 months for the price of 10.' }, items: ['Unlimited courses', 'Unlimited participants', 'Every feature included'], best: true },
     ],
   },
   {
@@ -223,10 +225,10 @@ export const EDITIONS: Edition[] = [
     preview: { title: 'MORNING SHIFT', time: '9:00 AM – 6:00 PM', counted: 'IN', rows: [['E003', 'Kumar', '9:07'], ['E002', 'Siti', '8:58'], ['E001', 'Ahmad', '8:55']] },
     orgPlaceholder: 'e.g. Kedai Kopi Maju',
     plans: [
-      { name: 'Free', price: 'RM0', per: 'Free forever', items: ['Up to 5 staff', 'Unlimited shifts', 'Every feature included'] },
-      { name: 'Pro 20', price: 'RM49', per: 'a month', items: ['Up to 20 staff', 'Unlimited shifts', 'Every feature included'], best: true },
-      { name: 'Pro 50', price: 'RM99', per: 'a month', items: ['Up to 50 staff', 'Unlimited shifts', 'Every feature included'] },
-      { name: 'Pro 100', price: 'RM179', per: 'a month', items: ['Up to 100 staff', 'Unlimited shifts', 'Every feature included'] },
+      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['Up to 5 staff', 'Unlimited shifts', 'Every feature included'] },
+      { name: 'Pro 20', price: { myr: 'RM49', usd: '$12' }, per: 'a month', items: ['Up to 20 staff', 'Unlimited shifts', 'Every feature included'], best: true },
+      { name: 'Pro 50', price: { myr: 'RM99', usd: '$24' }, per: 'a month', items: ['Up to 50 staff', 'Unlimited shifts', 'Every feature included'] },
+      { name: 'Pro 100', price: { myr: 'RM179', usd: '$45' }, per: 'a month', items: ['Up to 100 staff', 'Unlimited shifts', 'Every feature included'] },
     ],
   },
 ]

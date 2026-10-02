@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Snapshots, TrustSection } from '../components/LandingProof'
 import { LanguageSwitch } from '../components/LanguageSwitch'
 import { Logo, buttonClass } from '../components/ui'
+import { setCurrency, useCurrency } from '../lib/currency'
 import { EDITIONS, type Edition, type EditionId, editionById, rememberEdition } from '../lib/editions'
 import { t } from '../lib/i18n'
 import { PAYMENTS_OPEN } from '../lib/plan'
@@ -70,6 +71,7 @@ function ProductPreview({ edition }: { edition: Edition }) {
 export function Landing({ show }: { show?: EditionId }) {
   const edition = editionById(show) ?? EDITIONS[0]
   const signup = `/signup?for=${edition.id}`
+  const currency = useCurrency()
   // The page is written in each group's own words already; no vocabulary swaps on top.
   setPurpose('education')
   useEffect(() => {
@@ -194,6 +196,21 @@ export function Landing({ show }: { show?: EditionId }) {
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold text-accent">{t('Pricing')} · {t(edition.label)}</p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t('Start free. Pay only when you need more.')}</h2>
+            <div className="mt-5">
+              <div role="group" aria-label={t('Currency')} className="inline-flex rounded-full bg-slate-100 p-0.5 text-xs font-semibold">
+                {(['myr', 'usd'] as const).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-pressed={currency === c}
+                    onClick={() => setCurrency(c)}
+                    className={`rounded-full px-3 py-1 transition ${currency === c ? 'bg-white text-ink shadow-card' : 'text-slate-600 hover:text-ink'}`}
+                  >
+                    {c === 'myr' ? 'RM' : 'USD'}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className={`mt-12 grid gap-4 sm:grid-cols-2 ${edition.plans.length > 2 ? 'lg:grid-cols-4' : 'mx-auto max-w-4xl'}`}>
             {edition.plans.map((plan) => (
@@ -203,10 +220,10 @@ export function Landing({ show }: { show?: EditionId }) {
                   {plan.best && <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-accent">{t('Most popular')}</span>}
                 </div>
                 <p className="mt-4 flex items-baseline gap-1.5">
-                  <span className="tabular text-4xl font-semibold tracking-tight">{plan.price}</span>
+                  <span className="tabular text-4xl font-semibold tracking-tight">{plan.price[currency]}</span>
                   <span className="text-sm text-muted">{t(plan.per)}</span>
                 </p>
-                <p className="mt-1.5 min-h-5 text-sm text-muted">{plan.alt ? t(plan.alt) : ''}</p>
+                <p className="mt-1.5 min-h-5 text-sm text-muted">{plan.alt ? t(typeof plan.alt === 'string' ? plan.alt : plan.alt[currency]) : ''}</p>
                 <ul className="mt-5 flex-1 space-y-2.5 border-t border-line pt-5 text-sm text-slate-700">
                   {plan.items.map((item) => (
                     <li key={item} className="flex gap-2">

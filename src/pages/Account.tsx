@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, ErrorNote, Field, friendlyError, inputClass } from '../components/ui'
 import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, signOut } from '../data/account'
+import { useCurrency } from '../lib/currency'
 import { editionForPurpose } from '../lib/editions'
 import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, paidUntil, trialDaysLeft } from '../lib/plan'
 import { getPurpose } from '../lib/purpose'
@@ -60,6 +61,7 @@ export function Account() {
   const verifySave = useSave()
   const edition = editionForPurpose(getPurpose())
   const plan = activePlan()
+  const currency = useCurrency()
 
   const submitPassword = (e: FormEvent) => {
     e.preventDefault()
@@ -178,7 +180,7 @@ export function Account() {
                   <span className="text-muted"> · {t(p.items[0])}</span>
                 </span>
                 <span className="tabular whitespace-nowrap">
-                  <span className="font-semibold">{p.price}</span> <span className="text-muted">{t(p.per)}</span>
+                  <span className="font-semibold">{p.price[currency]}</span> <span className="text-muted">{t(p.per)}</span>
                 </span>
               </li>
             ))}
