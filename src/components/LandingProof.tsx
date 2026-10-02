@@ -108,13 +108,13 @@ export function Snapshots({ edition }: { edition: Edition }) {
             <figcaption className="mt-4 text-center text-sm text-muted">{t(phone.caption)}</figcaption>
           </figure>
           <figure className="min-w-0">
-            <div aria-hidden className="overflow-hidden rounded-xl bg-white shadow-pop">
+            <div aria-hidden className="overflow-x-auto rounded-xl bg-white shadow-pop">
               <p className="border-b border-line bg-slate-50 px-5 py-3 text-sm font-semibold">{report.name} · {t(report.kind)}</p>
               <table className="w-full text-left text-sm">
                 <thead className="text-xs text-muted">
                   <tr>
                     {report.head.map((h, i) => (
-                      <th key={h} className={`px-3 py-2.5 font-medium first:pl-5 last:pr-5 ${i ? 'text-right' : ''}`}>{t(h)}</th>
+                      <th key={h} className={`px-1.5 py-2.5 font-medium first:pl-4 last:pr-4 sm:px-3 sm:first:pl-5 sm:last:pr-5 ${i ? 'text-right' : ''}`}>{t(h)}</th>
                     ))}
                   </tr>
                 </thead>
@@ -122,7 +122,7 @@ export function Snapshots({ edition }: { edition: Edition }) {
                   {report.rows.map((row) => (
                     <tr key={row.cells[0]}>
                       {row.cells.map((cell, i) => (
-                        <td key={i} className={`px-3 py-3 first:pl-5 last:pr-5 ${i ? 'text-right whitespace-nowrap' : 'font-medium'} ${row.tone && i === row.cells.length - 1 ? `font-semibold ${TONE[row.tone]}` : ''}`}>
+                        <td key={i} className={`px-1.5 py-3 first:pl-4 last:pr-4 sm:px-3 sm:first:pl-5 sm:last:pr-5 ${i ? 'text-right whitespace-nowrap' : 'font-medium'} ${row.tone && i === row.cells.length - 1 ? `font-semibold ${TONE[row.tone]}` : ''}`}>
                           {row.tone && i === row.cells.length - 1 ? t(cell) : cell}
                           {i === 1 && row.late && <span className="block text-xs font-medium text-[#b25e00]">{t('Late by {n} min', { n: row.late })}</span>}
                         </td>
