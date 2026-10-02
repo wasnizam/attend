@@ -89,6 +89,7 @@ export interface Session extends CourseDetails, Geofence {
   daysPerWeek?: number | null
   minStaff?: number | null
   breakMin?: number | null
+  countEarly?: boolean
   id: string
   organisationId: string
   ownerId: string
@@ -174,6 +175,8 @@ export interface AttendanceRecord {
   timestamp: Timestamp | null
   status: AttendanceStatus
   method?: 'qr' | 'manual'
+  /** A random label for the phone that checked in. The same label on two people is worth a look. */
+  device?: string
 }
 
 /** A class that repeats every week of a semester. It becomes a real session the day it is started. */
@@ -215,5 +218,7 @@ export interface WeeklyClass extends CourseDetails, Geofence {
   minStaff?: number | null
   /** Workplace: unpaid break in minutes, taken off any day longer than five hours. */
   breakMin?: number | null
+  /** Workplace: time before the start counts as hours when someone arrives early. Off by default. */
+  countEarly?: boolean
   createdAt: Timestamp | null
 }

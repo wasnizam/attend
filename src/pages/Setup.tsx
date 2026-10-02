@@ -48,6 +48,7 @@ const inputOf = (cls: WeeklyClass | undefined, patch: Partial<ClassInput>): Clas
   daysPerWeek: cls?.daysPerWeek,
   minStaff: cls?.minStaff,
   breakMin: cls?.breakMin ?? 60,
+  countEarly: cls?.countEarly,
   ...patch,
 })
 
@@ -319,6 +320,7 @@ function Rules({ hours, many, shifts, busy, onBack, onNext }: { hours: WeeklyCla
   const [grace, setGrace] = useState(hours.flexible ? 'flex' : String(hours.graceMin ?? 10))
   const [useShifts, setUseShifts] = useState(shifts)
   const [breakMin, setBreakMin] = useState(String(hours.breakMin ?? 60))
+  const [countEarly, setCountEarly] = useState(Boolean(hours.countEarly))
   const valid = days.length > 0 && start !== end
 
   return (
@@ -367,6 +369,13 @@ function Rules({ hours, many, shifts, busy, onBack, onNext }: { hours: WeeklyCla
         </select>
         <span className="mt-1.5 block text-xs text-muted">{t('Taken off the hours of any day longer than five hours. Nobody has to clock out for lunch.')}</span>
       </label>
+      <label className="flex items-start gap-2.5 text-sm">
+        <input type="checkbox" checked={countEarly} onChange={(e) => setCountEarly(e.target.checked)} className="mt-0.5 size-4 accent-accent" />
+        <span>
+          <span className="font-medium">{t('Count the time before the start when someone arrives early')}</span>
+          <span className="block text-xs text-muted">{t('Left off, hours begin at the start time even if someone clocks in earlier.')}</span>
+        </span>
+      </label>
       <p className="rounded-lg bg-canvas px-4 py-3 text-sm text-slate-600">{t('Overtime is counted by itself: any time worked after the end time.')}</p>
       <div>
         <p className="mb-1.5 text-sm font-medium">{t('Does your company work in shifts?', undefined, true)}</p>
@@ -400,6 +409,7 @@ function Rules({ hours, many, shifts, busy, onBack, onNext }: { hours: WeeklyCla
                 graceMin: grace === 'flex' ? null : Number(grace),
                 flexible: grace === 'flex',
                 breakMin: Number(breakMin),
+                countEarly,
               },
               useShifts,
             )

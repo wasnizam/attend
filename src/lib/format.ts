@@ -165,6 +165,16 @@ export function minutesLate(
   return late > (session.graceMin ?? LATE_GRACE_MIN) ? late : 0
 }
 
+/** Minutes someone left before the end, once past the same grace that lateness gets. */
+export function minutesEarly(
+  clockOut: { toMillis(): number } | null | undefined,
+  session: Pick<Session, 'date' | 'startTime' | 'endTime' | 'graceMin' | 'flexible'>,
+): number {
+  if (!clockOut || session.flexible) return 0
+  const early = Math.floor((endOf(session).getTime() - clockOut.toMillis()) / 60_000)
+  return early > (session.graceMin ?? LATE_GRACE_MIN) ? early : 0
+}
+
 /** When something ends. An end time at or before the start means it runs past midnight (a night shift). */
 export function endOf(item: { date: string; startTime: string; endTime: string }): Date {
   const end = parseDate(item.date, item.endTime)

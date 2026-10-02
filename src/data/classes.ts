@@ -27,6 +27,7 @@ export interface ClassInput {
   daysPerWeek?: number | null
   minStaff?: number | null
   breakMin?: number | null
+  countEarly?: boolean
   name: string
   description: string
   slots: Slot[]
@@ -67,6 +68,7 @@ const clean = (input: ClassInput) => ({
   daysPerWeek: input.daysPerWeek || null,
   minStaff: input.minStaff || null,
   breakMin: input.breakMin || null,
+  countEarly: Boolean(input.countEarly),
 })
 
 export async function createClass(profile: UserProfile, input: ClassInput): Promise<string> {
@@ -164,7 +166,7 @@ export async function startClassSession(
           meetingUrl: cls.meetingUrl,
           kind: cls.kind ?? 'lecture',
           geofence: cls,
-          work: { graceMin: cls.graceMin, flexible: cls.flexible, rotating: cls.rotating, daysPerWeek: source?.daysPerWeek ?? cls.daysPerWeek, minStaff: cls.minStaff, breakMin: cls.breakMin },
+          work: { graceMin: cls.graceMin, flexible: cls.flexible, rotating: cls.rotating, daysPerWeek: source?.daysPerWeek ?? cls.daysPerWeek, minStaff: cls.minStaff, breakMin: cls.breakMin, countEarly: cls.countEarly },
         },
         cls.id,
       ),

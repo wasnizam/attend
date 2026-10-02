@@ -1,4 +1,4 @@
-import { addDays, endOf, minutesLate, parseDate } from './format'
+import { addDays, endOf, minutesEarly, minutesLate, parseDate } from './format'
 
 /** The Monday that starts the week a date falls in. */
 const mondayOf = (date: string) => addDays(date, -((parseDate(date).getDay() + 6) % 7))
@@ -29,7 +29,14 @@ export interface PayrollRow {
   noClockOut: number
   /** Days they clocked in to a shift other than the one planned for them. */
   wrongShift: number
+  /** Days they clocked out before the end, and by how many minutes in all. */
+  early: number
+  earlyMinutes: number
+  /** `leave`, split by kind. Leave recorded without a kind is under `other`. */
+  leaveBy: Record<LeaveKind, number>
 }
+
+export type LeaveKind = 'annual' | 'emergency' | 'unpaid' | 'other'
 
 /** A break is only taken off a day longer than this. */
 export const BREAK_AFTER_MIN = 300
@@ -48,11 +55,13 @@ export function buildPayroll(
   offices: Map<string, string> = new Map(),
   /** A day still in progress has nobody absent and nobody who "forgot" to clock out yet. */
   now = Date.now(),
+  /** Session ID -> staff key -> the kind of leave recorded for that day. */
+  leaveTypes: Map<string, Map<string, LeaveKind>> = new Map(),
 ): PayrollRow[] {
   const people = new Map<string, PayrollRow>()
   const person = (key: string, staffId: string, name: string) => {
     if (!people.has(key)) {
-      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, wrongShift: 0 })
+      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, wrongShift: 0, early: 0, earlyMinutes: 0, leaveBy: { annual: 0, emergency: 0, unpaid: 0, other: 0 } })
     }
     return people.get(key)!
   }
@@ -75,7 +84,10 @@ export function buildPayroll(
       const row = person(r.studentKey, r.studentId, r.studentName)
       const status = r.status ?? 'present'
       if (status === 'mc') row.mc += 1
-      else if (status === 'excused') row.leave += 1
+      else if (status === 'excused') {
+        row.leave += 1
+        row.leaveBy[leaveTypes.get(session.id)?.get(r.studentKey) ?? 'other'] += 1
+      }
       else {
         row.days += 1
         const late = r.method === 'manual' ? 0 : minutesLate(r.timestamp, session)
@@ -85,7 +97,14 @@ export function buildPayroll(
         }
         const out = outs.get(session.id)?.get(r.studentKey)
         if (out && r.timestamp) {
-          const from = r.timestamp.toMillis()
+          // Arriving early does not add hours, unless the company says it does.
+          const began = parseDate(session.date, session.startTime).getTime()
+          const from = session.countEarly || session.flexible ? r.timestamp.toMillis() : Math.max(r.timestamp.toMillis(), began)
+          const gone = minutesEarly(out, session)
+          if (gone) {
+            row.early += 1
+            row.earlyMinutes += gone
+          }
           const to = Math.max(from, out.toMillis())
           // An unpaid break comes off a day of more than five hours; overtime is not touched.
           const worked = (to - from) / 60_000

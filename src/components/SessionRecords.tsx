@@ -7,7 +7,7 @@ import { useLive } from '../hooks/useLive'
 import { useAbsentees } from '../hooks/useRoster'
 import { useNow } from '../hooks/useSessions'
 import { openEvidence } from '../lib/evidenceFile'
-import { isAway, minutesLate, studentKey as studentKeyOf } from '../lib/format'
+import { isAway, minutesEarly, minutesLate, studentKey as studentKeyOf } from '../lib/format'
 import { has } from '../lib/purpose'
 import { type Position, distanceMetres, formatDistance } from '../lib/geo'
 import { t } from '../lib/i18n'
@@ -49,11 +49,22 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
     [session.id, session.organisationId, viewer.id, viewer.role, clocking],
   )
   const notes = new Map<string, string>()
+  const note = (id: string, text: string) => notes.set(id, [notes.get(id), text].filter(Boolean).join(' · '))
   if (clocking) {
     for (const r of records) {
-      const late = r.method === 'manual' || isAway(r.status) ? 0 : minutesLate(r.timestamp, session)
-      if (late) notes.set(r.id, t('Late by {n} min', { n: late }))
+      if (isAway(r.status)) continue
+      const late = r.method === 'manual' ? 0 : minutesLate(r.timestamp, session)
+      if (late) note(r.id, t('Late by {n} min', { n: late }))
+      const early = minutesEarly(outs.data?.get(r.studentKey), session)
+      if (early) note(r.id, t('Left {n} min early', { n: early }))
     }
+  }
+  // One phone used for more than one person: worth a look (clocking in for a friend).
+  const phones = new Map<string, AttendanceRecord[]>()
+  for (const r of records) if (r.device) phones.set(r.device, [...(phones.get(r.device) ?? []), r])
+  for (const group of phones.values()) {
+    if (group.length < 2) continue
+    for (const r of group) note(r.id, t('Same phone as {name}', { name: group.filter((x) => x.id !== r.id).map((x) => x.studentName).join(', ') }))
   }
   if (fence && locations.data) {
     for (const r of records) {

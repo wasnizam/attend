@@ -122,6 +122,10 @@ function Day({ item, session, now }: { item: AgendaItem; session: Session; now: 
   const left = came.filter((r) => outs.data!.has(r.studentKey))
   const inNow = came.filter((r) => !outs.data!.has(r.studentKey))
   const late = came.map((r) => ({ r, by: r.method === 'manual' ? 0 : minutesLate(r.timestamp, session) })).filter((x) => x.by > 0 || x.r.status === 'late')
+  // The same phone label on more than one person today.
+  const phones = new Map<string, number>()
+  for (const r of came) if (r.device) phones.set(r.device, (phones.get(r.device) ?? 0) + 1)
+  const shared = [...phones.values()].filter((n) => n > 1).reduce((a, n) => a + n, 0)
   const figures: [string, number, string][] = [
     [closed ? t('Did not clock out') : t('In now'), inNow.length, closed && inNow.length ? 'text-[#b25e00]' : 'text-ink'],
     [t('Late'), late.length, late.length ? 'text-[#b25e00]' : 'text-ink'],
@@ -142,6 +146,12 @@ function Day({ item, session, now }: { item: AgendaItem; session: Session; now: 
         ))}
       </dl>
 
+      {shared > 0 && (
+        <p className="mt-3 rounded-lg bg-[#fff4d6] px-3 py-2 text-sm text-[#8a5a00]">
+          {t('{n} people clocked in from the same phone.', { n: shared })}{' '}
+          <Link to={`/app/session/${session.id}`} className="font-semibold underline">{t('See who')}</Link>
+        </p>
+      )}
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <Names
           title={closed ? t('Absent') : t('Not in yet')}

@@ -188,6 +188,14 @@ sessions stay with whoever ran them. The monthly report has an Office column and
 setup the distance and flag-or-refuse choice is made once for every office; the working-hours
 form can still set one office differently.
 
+**What the workplace report and screens take care of.** Each check-in carries a random label kept
+on the phone (`device`); two people with the same label in one day are flagged as "Same phone as…".
+A clock-out more than the grace before the end is "Left N min early". Scanning again after a
+clock-out moves the time to now (accidental clock-out, or coming back). Hours start at the start
+time unless `countEarly` is set; an unpaid `breakMin` comes off days over five hours. A staff list
+added while a day is already open is attached to that day. Leave is recorded with a kind (annual,
+emergency, unpaid, other), kept with the private evidence, and split in the monthly report.
+
 **Office first, shifts as an extra.** A workplace starts as a plain office: the menu reads
 "Working hours", the form opens on Monday to Friday, nine to five, and nothing mentions shifts.
 An admin ticks "We work in shifts" on the Account page (`organisations.shifts`, `has('shifts')`)

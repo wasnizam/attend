@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, buttonClass, inputClass } from '../components/ui'
 import { fetchClockOuts, fetchSessionAttendance } from '../data/attendance'
+import { LEAVE_LABEL, fetchLeaveTypes } from '../data/evidence'
 import { fetchPlans } from '../data/plans'
 import { fetchRoster } from '../data/roster'
 import { useProfile } from '../hooks/useAuth'
@@ -11,6 +12,9 @@ import { downloadCsv } from '../lib/csv'
 import { formatDuration, isoDate, weekStart } from '../lib/format'
 import { t } from '../lib/i18n'
 import { type PayrollRow, buildPayroll, hours } from '../lib/payroll'
+
+const LEAVE_KINDS = ['annual', 'emergency', 'unpaid', 'other'] as const
+const SHORT_LEAVE = { annual: 'annual', emergency: 'emergency', unpaid: 'unpaid', other: 'other' }
 
 const csvCell = (v: string | number) => {
   const s = String(v)
@@ -51,8 +55,12 @@ export function Payroll() {
           fetchPlans(id, [...new Set(held.filter((s) => s.rosterId === id).map((s) => weekStart(s.date)))], profile).catch(() => []),
         ),
       ),
+      // What kind of leave each day off was.
+      Promise.all(held.map(async (s) => [s.id, await fetchLeaveTypes(s, profile).catch(() => new Map())] as const)),
     ]).then(
-      ([records, outs, rosters, plans]) => !stale && setRows(buildPayroll(held, new Map(records), new Map(outs), new Map(rosters), plans.flat(), new Map((classes.data ?? []).map((c) => [c.id, c.venue || ''] as const)))),
+      ([records, outs, rosters, plans, leave]) =>
+        !stale &&
+        setRows(buildPayroll(held, new Map(records), new Map(outs), new Map(rosters), plans.flat(), new Map((classes.data ?? []).map((c) => [c.id, c.venue || ''] as const)), Date.now(), new Map(leave))),
       () => !stale && setFailed(true),
     )
     return () => {
@@ -75,8 +83,8 @@ export function Payroll() {
     downloadCsv(
       `payroll-${month}${department ? `-${department.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : ''}-excel.csv`,
       [
-        ['Office', 'Department', 'Student ID', 'Student Name', 'Days worked', 'Hours', 'Overtime hours', 'Late', 'Late minutes', 'MC', 'Excused', 'Absent', 'No clock-out', 'Wrong shift'].map((h) => t(h)),
-        ...shown.map((r) => [r.office, r.department, r.staffId, r.name, r.days, hours(r.minutes), hours(r.overtime), r.late, Math.round(r.lateMinutes), r.mc, r.leave, r.absent, r.noClockOut, r.wrongShift]),
+        ['Office', 'Department', 'Student ID', 'Student Name', 'Days worked', 'Hours', 'Overtime hours', 'Late', 'Late minutes', 'Left early', 'Early minutes', 'MC', 'Excused', ...LEAVE_KINDS.map((k) => LEAVE_LABEL[k]), 'Absent', 'No clock-out', 'Wrong shift'].map((h) => t(h)),
+        ...shown.map((r) => [r.office, r.department, r.staffId, r.name, r.days, hours(r.minutes), hours(r.overtime), r.late, Math.round(r.lateMinutes), r.early, Math.round(r.earlyMinutes), r.mc, r.leave, ...LEAVE_KINDS.map((k) => r.leaveBy[k]), r.absent, r.noClockOut, r.wrongShift]),
       ]
         .map((line) => line.map(csvCell).join(','))
         .join('\r\n') + '\r\n',
@@ -140,12 +148,12 @@ export function Payroll() {
             <Stat label={t('Late')} value={sum(shown, 'late')} />
           </div>
           <Card className="overflow-x-auto">
-            <table className="w-full min-w-[46rem] text-left text-sm">
+            <table className="w-full min-w-[52rem] text-left text-sm">
               <thead className="bg-slate-50 text-xs text-muted">
                 <tr>
                   <th className="py-2.5 pr-2 pl-5 font-medium">{t('Student ID')}</th>
                   <th className="px-2 py-2.5 font-medium">{t('Name')}</th>
-                  {['Days worked', 'Hours', 'Overtime', 'Late', 'MC', 'Excused', 'Absent'].map((h) => (
+                  {['Days worked', 'Hours', 'Overtime', 'Late', 'Left early', 'MC', 'Excused', 'Absent'].map((h) => (
                     <th key={h} className="px-2 py-2.5 text-right font-medium last:pr-5">{t(h)}</th>
                   ))}
                 </tr>
@@ -159,7 +167,7 @@ export function Payroll() {
                         <td className="px-2 py-2 text-right whitespace-nowrap">{formatDuration(sum(g.list, 'minutes'))}</td>
                         <td className="px-2 py-2 text-right whitespace-nowrap">{formatDuration(sum(g.list, 'overtime'))}</td>
                         <td className="px-2 py-2 text-right">{sum(g.list, 'late')}</td>
-                        <td colSpan={2} />
+                        <td colSpan={3} />
                         <td className="py-2 pr-5 pl-2 text-right">{sum(g.list, 'absent')}</td>
                       </tr>
                     )}
@@ -180,8 +188,19 @@ export function Payroll() {
                           {r.late}
                           {r.lateMinutes >= 1 && <span className="text-xs text-muted"> · {Math.round(r.lateMinutes)} min</span>}
                         </td>
+                        <td className="px-2 py-2.5 text-right whitespace-nowrap">
+                          {r.early}
+                          {r.earlyMinutes >= 1 && <span className="text-xs text-muted"> · {Math.round(r.earlyMinutes)} min</span>}
+                        </td>
                         <td className="px-2 py-2.5 text-right">{r.mc}</td>
-                        <td className="px-2 py-2.5 text-right">{r.leave}</td>
+                        <td className="px-2 py-2.5 text-right">
+                          {r.leave}
+                          {r.leave > 0 && (
+                            <span className="block text-xs text-muted">
+                              {LEAVE_KINDS.filter((k) => r.leaveBy[k] > 0 && (k !== 'other' || r.leaveBy.other !== r.leave)).map((k) => `${r.leaveBy[k]} ${t(SHORT_LEAVE[k])}`).join(', ')}
+                            </span>
+                          )}
+                        </td>
                         <td className="py-2.5 pr-5 pl-2 text-right font-semibold">{r.absent}</td>
                       </tr>
                     ))}

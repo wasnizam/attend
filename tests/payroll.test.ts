@@ -3,8 +3,8 @@ import { buildPayroll as build } from '../src/lib/payroll'
 
 // The figures are judged after the month is over.
 const LATER = new Date('2027-01-01T00:00:00').getTime()
-const buildPayroll = (sessions: never[], records: Map<string, never[]>, outs: Map<string, Map<string, never>>, rosters: Map<string, never[]>, plans: never[] = [], offices = new Map<string, string>()) =>
-  build(sessions, records, outs, rosters as never, plans, offices, LATER)
+const buildPayroll = (sessions: never[], records: Map<string, never[]>, outs: Map<string, Map<string, never>>, rosters: Map<string, never[]>, plans: never[] = [], offices = new Map<string, string>(), leave = new Map<string, Map<string, never>>()) =>
+  build(sessions, records, outs, rosters as never, plans, offices, LATER, leave)
 
 const at = (date: string, time: string) => {
   const ms = new Date(`${date}T${time}:00`).getTime()
@@ -36,7 +36,8 @@ describe('monthly payroll figures', () => {
 
   it('adds up hours and splits out overtime after the shift ends', () => {
     expect(by.E1.days).toBe(2)
-    expect(Math.round(by.E1.minutes)).toBe(635)
+    // In at 08:55 for a 09:00 start: the five minutes before the start are not hours.
+    expect(Math.round(by.E1.minutes)).toBe(630)
     expect(Math.round(by.E1.overtime)).toBe(90)
     expect(by.E1.noClockOut).toBe(1)
   })
@@ -92,5 +93,45 @@ describe('unpaid break', () => {
     // Day one: 10 h less 1 h break = 9 h, of which 1 h is overtime. Day two: 4 h, no break taken off.
     expect(Math.round(e1.minutes)).toBe(540 + 240)
     expect(Math.round(e1.overtime)).toBe(60)
+  })
+})
+
+describe('early arrival, early leaving and kinds of leave', () => {
+  it('counts the time before the start only when the company asks for it', () => {
+    const early = { ...(session('d1', '2026-10-01') as object), countEarly: true } as never
+    const rows = buildPayroll([early], new Map([['d1', [rec('E1', '2026-10-01', '08:00')]]]), new Map([['d1', new Map([['E1', at('2026-10-01', '18:00')]])]]), roster)
+    expect(Math.round(rows.find((r) => r.key === 'E1')!.minutes)).toBe(600)
+    const plain = buildPayroll([session('d1', '2026-10-01')], new Map([['d1', [rec('E1', '2026-10-01', '08:00')]]]), new Map([['d1', new Map([['E1', at('2026-10-01', '18:00')]])]]), roster)
+    expect(Math.round(plain.find((r) => r.key === 'E1')!.minutes)).toBe(540)
+  })
+
+  it('flags leaving more than the grace before the end', () => {
+    const rows = buildPayroll(
+      [session('d1', '2026-10-01')],
+      new Map([['d1', [rec('E1', '2026-10-01', '09:00'), rec('E2', '2026-10-01', '09:00')]]]),
+      new Map([['d1', new Map([['E1', at('2026-10-01', '16:30')], ['E2', at('2026-10-01', '17:55')]])]]),
+      roster,
+    )
+    const by = Object.fromEntries(rows.map((r) => [r.key, r]))
+    expect([by.E1.early, by.E1.earlyMinutes]).toEqual([1, 90])
+    expect(by.E2.early).toBe(0)
+  })
+
+  it('splits leave by kind', () => {
+    const rows = buildPayroll(
+      [session('d1', '2026-10-01'), session('d2', '2026-10-02')],
+      new Map([
+        ['d1', [rec('E1', '2026-10-01', '09:00', { status: 'excused', method: 'manual' })]],
+        ['d2', [rec('E1', '2026-10-02', '09:00', { status: 'excused', method: 'manual' })]],
+      ]),
+      new Map(),
+      roster,
+      [],
+      new Map(),
+      new Map([['d1', new Map([['E1', 'unpaid' as never]])]]),
+    )
+    const e1 = rows.find((r) => r.key === 'E1')!
+    expect(e1.leave).toBe(2)
+    expect(e1.leaveBy).toEqual({ annual: 0, emergency: 0, unpaid: 1, other: 1 })
   })
 })

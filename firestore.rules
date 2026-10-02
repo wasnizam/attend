@@ -223,7 +223,7 @@ service cloud.firestore {
       // may flag that a code is required and open a presence check.
       allow update: if memberOf(resource.data.organisationId)
         && (resource.data.ownerId == request.auth.uid || me().role == 'admin')
-        && onlyChanges(['status', 'needsCode', 'checkpoint', 'geo'])
+        && onlyChanges(['status', 'needsCode', 'checkpoint', 'geo', 'rosterId'])
         && (request.resource.data.status == resource.data.status
             || request.resource.data.status == 'ended');
     }
@@ -235,7 +235,9 @@ service cloud.firestore {
       let s = get(/databases/$(database)/documents/sessions/$(d.sessionId)).data;
       return d.keys().hasOnly(['sessionId', 'organisationId', 'ownerId', 'sessionName', 'date',
                                'token', 'studentKey', 'studentId', 'studentName',
-                               'timestamp', 'status', 'method', 'code'])
+                               'timestamp', 'status', 'method', 'code', 'device'])
+        // A random label for the phone, so the manager can see one phone used for several people.
+        && d.get('device', '') is string && d.get('device', '').size() <= 40
         && d.keys().hasAll(['sessionId', 'organisationId', 'ownerId', 'sessionName', 'date',
                             'token', 'studentKey', 'studentId', 'studentName',
                             'timestamp', 'status', 'method'])
@@ -364,7 +366,9 @@ service cloud.firestore {
     }
 
     match /clockouts/{clockoutId} {
-      allow create: if validClockout(clockoutId);
+      // Clocking out again (after a fresh scan) moves the time: for someone who clocked out
+      // by mistake, or came back. A manager can change it the same way.
+      allow create, update: if validClockout(clockoutId);
       allow get: if true;
       allow list, delete: if memberOf(resource.data.organisationId)
         && (resource.data.ownerId == request.auth.uid || me().role == 'admin');

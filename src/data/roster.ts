@@ -75,6 +75,27 @@ export async function addToRoster(cls: WeeklyClass, entries: RosterEntry[], exis
     await batch.commit()
   }
   await setCount(cls.id, added)
+  if (existing.length === 0) await attachToOpenDays(cls, entries.length).catch(() => {})
+}
+
+/**
+ * A day opened before the list existed takes anybody under any name. Once the list is there,
+ * that day starts using it too.
+ */
+async function attachToOpenDays(cls: WeeklyClass, count: number) {
+  const open = await getDocs(
+    query(collection(db, 'sessions'), where('organisationId', '==', cls.organisationId), where('ownerId', '==', cls.ownerId), where('classId', '==', cls.id), where('status', '==', 'active')),
+  )
+  const batch = writeBatch(db)
+  let any = false
+  open.forEach((d) => {
+    const s = d.data()
+    if (s.rosterId || !s.token) return
+    any = true
+    batch.update(d.ref, { rosterId: cls.id, expected: count })
+    batch.update(doc(db, 'sessionLinks', s.token), { rosterId: cls.id })
+  })
+  if (any) await batch.commit()
 }
 
 export async function removeFromRoster(cls: WeeklyClass, keys: string[]) {

@@ -1,5 +1,5 @@
 import { type FormEvent, useRef, useState } from 'react'
-import type { Evidence } from '../data/evidence'
+import { type Evidence, LEAVE_LABEL, LEAVE_TYPES, type LeaveType } from '../data/evidence'
 import { type PreparedFile, openEvidence, prepareEvidence } from '../lib/evidenceFile'
 import { t } from '../lib/i18n'
 import { has } from '../lib/purpose'
@@ -12,7 +12,7 @@ interface Props {
   current?: Evidence
   onCancel: () => void
   /** file: a new file, null to remove the saved one, undefined to keep it. */
-  onSave: (details: { remarks: string; mcNumber?: string; clinic?: string }, file: PreparedFile | null | undefined) => Promise<void>
+  onSave: (details: { remarks: string; mcNumber?: string; clinic?: string; leaveType?: LeaveType }, file: PreparedFile | null | undefined) => Promise<void>
 }
 
 /** Details and proof for an MC or excused absence. An MC needs its number and the clinic's name. */
@@ -25,6 +25,9 @@ export function EvidenceDialog({ student, status, current, onCancel, onSave }: P
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const mc = status === 'mc'
+  // A workplace records what kind of leave it was, for payroll.
+  const leave = !mc && has('clock')
+  const [leaveType, setLeaveType] = useState<LeaveType>(current?.leaveType ?? 'annual')
   // What will be on record after saving: the new pick, or whatever is already saved.
   const shown = file === undefined ? (current?.dataUrl ? { fileName: current.fileName ?? '', dataUrl: current.dataUrl } : null) : file
 
@@ -48,7 +51,7 @@ export function EvidenceDialog({ student, status, current, onCancel, onSave }: P
     setBusy(true)
     setError('')
     try {
-      await onSave(mc ? { remarks, mcNumber, clinic } : { remarks }, file)
+      await onSave(mc ? { remarks, mcNumber, clinic } : leave ? { remarks, leaveType } : { remarks }, file)
     } catch (err) {
       setError(friendlyError(err))
       setBusy(false)
@@ -65,6 +68,16 @@ export function EvidenceDialog({ student, status, current, onCancel, onSave }: P
           </p>
         </div>
 
+        {leave && (
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium">{t('Type of leave')}</span>
+            <select value={leaveType} onChange={(e) => setLeaveType(e.target.value as LeaveType)} className={inputClass}>
+              {LEAVE_TYPES.map((type) => (
+                <option key={type} value={type}>{t(LEAVE_LABEL[type])}</option>
+              ))}
+            </select>
+          </label>
+        )}
         {mc && (
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('MC number')} required autoFocus maxLength={40} placeholder={t('e.g. MC 0123456')} value={mcNumber} onChange={(e) => setMcNumber(e.target.value)} />

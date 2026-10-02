@@ -84,6 +84,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
   const [minStaff, setMinStaff] = useState(editing?.minStaff ? String(editing.minStaff) : '')
   const [fence, setFence] = useState<Fence>(undefined)
   const [breakMin, setBreakMin] = useState(String(editing?.breakMin ?? 60))
+  const [countEarly, setCountEarly] = useState(Boolean(editing?.countEarly))
   const myClasses = useMyClasses().data
   const lists = (myClasses ?? []).filter((c) => (c.rosterCount ?? 0) > 0)
   // Semester dates: default to 14 weeks from today, or to the dates of the newest class
@@ -139,7 +140,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
     setBusy(true)
     try {
       const details = { name, description, code, section, venue, expected: count, delivery, meetingUrl: delivery === 'in_person' ? '' : meetingUrl }
-      const work = clock ? { graceMin: grace === 'flex' ? null : Number(grace), flexible: grace === 'flex', rotating, rosterFrom: rosterFrom || null, daysPerWeek: rotating && !rosterFrom ? Number(daysPerWeek) : null, minStaff: Number(minStaff) > 0 ? Math.floor(Number(minStaff)) : null, breakMin: Number(breakMin) } : {}
+      const work = clock ? { graceMin: grace === 'flex' ? null : Number(grace), flexible: grace === 'flex', rotating, rosterFrom: rosterFrom || null, daysPerWeek: rotating && !rosterFrom ? Number(daysPerWeek) : null, minStaff: Number(minStaff) > 0 ? Math.floor(Number(minStaff)) : null, breakMin: Number(breakMin), countEarly } : {}
       if (editing) {
         await updateClass(editing.id, { ...details, ...work, kind, slots, startDate: semStart, endDate: semEnd })
         if (clock && fence !== undefined) await setClassGeofence(editing.id, fence)
@@ -346,6 +347,10 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
                     <option key={m} value={m}>{t('{n} minutes', { n: m })}</option>
                   ))}
                 </select>
+              </label>
+              <label className="flex items-start gap-2.5 text-sm">
+                <input type="checkbox" checked={countEarly} onChange={(e) => setCountEarly(e.target.checked)} className="mt-0.5 size-4 accent-accent" />
+                <span className="font-medium">{t('Count the time before the start when someone arrives early')}</span>
               </label>
               {has('shifts') && (myClasses ?? []).some((c) => c.id !== editing?.id && !c.rosterFrom) && (
                 <label className="block">

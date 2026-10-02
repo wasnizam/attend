@@ -128,6 +128,31 @@ function ClockOutCard({ link, studentId, since, justIn, code }: { link: SessionL
       <Card className="mt-4 p-5 text-center">
         <p className="font-semibold text-good">✓ {t('Clocked out at {time}', { time: formatClock(out) })}</p>
         {since && <p className="tabular mt-1 text-sm text-muted">{t('Time at work: {d}', { d: formatDuration((out.getTime() - since.getTime()) / 60_000) })}</p>}
+        {/* Clocked out by mistake, or came back: after a fresh scan the time can be moved to now. */}
+        {link.status === 'active' && !justIn && Date.now() - out.getTime() > 60_000 && (
+          <div className="mt-4 space-y-2 border-t border-line pt-4">
+            <p className="text-sm text-muted">{t('Still at work? Clock out again when you really leave.')}</p>
+            <ErrorNote>{error}</ErrorNote>
+            <Button
+              variant="secondary"
+              block
+              busy={busy}
+              onClick={async () => {
+                setBusy(true)
+                setError('')
+                try {
+                  setOut(await clockOut(link, studentId, code, true))
+                } catch {
+                  setError(t('We could not clock you out. The code may have changed: scan the QR again.'))
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            >
+              {t('I am leaving now')}
+            </Button>
+          </div>
+        )}
       </Card>
     )
   }

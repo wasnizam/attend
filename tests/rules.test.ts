@@ -523,7 +523,6 @@ describe('clock-out (workplace)', () => {
 
   it('someone who clocked in can clock out once, with the session token', async () => {
     await assertSucceeds(setDoc(doc(anon(), 'clockouts/live_ST001'), out('ST001')))
-    await assertFails(setDoc(doc(anon(), 'clockouts/live_ST001'), out('ST001')))
     await assertSucceeds(getDoc(doc(anon(), 'clockouts/live_ST001')))
   })
 
@@ -616,5 +615,27 @@ describe('handing an office to a branch manager', () => {
     await assertSucceeds(setDoc(doc(as('lecA2'), 'rosters/office/students/E002'), { ...entry('lecA2'), studentKey: 'E002', studentId: 'E002' }))
     await assertSucceeds(deleteDoc(doc(as('lecA2'), 'rosters/office/students/E001')))
     await assertFails(list('lecB'))
+  })
+})
+
+describe('workplace gaps', () => {
+  it('a check-in may carry a short phone label and nothing longer', async () => {
+    await assertSucceeds(setDoc(doc(anon(), 'attendance/live_ST002'), record('live', 'ST002', { device: 'ABCDEFGH12345678' })))
+    await assertFails(setDoc(doc(anon(), 'attendance/live_ST003'), record('live', 'ST003', { device: 'x'.repeat(41) })))
+    await assertFails(setDoc(doc(anon(), 'attendance/live_ST004'), record('live', 'ST004', { device: 123 })))
+  })
+
+  it('clocking out again moves the time, but only with the session token', async () => {
+    const out = (extra = {}) => ({ sessionId: 'live', organisationId: 'orgA', ownerId: 'lecA', studentKey: 'ST001', token: 'ABC234', by: 'self', timestamp: serverTimestamp(), ...extra })
+    await assertSucceeds(setDoc(doc(anon(), 'clockouts/live_ST001'), out()))
+    await assertSucceeds(setDoc(doc(anon(), 'clockouts/live_ST001'), out()))
+    await assertFails(setDoc(doc(anon(), 'clockouts/live_ST001'), out({ token: 'WRONG1' })))
+    await assertFails(setDoc(doc(anon(), 'clockouts/live_ST001'), out({ timestamp: Timestamp.fromMillis(Date.now() + 3600_000) })))
+  })
+
+  it('the owner can attach a staff list to a link that is already open; nobody else can', async () => {
+    await assertSucceeds(updateDoc(doc(as('lecA'), 'sessionLinks/ABC234'), { rosterId: 'shift' }))
+    await assertFails(updateDoc(doc(as('lecA2'), 'sessionLinks/ABC234'), { rosterId: 'other' }))
+    await assertFails(updateDoc(doc(anon(), 'sessionLinks/ABC234'), { rosterId: 'other' }))
   })
 })

@@ -18,7 +18,7 @@ import {
   Timestamp,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import { studentKey } from '../lib/format'
+import { studentKey, randomToken } from '../lib/format'
 import type { Position } from '../lib/geo'
 import type { AttendanceRecord, AttendanceStatus, Session, SessionLink, UserProfile } from '../lib/types'
 
@@ -37,6 +37,22 @@ export type SubmitResult =
  * `{sessionId}_{studentKey}`, and the security rules only allow *creating* it, so a
  * second submission for the same ID can never produce a second record.
  */
+const DEVICE_KEY = 'attend.device'
+
+/** A random label kept on this phone. It says nothing about the phone or its owner. */
+function deviceLabel(): string | undefined {
+  try {
+    let label = localStorage.getItem(DEVICE_KEY)
+    if (!label) {
+      label = randomToken(16)
+      localStorage.setItem(DEVICE_KEY, label)
+    }
+    return label
+  } catch {
+    return undefined
+  }
+}
+
 export async function submitAttendance(
   link: SessionLink,
   rawStudentId: string,
@@ -74,6 +90,7 @@ export async function submitAttendance(
       status: 'present',
       method: 'qr',
       ...(code ? { code } : {}),
+      ...(deviceLabel() ? { device: deviceLabel() } : {}),
     }
     if (position) {
       // One atomic write: the rules read the location while deciding on the record.
@@ -301,7 +318,7 @@ export async function getClockOut(link: SessionLink, rawStudentId: string): Prom
 }
 
 /** Participant side: clock out now. Returns the time recorded. */
-export async function clockOut(link: SessionLink, rawStudentId: string, code?: string): Promise<Date> {
+export async function clockOut(link: SessionLink, rawStudentId: string, code?: string, /** Clocking out again, to move the time. */ again = false): Promise<Date> {
   const key = studentKey(rawStudentId)
   const ref = doc(clockouts, `${link.sessionId}_${key}`)
   try {
@@ -317,8 +334,8 @@ export async function clockOut(link: SessionLink, rawStudentId: string, code?: s
     })
     return new Date()
   } catch (e) {
-    // A second clock-out is refused; show the first one instead of an error.
-    const existing = await getClockOut(link, rawStudentId)
+    // Refused (an old code, or the day has closed). On a first try, show the time already recorded.
+    const existing = again ? null : await getClockOut(link, rawStudentId)
     if (existing) return existing
     throw e
   }
