@@ -78,7 +78,9 @@ export function AppShell() {
   // The phone tab bar has room for five; Calendar (and History, when Reports is shown)
   // live in the sidebar and are one tap from Today or Reports on a phone.
   const tabs = [today, ...recurring.timetable, students, ...(recurring.reports.length ? recurring.reports : [history]), ...adminItem]
-  const sidebar = [today, calendar, ...recurring.timetable, students, ...recurring.reports, history, ...adminItem]
+  // Workplaces leave a tablet at the door; the link opens that full-screen view.
+  const door = has('clock') ? [item('/app/door', t('Door screen'), icons.today)] : []
+  const sidebar = [today, ...door, calendar, ...recurring.timetable, students, ...recurring.reports, history, ...adminItem]
 
   return (
     <div className="min-h-dvh md:pl-60 print:!pl-0">

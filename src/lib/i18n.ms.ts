@@ -737,4 +737,10 @@ export const ms: Record<string, string> = {
   "Currency": "Mata wang",
   "Or $90 a year: 12 months for the price of 10.": "Atau $90 setahun: 12 bulan pada harga 10 bulan.",
   "Export list": "Eksport senarai",
+  "Door screen": "Skrin pintu",
+  "Exit door screen": "Keluar dari skrin pintu",
+  "Nothing is open right now": "Tiada yang dibuka sekarang",
+  "We could not open it by ourselves. Check the internet connection, or open it from the Today page.": "Kami tidak dapat membukanya secara automatik. Semak sambungan internet, atau buka dari halaman Hari Ini.",
+  "{name} opens by itself at {time}. Leave this screen on.": "{name} dibuka sendiri pada {time}. Biarkan skrin ini hidup.",
+  "Nothing more is planned for today. Leave this screen on and tomorrow opens by itself.": "Tiada lagi yang dirancang hari ini. Biarkan skrin ini hidup dan esok ia dibuka sendiri.",
 }

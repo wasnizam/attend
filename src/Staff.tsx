@@ -15,6 +15,7 @@ import { Dashboard } from './pages/Dashboard'
 import { History } from './pages/History'
 import { Login } from './pages/Login'
 import { NewSession } from './pages/NewSession'
+import { Kiosk } from './pages/Kiosk'
 import { Report } from './pages/Report'
 import { Reports } from './pages/Reports'
 import { Roster } from './pages/Roster'
@@ -78,6 +79,8 @@ export default function Staff() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route element={<RequireAuth />}>
+          {/* Full screen, for a tablet at the door: no menu around it. */}
+          <Route path="/app/door" element={<Kiosk />} />
           <Route element={<AppShell />}>
             <Route path="/app" element={<Dashboard />} />
             <Route path="/app/new" element={<NewSession />} />

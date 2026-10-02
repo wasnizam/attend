@@ -164,6 +164,11 @@ writes `clockouts/{sessionId}_{studentKey}` (a manager can also clock someone ou
 Hours are clock-out minus clock-in; lateness is worked out from the clock-in time (more than
 10 minutes after the start) instead of being set by hand; the report gains an Hours column.
 
+The **door screen** (`/app/door`, `src/pages/Kiosk.tsx`) is a full-screen view to leave on a
+tablet: anything on today's timetable opens by itself 30 minutes before its start, always with
+the rotating QR, and closes when its window lapses. It needs the manager to be signed in on
+that device, and the page to stay open (it asks the browser to keep the screen awake).
+
 Apart from that, the data model and the security rules are the same for every purpose. To add a purpose, add it
 to `PURPOSES`, `FEATURES` and `TERMS` in that file and to the allowed values in `firestore.rules`.
 
