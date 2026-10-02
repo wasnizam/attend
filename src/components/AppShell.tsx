@@ -80,7 +80,7 @@ export function AppShell() {
   const tabs = [today, ...recurring.timetable, students, ...(recurring.reports.length ? recurring.reports : [history]), ...adminItem]
   // Workplaces leave a tablet at the door; the link opens that full-screen view.
   const door = has('clock')
-    ? [...(has('shifts') ? [item('/app/plan', t('Shift plan'), icons.calendar)] : []), item('/app/door', t('Door screen'), icons.today)]
+    ? [...(has('shifts') ? [item('/app/plan', t('Shift plan'), icons.calendar)] : [])]
     : []
   const sidebar = [today, ...door, calendar, ...recurring.timetable, students, ...recurring.reports, history, ...adminItem]
 
@@ -91,10 +91,17 @@ export function AppShell() {
           <Logo />
         </NavLink>
         <div className="px-3">
-          <Link to="/app/new" className={buttonClass({ block: true })}>
-            <Icon d={icons.plus} className="size-4" />
-            {t('New session')}
-          </Link>
+          {/* A workplace sets its hours once; what it does every day is open the door screen. */}
+          {has('clock') ? (
+            <Link to="/app/door" className={buttonClass({ block: true })}>
+              {t('Open door screen')}
+            </Link>
+          ) : (
+            <Link to="/app/new" className={buttonClass({ block: true })}>
+              <Icon d={icons.plus} className="size-4" />
+              {t('New session')}
+            </Link>
+          )}
         </div>
         <nav className="mt-4 flex-1 space-y-0.5 px-3">
           {sidebar.map((tab) => (

@@ -824,4 +824,5 @@ export const ms: Record<string, string> = {
   "We work in shifts": "Kami bekerja mengikut syif",
   "Adds several shifts, people who rotate between them, and a weekly shift plan. Leave it off for ordinary office hours.": "Menambah beberapa syif, kakitangan yang bergilir antara syif, dan jadual syif mingguan. Biarkan mati untuk waktu pejabat biasa.",
   "Office hours": "Waktu pejabat",
+  "Open door screen": "Buka skrin pintu",
 }

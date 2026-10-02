@@ -81,12 +81,12 @@ export function Dashboard() {
           <p className="mt-1 text-sm text-muted">{summary}</p>
         </div>
         {has('clock') && (
-          <Link to="/app/door" className={`${buttonClass({ variant: 'secondary' })} self-start`}>
-            {t('Door screen')}
+          <Link to="/app/door" className={`${buttonClass()} self-start md:hidden`}>
+            {t('Open door screen')}
           </Link>
         )}
         {/* On desktop the sidebar carries this button. */}
-        <Link to="/app/new" className={`${buttonClass({ variant: 'secondary' })} self-start md:hidden`}>
+        <Link to="/app/new" className={`${buttonClass({ variant: 'secondary' })} self-start md:hidden ${has('clock') ? 'hidden' : ''}`}>
           {t('+ New session')}
         </Link>
       </div>
