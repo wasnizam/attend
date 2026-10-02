@@ -3,7 +3,7 @@ import { addDays, endOf, minutesLate, parseDate } from './format'
 /** The Monday that starts the week a date falls in. */
 const mondayOf = (date: string) => addDays(date, -((parseDate(date).getDay() + 6) % 7))
 import type { RosterEntry } from './rosterImport'
-import type { AttendanceRecord, Session } from './types'
+import type { AttendanceRecord, Session, ShiftPlan } from './types'
 
 /** One person's month, in the figures a payroll sheet needs. */
 export interface PayrollRow {
@@ -25,6 +25,8 @@ export interface PayrollRow {
   absent: number
   /** Days with a clock-in and no clock-out: hours for those days are not counted. */
   noClockOut: number
+  /** Days they clocked in to a shift other than the one planned for them. */
+  wrongShift: number
 }
 
 type Outs = Map<string, { toMillis(): number }>
@@ -35,11 +37,13 @@ export function buildPayroll(
   records: Map<string, AttendanceRecord[]>,
   outs: Map<string, Outs>,
   rosters: Map<string, RosterEntry[]>,
+  /** Weekly shift plans. A planned week is checked day by day; an unplanned one by days per week. */
+  plans: ShiftPlan[] = [],
 ): PayrollRow[] {
   const people = new Map<string, PayrollRow>()
   const person = (key: string, staffId: string, name: string) => {
     if (!people.has(key)) {
-      people.set(key, { key, staffId, name, department: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0 })
+      people.set(key, { key, staffId, name, department: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, wrongShift: 0 })
     }
     return people.get(key)!
   }
@@ -84,7 +88,7 @@ export function buildPayroll(
   for (const pool of pools) {
     const mine = sessions.filter((x) => x.rosterId === pool)
     const perWeek = mine.find((x) => x.daysPerWeek)?.daysPerWeek
-    if (!perWeek) continue
+    const planned = new Map(plans.filter((p) => p.rosterId === pool).map((p) => [p.week, p.cells]))
     // How many weekdays the pool runs at all, and which dates it was open in each week.
     const weekdays = new Set(mine.map((x) => parseDate(x.date).getDay())).size
     const weeks = new Map<string, Set<string>>()
@@ -95,6 +99,19 @@ export function buildPayroll(
     for (const member of rosters.get(pool) ?? []) {
       const row = person(member.studentKey, member.studentId, member.studentName)
       for (const [week, openDates] of weeks) {
+        const cells = planned.get(week)
+        if (cells) {
+          // Planned week: each day is checked against the shift the person was put on.
+          for (const [date, shift] of Object.entries(cells[member.studentKey] ?? {})) {
+            const due = mine.find((x) => x.date === date && x.classId === shift)
+            if (!due) continue
+            const theirs = mine.filter((x) => x.date === date).flatMap((x) => (records.get(x.id) ?? []).filter((r) => r.studentKey === member.studentKey).map((r) => ({ x, r })))
+            if (theirs.length === 0) row.absent += 1
+            else if (!theirs.some(({ x }) => x.id === due.id) && theirs.some(({ r }) => r.status !== 'mc' && r.status !== 'excused')) row.wrongShift += 1
+          }
+          continue
+        }
+        if (!perWeek) continue
         // A part week (the month's first or last) expects its share of the days, rounded down.
         const expected = Math.min(openDates.size, Math.floor((perWeek * openDates.size) / Math.max(weekdays, perWeek)))
         const accounted = new Set<string>()

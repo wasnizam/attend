@@ -17,6 +17,7 @@ import { Login } from './pages/Login'
 import { NewSession } from './pages/NewSession'
 import { Kiosk } from './pages/Kiosk'
 import { Payroll } from './pages/Payroll'
+import { Schedule } from './pages/Schedule'
 import { Report } from './pages/Report'
 import { Reports } from './pages/Reports'
 import { Roster } from './pages/Roster'
@@ -94,6 +95,7 @@ export default function Staff() {
             <Route path="/app/students" element={<Students />} />
             <Route path="/app/reports" element={<Reports />} />
             <Route path="/app/reports/monthly" element={<Payroll />} />
+            <Route path="/app/plan" element={<Schedule />} />
             <Route path="/app/reports/subject/:subjectKey" element={<SubjectReport />} />
             <Route path="/app/history" element={<History />} />
             <Route path="/app/session/:id" element={<SessionDetail />} />

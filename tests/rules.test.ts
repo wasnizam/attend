@@ -566,3 +566,20 @@ describe('departments on a staff list', () => {
     await assertFails(setDoc(doc(as('lecA'), 'rosters/shift/students/E001'), entry({ salary: 5000 })))
   })
 })
+
+describe('shift plans', () => {
+  const plan = (extra = {}) => ({ organisationId: 'orgA', ownerId: 'lecA', rosterId: 'shift', week: '2026-10-05', cells: { E001: { '2026-10-05': 'shift' } }, updatedAt: serverTimestamp(), ...extra })
+  beforeEach(() =>
+    env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'classes/shift'), { organisationId: 'orgA', ownerId: 'lecA', name: 'Shift' })),
+  )
+
+  it('the manager who keeps the list can plan it; nobody else can read or write it', async () => {
+    await assertSucceeds(setDoc(doc(as('lecA'), 'plans/shift_2026-10-05'), plan()))
+    await assertSucceeds(getDocs(query(collection(as('lecA'), 'plans'), where('organisationId', '==', 'orgA'), where('rosterId', '==', 'shift'), where('week', 'in', ['2026-10-05']), where('ownerId', '==', 'lecA'))))
+    await assertFails(setDoc(doc(as('lecA2'), 'plans/shift_2026-10-12'), plan({ ownerId: 'lecA2', week: '2026-10-12' })))
+    await assertFails(setDoc(doc(as('lecA'), 'plans/other_2026-10-05'), plan()))
+    await assertFails(getDoc(doc(as('lecA2'), 'plans/shift_2026-10-05')))
+    await assertFails(getDoc(doc(anon(), 'plans/shift_2026-10-05')))
+    await assertFails(getDoc(doc(as('adminB'), 'plans/shift_2026-10-05')))
+  })
+})

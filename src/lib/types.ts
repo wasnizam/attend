@@ -123,6 +123,19 @@ export interface Session extends CourseDetails, Geofence {
 }
 
 /** Public, participant-readable summary stored at sessionLinks/{token}. */
+/** Who is planned on which shift, for one staff list and one week. */
+export interface ShiftPlan {
+  id: string
+  organisationId: string
+  ownerId: string
+  /** The staff list (the shift that keeps it). */
+  rosterId: string
+  /** The Monday the week starts on (YYYY-MM-DD). */
+  week: string
+  /** Staff key -> date -> shift ID, or 'off' for a rest day. A missing date is not planned. */
+  cells: Record<string, Record<string, string>>
+}
+
 export interface SessionLink {
   token: string
   sessionId: string

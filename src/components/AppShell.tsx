@@ -79,7 +79,7 @@ export function AppShell() {
   // live in the sidebar and are one tap from Today or Reports on a phone.
   const tabs = [today, ...recurring.timetable, students, ...(recurring.reports.length ? recurring.reports : [history]), ...adminItem]
   // Workplaces leave a tablet at the door; the link opens that full-screen view.
-  const door = has('clock') ? [item('/app/door', t('Door screen'), icons.today)] : []
+  const door = has('clock') ? [item('/app/plan', t('Shift plan'), icons.calendar), item('/app/door', t('Door screen'), icons.today)] : []
   const sidebar = [today, ...door, calendar, ...recurring.timetable, students, ...recurring.reports, history, ...adminItem]
 
   return (

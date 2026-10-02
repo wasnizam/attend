@@ -70,3 +70,33 @@ describe('people who rotate are measured by the week', () => {
     expect(by.E2.absent).toBe(2)
   })
 })
+
+describe('a planned week is checked day by day', () => {
+  const pool = [{ studentKey: 'E1', studentId: 'E1', studentName: 'Ahmad' }, { studentKey: 'E2', studentId: 'E2', studentName: 'Siti' }]
+  const day = (id: string, date: string, shift: string, start: string, end: string) =>
+    ({ id, date, startTime: start, endTime: end, rosterId: 'pool', classId: shift, rotating: true, daysPerWeek: 6 }) as never
+  const sessions = [
+    day('m5', '2026-10-05', 'morning', '06:00', '14:00'), day('n5', '2026-10-05', 'night', '22:00', '06:00'),
+    day('m6', '2026-10-06', 'morning', '06:00', '14:00'), day('n6', '2026-10-06', 'night', '22:00', '06:00'),
+  ]
+  const came = (key: string, date: string, time: string) => ({ studentKey: key, studentId: key, studentName: key, status: 'present', method: 'qr', timestamp: at(date, time) }) as never
+  const plan = { id: 'p', organisationId: 'o', ownerId: 'u', rosterId: 'pool', week: '2026-10-05', cells: {
+    E1: { '2026-10-05': 'morning', '2026-10-06': 'morning', '2026-10-07': 'off' },
+    E2: { '2026-10-05': 'night', '2026-10-06': 'night' },
+  } }
+
+  it('absent on the planned day, and a clock-in to the other shift is noted', () => {
+    const rows = buildPayroll(
+      sessions,
+      new Map([['m5', [came('E1', '2026-10-05', '06:00')]], ['n6', [came('E1', '2026-10-06', '22:00'), came('E2', '2026-10-06', '22:00')]]]),
+      new Map(),
+      new Map([['pool', pool]]),
+      [plan],
+    )
+    const by = Object.fromEntries(rows.map((r) => [r.key, r]))
+    expect(by.E1.absent).toBe(0)
+    expect(by.E1.wrongShift).toBe(1)
+    expect(by.E2.absent).toBe(1)
+    expect(by.E2.wrongShift).toBe(0)
+  })
+})

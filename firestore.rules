@@ -311,6 +311,21 @@ service cloud.firestore {
         && (request.resource.data.get('dataUrl', null) == null || request.resource.data.dataUrl.size() <= 990000);
     }
 
+    // ---------- shift plans (workplace) ----------
+
+    // A manager's weekly plan of who works which shift. Private to the manager and admins.
+    match /plans/{planId} {
+      allow read, delete: if memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+      allow create, update: if memberOf(request.resource.data.organisationId)
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['organisationId', 'ownerId', 'rosterId', 'week', 'cells', 'updatedAt'])
+        && planId == request.resource.data.rosterId + '_' + request.resource.data.week
+        && request.resource.data.week.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.cells is map
+        && get(/databases/$(database)/documents/classes/$(request.resource.data.rosterId)).data.ownerId == request.auth.uid;
+    }
+
     // ---------- clock-out (workplace) ----------
 
     // The time someone left. Staff clock out themselves with the session's QR while it is

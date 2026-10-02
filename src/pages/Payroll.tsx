@@ -2,12 +2,13 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, inputClass } from '../components/ui'
 import { fetchClockOuts, fetchSessionAttendance } from '../data/attendance'
+import { fetchPlans } from '../data/plans'
 import { fetchRoster } from '../data/roster'
 import { useProfile } from '../hooks/useAuth'
 import { useMyClasses } from '../hooks/useClasses'
 import { useMySessions } from '../hooks/useSessions'
 import { downloadCsv } from '../lib/csv'
-import { formatDuration, isoDate } from '../lib/format'
+import { formatDuration, isoDate, weekStart } from '../lib/format'
 import { t } from '../lib/i18n'
 import { type PayrollRow, buildPayroll, hours } from '../lib/payroll'
 
@@ -43,8 +44,14 @@ export function Payroll() {
       Promise.all(held.map(async (s) => [s.id, await fetchSessionAttendance(s, profile)] as const)),
       Promise.all(held.map(async (s) => [s.id, await fetchClockOuts(s, profile)] as const)),
       Promise.all(lists.map(async (id) => [id, await fetchRoster(id, profile.organisationId, profile)] as const)),
+      // The weekly plans for the lists people rotate on, so a planned day is checked exactly.
+      Promise.all(
+        [...new Set(held.filter((s) => s.rotating && s.rosterId).map((s) => s.rosterId!))].map((id) =>
+          fetchPlans(id, [...new Set(held.filter((s) => s.rosterId === id).map((s) => weekStart(s.date)))], profile).catch(() => []),
+        ),
+      ),
     ]).then(
-      ([records, outs, rosters]) => !stale && setRows(buildPayroll(held, new Map(records), new Map(outs), new Map(rosters))),
+      ([records, outs, rosters, plans]) => !stale && setRows(buildPayroll(held, new Map(records), new Map(outs), new Map(rosters), plans.flat())),
       () => !stale && setFailed(true),
     )
     return () => {
@@ -64,8 +71,8 @@ export function Payroll() {
     downloadCsv(
       `payroll-${month}${department ? `-${department.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : ''}-excel.csv`,
       [
-        ['Department', 'Student ID', 'Student Name', 'Days worked', 'Hours', 'Overtime hours', 'Late', 'Late minutes', 'MC', 'Excused', 'Absent', 'No clock-out'].map((h) => t(h)),
-        ...shown.map((r) => [r.department, r.staffId, r.name, r.days, hours(r.minutes), hours(r.overtime), r.late, Math.round(r.lateMinutes), r.mc, r.leave, r.absent, r.noClockOut]),
+        ['Department', 'Student ID', 'Student Name', 'Days worked', 'Hours', 'Overtime hours', 'Late', 'Late minutes', 'MC', 'Excused', 'Absent', 'No clock-out', 'Wrong shift'].map((h) => t(h)),
+        ...shown.map((r) => [r.department, r.staffId, r.name, r.days, hours(r.minutes), hours(r.overtime), r.late, Math.round(r.lateMinutes), r.mc, r.leave, r.absent, r.noClockOut, r.wrongShift]),
       ]
         .map((line) => line.map(csvCell).join(','))
         .join('\r\n') + '\r\n',
@@ -143,7 +150,10 @@ export function Payroll() {
                       <tr key={r.key}>
                         <td className="py-2.5 pr-2 pl-5 font-medium whitespace-nowrap">{r.staffId}</td>
                         <td className="px-2 py-2.5 break-words">{r.name}</td>
-                        <td className="px-2 py-2.5 text-right">{r.days}</td>
+                        <td className="px-2 py-2.5 text-right">
+                          {r.days}
+                          {r.wrongShift > 0 && <span className="block text-xs text-[#b25e00]">{t('{n} on another shift', { n: r.wrongShift })}</span>}
+                        </td>
                         <td className="px-2 py-2.5 text-right whitespace-nowrap">
                           {formatDuration(r.minutes)}
                           {r.noClockOut > 0 && <span className="block text-xs text-[#b25e00]">{t('{n} without clock-out', { n: r.noClockOut })}</span>}

@@ -191,6 +191,14 @@ not clock out are listed there with one tap to set the shift's end time (a manag
 earlier clock-out; staff cannot choose a time). Not built yet: learning rotation patterns and
 suggesting next week's schedule.
 
+**Shift plan** (`/app/plan`, `src/pages/Schedule.tsx`, `plans/{listId}_{monday}`). A grid of
+people by days for one staff list and one week: each cell is a shift, "Off", or not planned.
+A whole week can be filled for a person or a department, and last week copied. A planned week
+is checked day by day (absent on the planned day; a clock-in to another shift is counted as
+"wrong shift"); the live list of a rotating shift shows who was planned and has not come. A week
+without a plan falls back to days per week. Plans are private to the manager and admins, so the
+public door page cannot use them: it still goes by the time.
+
 Each person on a workplace list can carry a `department` (picked up from a sheet's Department
 column, or typed). The **monthly report** (`/app/reports/monthly`, `src/lib/payroll.ts`) adds up
 a month for everyone: days worked, hours, overtime (time after the shift's end), lateness, MC,
