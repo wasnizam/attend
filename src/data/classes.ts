@@ -1,4 +1,5 @@
 import {
+  GeoPoint,
   addDoc,
   collection,
   deleteDoc,
@@ -14,7 +15,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { classSessionId, meetingKey } from '../lib/format'
-import type { ClassKind, Delivery, Session, Slot, UserProfile, WeeklyClass } from '../lib/types'
+import type { ClassKind, Delivery, GeoMode, Session, Slot, UserProfile, WeeklyClass } from '../lib/types'
 import { newSessionData, startSession } from './sessions'
 
 export interface ClassInput {
@@ -91,6 +92,15 @@ export const restoreMeeting = (cls: WeeklyClass, date: string, slot: Slot) =>
   updateDoc(doc(classes, cls.id), { [`cancelled.${meetingKey(date, slot)}`]: deleteField() })
 
 /** Removes the class from the timetable. Sessions already held keep their records. */
+/** Where the workplace (or class) is, for the location check on every day opened from it. */
+export const setClassGeofence = (id: string, fence: { lat: number; lng: number; radius: number; mode: GeoMode } | null) =>
+  updateDoc(
+    doc(classes, id),
+    fence
+      ? { geoPoint: new GeoPoint(fence.lat, fence.lng), geoRadius: fence.radius, geoMode: fence.mode, geoCos: Math.cos((fence.lat * Math.PI) / 180) }
+      : { geoPoint: null, geoRadius: null, geoMode: null, geoCos: null },
+  )
+
 export const deleteClass = (id: string) => deleteDoc(doc(classes, id))
 
 export function subscribeMyClasses(

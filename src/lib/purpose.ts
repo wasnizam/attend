@@ -142,12 +142,13 @@ const OFFICE: Record<'en' | 'ms', Swap[]> = {
 }
 
 /** Rewrites interface text into the current purpose's vocabulary. */
-export function applyTerms(text: string, lang: 'en' | 'ms'): string {
+export function applyTerms(text: string, lang: 'en' | 'ms', keepShifts = false): string {
   const rules = TERMS[lang][purpose]
   if (!rules) return text
   let out = text
   for (const [pattern, to] of rules) out = out.replace(pattern, to)
   // An office without shifts never reads the word: what it has is its working hours.
-  if (purpose === 'workplace' && !shiftMode) for (const [pattern, to] of OFFICE[lang]) out = out.replace(pattern, to)
+  // (Except where the text is itself asking about shifts.)
+  if (purpose === 'workplace' && !shiftMode && !keepShifts) for (const [pattern, to] of OFFICE[lang]) out = out.replace(pattern, to)
   return out
 }

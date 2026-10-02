@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { GettingStarted } from '../components/GettingStarted'
 import { ShiftAlerts } from '../components/ShiftAlerts'
 import { TodayHero, TodaySchedule } from '../components/TodayItems'
@@ -29,6 +29,8 @@ export function Dashboard() {
 
   const sessions = data ?? []
   const myClasses = classes.data ?? []
+  // A workplace with nothing set up yet starts with the four setup steps, not an empty page.
+  if (has('clock') && sessions.length + myClasses.length === 0) return <Navigate to="/app/setup" replace />
   // Anything still running belongs on this screen, even if it was scheduled for another day.
   const carriedOver: AgendaItem[] = sessions
     .filter((s) => s.date !== today && effectiveStatus(s) === 'active')

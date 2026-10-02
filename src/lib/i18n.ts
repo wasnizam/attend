@@ -51,10 +51,10 @@ export function useLang(): Lang {
  * Translates UI text. The English sentence is the key, so untranslated text simply
  * stays English. `{name}` placeholders are filled from `vars`.
  */
-export function t(text: string, vars?: Record<string, string | number>): string {
+export function t(text: string, vars?: Record<string, string | number>, keepShifts = false): string {
   // Translate, then switch to the organisation's vocabulary (participants, attendees…)
   // before filling in names, so nobody's name is ever rewritten.
-  const out = applyTerms((lang === 'ms' && ms[text]) || text, lang)
+  const out = applyTerms((lang === 'ms' && ms[text]) || text, lang, keepShifts)
   return vars ? out.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? '')) : out
 }
 

@@ -83,7 +83,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
   // Semester dates: default to 14 weeks from today, or to the dates of the newest class
   // already on the timetable, so a lecturer types them once per semester.
   const [semStart, setSemStart] = useState(editing?.startDate ?? isoDate())
-  const [semEnd, setSemEnd] = useState(editing?.endDate ?? addDays(isoDate(), 14 * 7 - 1))
+  const [semEnd, setSemEnd] = useState(editing?.endDate ?? addDays(isoDate(), has('clock') ? 3 * 365 : 14 * 7 - 1))
   const [datesTouched, setDatesTouched] = useState(Boolean(editing))
   useEffect(() => {
     if (datesTouched) return

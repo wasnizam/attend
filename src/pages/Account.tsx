@@ -164,8 +164,8 @@ export function Account() {
               className="mt-1 size-4 accent-accent"
             />
             <span>
-              <span className="block text-sm font-medium">{t('We work in shifts')}</span>
-              <span className="block text-xs text-muted">{t('Adds several shifts, people who rotate between them, and a weekly shift plan. Leave it off for ordinary office hours.')}</span>
+              <span className="block text-sm font-medium">{t('We work in shifts', undefined, true)}</span>
+              <span className="block text-xs text-muted">{t('Adds several shifts, people who rotate between them, and a weekly shift plan. Leave it off for ordinary office hours.', undefined, true)}</span>
             </span>
           </label>
         )}

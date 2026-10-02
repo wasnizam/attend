@@ -169,6 +169,12 @@ tablet: anything on today's timetable opens by itself 30 minutes before its star
 the rotating QR, and closes when its window lapses. It needs the manager to be signed in on
 that device, and the page to stay open (it asks the browser to keep the screen awake).
 
+**First-run setup** (`/app/setup`, `src/pages/Setup.tsx`). A workplace with nothing set up is
+sent here from Today. Four steps, each saved as it is completed: company (name, optional
+location), people (staff list with departments), working rules (days, hours, grace, shifts or
+not), and how people clock in (the door screen; phone-only is shown as not available yet,
+because opening a day without a screen needs a server).
+
 **Office first, shifts as an extra.** A workplace starts as a plain office: the menu reads
 "Working hours", the form opens on Monday to Friday, nine to five, and nothing mentions shifts.
 An admin ticks "We work in shifts" on the Account page (`organisations.shifts`, `has('shifts')`)
