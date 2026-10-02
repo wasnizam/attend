@@ -28,6 +28,18 @@ interface ShotRow {
   late?: number
 }
 
+export interface PlanCard {
+  name: string
+  price: string
+  /** What the price is for: "per semester", "a month"… */
+  per: string
+  /** A second way to pay, in small print. */
+  alt?: string
+  items: string[]
+  /** The one we would pick for most people. */
+  best?: boolean
+}
+
 export interface Edition {
   id: EditionId
   /** What the organisation is set up as when someone signs up from this edition. */
@@ -54,10 +66,8 @@ export interface Edition {
   /** The made-up screen in the hero. */
   preview: { title: string; time: string; counted: string; rows: [string, string, string][] }
   orgPlaceholder: string
-  free: string[]
-  pro: string[]
-  /** How the paid plan is charged. */
-  billing: string
+  /** What is on offer, cheapest first. The first one is the free plan. */
+  plans: PlanCard[]
 }
 
 export const EDITIONS: Edition[] = [
@@ -108,9 +118,10 @@ export const EDITIONS: Edition[] = [
     },
     preview: { title: 'DATABASE SYSTEMS', time: '10:00 AM – 12:00 PM', counted: 'PRESENT', rows: [['ST003', 'Kumar', '10:07'], ['ST002', 'Siti', '10:05'], ['ST001', 'Ahmad', '10:03']] },
     orgPlaceholder: 'e.g. Faculty of Computing',
-    free: ['1 class', 'Unlimited students', 'Every feature included'],
-    pro: ['Unlimited classes', 'Unlimited students', 'Every feature included'],
-    billing: 'Per lecturer. Pay by month or by semester.',
+    plans: [
+      { name: 'Free', price: 'RM0', per: 'Free forever', items: ['1 class', 'Unlimited students', 'Every feature included'] },
+      { name: 'Pro', price: 'RM39', per: 'per semester', alt: 'Pay once a semester. No monthly bill.', items: ['Unlimited classes', 'Unlimited students', 'Every feature included'], best: true },
+    ],
   },
   {
     id: 'trainers',
@@ -159,9 +170,10 @@ export const EDITIONS: Edition[] = [
     },
     preview: { title: 'EXCEL FOR MANAGERS', time: '9:00 AM – 5:00 PM', counted: 'PRESENT', rows: [['P003', 'Kumar', '9:07'], ['P002', 'Siti', '9:05'], ['P001', 'Ahmad', '9:03']] },
     orgPlaceholder: 'e.g. Bright Training Sdn Bhd',
-    free: ['1 course', 'Unlimited participants', 'Every feature included'],
-    pro: ['Unlimited courses', 'Unlimited participants', 'Every feature included'],
-    billing: 'Per trainer. Pay by month.',
+    plans: [
+      { name: 'Free', price: 'RM0', per: 'Free forever', items: ['1 course', 'Unlimited participants', 'Every feature included'] },
+      { name: 'Pro', price: 'RM39', per: 'a month', alt: 'Or RM390 a year: 12 months for the price of 10.', items: ['Unlimited courses', 'Unlimited participants', 'Every feature included'], best: true },
+    ],
   },
   {
     id: 'workplace',
@@ -210,9 +222,12 @@ export const EDITIONS: Edition[] = [
     },
     preview: { title: 'MORNING SHIFT', time: '9:00 AM – 6:00 PM', counted: 'IN', rows: [['E003', 'Kumar', '9:07'], ['E002', 'Siti', '8:58'], ['E001', 'Ahmad', '8:55']] },
     orgPlaceholder: 'e.g. Kedai Kopi Maju',
-    free: ['Up to 5 staff', 'Unlimited shifts', 'Every feature included'],
-    pro: ['Unlimited staff', 'Unlimited shifts', 'Every feature included'],
-    billing: 'Per staff member. Pay by month.',
+    plans: [
+      { name: 'Free', price: 'RM0', per: 'Free forever', items: ['Up to 5 staff', 'Unlimited shifts', 'Every feature included'] },
+      { name: 'Pro 20', price: 'RM49', per: 'a month', items: ['Up to 20 staff', 'Unlimited shifts', 'Every feature included'], best: true },
+      { name: 'Pro 50', price: 'RM99', per: 'a month', items: ['Up to 50 staff', 'Unlimited shifts', 'Every feature included'] },
+      { name: 'Pro 100', price: 'RM179', per: 'a month', items: ['Up to 100 staff', 'Unlimited shifts', 'Every feature included'] },
+    ],
   },
 ]
 

@@ -1,4 +1,5 @@
 import type { GeoPoint, Timestamp } from 'firebase/firestore'
+import type { Plan } from './plan'
 import type { Purpose } from './purpose'
 
 export type Role = 'lecturer' | 'admin'
@@ -66,7 +67,13 @@ export interface Organisation {
   /** What the organisation uses Attend for. Missing means education. */
   purpose?: Purpose
   /** What they pay for. Missing means early access (everything open). */
-  plan?: 'early' | 'free' | 'pro'
+  plan?: Plan
+  /** When the 30-day Pro trial began. */
+  trialStarted?: Timestamp | null
+  /** Pro runs until this moment. Written by the payment webhook only. */
+  paidUntil?: Timestamp | null
+  /** Workplace Pro: staff covered by the paid tier. */
+  seats?: number
   name: string
   ownerId: string
   inviteCode: string

@@ -495,11 +495,16 @@ describe('purpose and plan are fixed at sign-up', () => {
     await assertSucceeds(updateDoc(doc(db, 'organisations/orgA'), { name: 'Renamed' }))
     await assertFails(updateDoc(doc(db, 'organisations/orgA'), { purpose: 'workplace' }))
     await assertFails(updateDoc(doc(db, 'organisations/orgA'), { plan: 'pro' }))
+    await assertFails(updateDoc(doc(db, 'organisations/orgA'), { paidUntil: future }))
+    await assertFails(updateDoc(doc(db, 'organisations/orgA'), { trialStarted: serverTimestamp() }))
   })
 
   it('a new organisation picks its purpose but cannot start on a paid plan', async () => {
     const db = as('newbie')
     await assertSucceeds(setDoc(doc(db, 'organisations/orgD'), { name: 'D', ownerId: 'newbie', inviteCode: 'X', purpose: 'workplace', plan: 'early' }))
+    await assertSucceeds(setDoc(doc(db, 'organisations/orgG'), { name: 'G', ownerId: 'newbie', inviteCode: 'X', plan: 'trial', trialStarted: serverTimestamp() }))
+    await assertFails(setDoc(doc(db, 'organisations/orgH'), { name: 'H', ownerId: 'newbie', inviteCode: 'X', plan: 'trial', trialStarted: Timestamp.fromMillis(Date.now() + 86_400_000 * 365) }))
+    await assertFails(setDoc(doc(db, 'organisations/orgI'), { name: 'I', ownerId: 'newbie', inviteCode: 'X', plan: 'early', seats: 100 }))
     await assertFails(setDoc(doc(db, 'organisations/orgE'), { name: 'E', ownerId: 'newbie', inviteCode: 'X', plan: 'pro' }))
     await assertFails(setDoc(doc(db, 'organisations/orgF'), { name: 'F', ownerId: 'newbie', inviteCode: 'X', purpose: 'bank' }))
   })

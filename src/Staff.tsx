@@ -34,8 +34,8 @@ function PurposeGate({ organisationId, children }: { organisationId: string; chi
     () =>
       subscribeOrganisation(organisationId, (org) => {
         setPurpose(org?.purpose)
-        setPlan(org?.plan)
-        setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}`)
+        setPlan(org)
+        setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}:${org?.seats ?? ''}`)
       }),
     [organisationId],
   )

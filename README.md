@@ -135,11 +135,24 @@ own tab with its own words and pricing. Sign-up takes the edition from `?for=` (
 landing page visited), so there is no picker, and the security rules refuse any later change of
 `purpose`. Events still works for organisations that already have it but is not offered.
 
-An organisation also has a `plan` (`early`, `free` or `pro`; missing means `early`).
-`src/lib/plan.ts` holds the free limits (1 class for lecturers and trainers, 5 staff for
-workplace), checked when a class is created or people are added to a list. Everyone is on
-`early` (no limits) until payment exists. The client cannot write `plan`; a payment webhook
-running with admin rights will. The limits are enforced in the app only, not yet in the rules.
+**Plans** (`src/lib/plan.ts`, prices in `src/lib/editions.ts`):
+
+| Edition | Free | Pro |
+|---|---|---|
+| Lecturers | 1 class | RM39 per semester, unlimited classes |
+| Trainers | 1 course | RM39 a month or RM390 a year, unlimited courses |
+| Workplace | 5 staff | RM49 / RM99 / RM179 a month for 20 / 50 / 100 staff |
+
+An organisation stores `plan` (`early`, `trial`, `free`, `pro`), `trialStarted`, `paidUntil` and
+(workplace) `seats`. `activePlan()` works out what applies now: a trial is Pro for 30 days and
+then Free; Pro falls back to Free when `paidUntil` passes; nothing is ever deleted. Limits are
+checked when a class is created or people are added to a list.
+
+Payment is **not connected yet**: `PAYMENTS_OPEN` is `false`, so every sign-up is `early` (no
+limits) and the Upgrade button is disabled. To go live: connect the gateway, have its webhook
+(admin rights) write `plan: 'pro'`, `paidUntil` and `seats`, set `PAYMENTS_OPEN = true`, and
+remove `'early'` from the organisation create rule. The client can never write these fields.
+The limits are enforced in the app only, not yet in the rules.
 
 **Workplace** adds one thing, behind `has('clock')`: clocking out. A second scan of the same QR
 writes `clockouts/{sessionId}_{studentKey}` (a manager can also clock someone out, or undo it).

@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Button, Card, ErrorNote, Field, friendlyError, inputClass } from '../components/ui'
 import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, signOut } from '../data/account'
 import { editionForPurpose } from '../lib/editions'
-import { PLAN_LABEL, getPlan } from '../lib/plan'
+import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, paidUntil, trialDaysLeft } from '../lib/plan'
 import { getPurpose } from '../lib/purpose'
 import { useAuth, useProfile } from '../hooks/useAuth'
-import { LANGS, getLang, setLang, t } from '../lib/i18n'
+import { LANGS, getLang, locale, setLang, t } from '../lib/i18n'
 import type { Organisation } from '../lib/types'
 
 function Saved({ text }: { text: string }) {
@@ -59,7 +59,7 @@ export function Account() {
 
   const verifySave = useSave()
   const edition = editionForPurpose(getPurpose())
-  const plan = getPlan()
+  const plan = activePlan()
 
   const submitPassword = (e: FormEvent) => {
     e.preventDefault()
@@ -163,23 +163,32 @@ export function Account() {
           </div>
           <p className="mt-3 text-sm text-slate-700">
             {plan === 'early'
-              ? t('Everything is free during early access. We will tell you before that changes.')
-              : plan === 'free'
-                ? t('You are on the free plan.')
-                : t('You are on Pro. Thank you.')}
+              ? t('You joined during early access, so everything is free and without limits for now. We will tell you before that changes.')
+              : plan === 'trial'
+                ? t('You have Pro free for {n} more days. After that you move to the free plan; nothing is deleted.', { n: trialDaysLeft() ?? 0 })
+                : plan === 'free'
+                  ? t('You are on the free plan. Your older records stay, ready to view and export.')
+                  : t('You are on Pro until {date}. Thank you.', { date: new Date(paidUntil()?.toMillis() ?? 0).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) ?? '' })}
           </p>
-          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-            {([['Free', edition.free], ['Pro', edition.pro]] as const).map(([name, items]) => (
-              <div key={name} className="rounded-lg bg-canvas px-3 py-2.5">
-                <p className="font-semibold">{t(name)}</p>
-                <ul className="mt-1 space-y-0.5 text-muted">
-                  {items.map((item) => (
-                    <li key={item}>{t(item)}</li>
-                  ))}
-                </ul>
-              </div>
+          <ul className="mt-4 divide-y divide-line rounded-lg border border-line text-sm">
+            {edition.plans.map((p) => (
+              <li key={p.name} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                <span>
+                  <span className="font-semibold">{t(p.name)}</span>
+                  <span className="text-muted"> · {t(p.items[0])}</span>
+                </span>
+                <span className="tabular whitespace-nowrap">
+                  <span className="font-semibold">{p.price}</span> <span className="text-muted">{t(p.per)}</span>
+                </span>
+              </li>
             ))}
-          </div>
+          </ul>
+          {profile.role === 'admin' && plan !== 'pro' && (
+            <div className="mt-4">
+              <Button disabled={!PAYMENTS_OPEN}>{t('Upgrade to Pro')}</Button>
+              {!PAYMENTS_OPEN && <p className="mt-2 text-xs text-muted">{t('Payment is not open yet. You do not need to do anything.')}</p>}
+            </div>
+          )}
         </Card>
       )}
 

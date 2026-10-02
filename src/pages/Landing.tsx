@@ -6,13 +6,14 @@ import { LanguageSwitch } from '../components/LanguageSwitch'
 import { Logo, buttonClass } from '../components/ui'
 import { EDITIONS, type Edition, type EditionId, editionById, rememberEdition } from '../lib/editions'
 import { t } from '../lib/i18n'
+import { PAYMENTS_OPEN } from '../lib/plan'
 import { setPurpose } from '../lib/purpose'
 
 const FAQ = [
   ['Do people need to install an app or make an account?', 'No. They scan the QR with their phone camera and type their ID. That is all.'],
   ['Can someone send the QR to a friend who is not there?', 'With the rotating QR, a photo or a shared link stops working within a minute. Turn on the location check as well to flag or refuse anyone who is somewhere else.'],
   ['What if someone has no phone or no internet?', 'You can mark them present by hand in two taps, during the session or after it.'],
-  ['Is it really free?', 'Yes. Everything is free during early access. After that there will still be a free plan, and we will tell you before anything changes.'],
+  ['Is it really free?', 'Yes. The free plan stays free, and you can do real work on it. You only pay if you need more than it includes.'],
   ['Can I get my data out?', 'Yes. Every list and report can be exported to Excel.'],
 ]
 
@@ -189,35 +190,42 @@ export function Landing({ show }: { show?: EditionId }) {
       </section>
 
       <section id="pricing" className="scroll-mt-16 border-y border-line bg-canvas py-20">
-        <div className="mx-auto max-w-4xl px-5">
+        <div className="mx-auto max-w-6xl px-5">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold text-accent">{t('Pricing')} · {t(edition.label)}</p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t('Start free. Pay only when you need more.')}</h2>
           </div>
-          <div className="mt-12 grid gap-4 sm:grid-cols-2">
-            {([['Free', 'RM0', 'Free forever', edition.free], ['Pro', '', edition.billing, edition.pro]] as const).map(([name, price, billing, items]) => (
-              <div key={name} className={`flex flex-col rounded-2xl bg-white p-7 ${name === 'Pro' ? 'shadow-pop ring-2 ring-accent' : 'shadow-card'}`}>
+          <div className={`mt-12 grid gap-4 sm:grid-cols-2 ${edition.plans.length > 2 ? 'lg:grid-cols-4' : 'mx-auto max-w-4xl'}`}>
+            {edition.plans.map((plan) => (
+              <div key={plan.name} className={`flex flex-col rounded-2xl bg-white p-6 ${plan.best ? 'shadow-pop ring-2 ring-accent' : 'shadow-card'}`}>
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold tracking-tight">{t(name)}</h3>
-                  {name === 'Pro' && <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">{t('Early access')}</span>}
+                  <h3 className="text-lg font-semibold tracking-tight">{t(plan.name)}</h3>
+                  {plan.best && <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-accent">{t('Most popular')}</span>}
                 </div>
-                <p className="tabular mt-4 text-4xl font-semibold tracking-tight">{price || t('Free for now')}</p>
-                <p className="mt-1.5 text-sm text-muted">{t(billing)}</p>
-                <ul className="mt-6 flex-1 space-y-2.5 border-t border-line pt-6 text-sm text-slate-700">
-                  {items.map((item) => (
+                <p className="mt-4 flex items-baseline gap-1.5">
+                  <span className="tabular text-4xl font-semibold tracking-tight">{plan.price}</span>
+                  <span className="text-sm text-muted">{t(plan.per)}</span>
+                </p>
+                <p className="mt-1.5 min-h-5 text-sm text-muted">{plan.alt ? t(plan.alt) : ''}</p>
+                <ul className="mt-5 flex-1 space-y-2.5 border-t border-line pt-5 text-sm text-slate-700">
+                  {plan.items.map((item) => (
                     <li key={item} className="flex gap-2">
                       <span className="text-good" aria-hidden>✓</span>
                       {t(item)}
                     </li>
                   ))}
                 </ul>
-                <Link to={signup} className={`${buttonClass({ size: 'lg', variant: name === 'Pro' ? 'primary' : 'secondary' })} mt-6`}>
+                <Link to={signup} className={`${buttonClass({ size: 'lg', variant: plan.best ? 'primary' : 'secondary' })} mt-6`}>
                   {t('Start Free')}
                 </Link>
               </div>
             ))}
           </div>
-          <p className="mt-6 text-center text-sm text-muted">{t('Early access: everything is free for everyone for now. The Pro price will be announced before that changes.')}</p>
+          <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-balance text-muted">
+            {PAYMENTS_OPEN
+              ? t('Every new account gets Pro free for 30 days. No card needed. Stop paying and your records stay, ready to view and export.')
+              : t('Payment is not open yet, so everything is free for now. When it opens, every account gets Pro free for 30 days first.')}
+          </p>
         </div>
       </section>
 

@@ -1,12 +1,35 @@
 import { type Purpose, getPurpose } from './purpose'
 
 /**
- * What an organisation is paying for. `early` is the launch period: everything is open.
- * `free` has the limits below; `pro` has none. Only the server side may change a plan.
+ * Payment is not connected yet. While this is false every new organisation is created on
+ * `early` (everything open). Turn it on together with the payment gateway: from then on a
+ * new organisation starts a 30-day Pro trial and drops to Free when it ends.
  */
-export type Plan = 'early' | 'free' | 'pro'
+export const PAYMENTS_OPEN = false
+export const TRIAL_DAYS = 30
 
-export const PLAN_LABEL: Record<Plan, string> = { early: 'Early access', free: 'Free', pro: 'Pro' }
+/**
+ * What is stored on the organisation. `early` = joined before payment opened, no limits.
+ * `trial` = Pro until 30 days after `trialStarted`. `pro` = paid, until `paidUntil`.
+ * Only the server side (the payment webhook) may set `pro`, `paidUntil` or `seats`.
+ */
+export type Plan = 'early' | 'trial' | 'free' | 'pro'
+
+/** What applies right now, once dates are taken into account. */
+export type ActivePlan = 'early' | 'trial' | 'free' | 'pro'
+
+export const PLAN_LABEL: Record<ActivePlan, string> = { early: 'Early access', trial: 'Pro trial', free: 'Free', pro: 'Pro' }
+
+interface Stamp {
+  toMillis(): number
+}
+export interface PlanFields {
+  plan?: Plan
+  trialStarted?: Stamp | null
+  paidUntil?: Stamp | null
+  /** Workplace Pro: how many staff the paid tier covers. */
+  seats?: number
+}
 
 /** What the free plan allows. Missing means no limit. */
 const FREE_LIMIT: Record<Purpose, { classes?: number; staff?: number }> = {
@@ -16,16 +39,39 @@ const FREE_LIMIT: Record<Purpose, { classes?: number; staff?: number }> = {
   events: {},
 }
 
-let plan: Plan = 'early'
+const DAY = 86_400_000
+let fields: PlanFields = {}
 
-export const getPlan = () => plan
-export const setPlan = (next: Plan | undefined | null) => {
-  plan = next === 'free' || next === 'pro' ? next : 'early'
+export const setPlan = (org: PlanFields | null | undefined) => {
+  fields = org ?? {}
 }
 
-/** True when the free plan does not allow this many classes (or people on one list). */
+export function activePlan(now = Date.now()): ActivePlan {
+  const { plan, trialStarted, paidUntil } = fields
+  if (plan === 'pro') return paidUntil && paidUntil.toMillis() > now ? 'pro' : 'free'
+  if (plan === 'trial') return trialStarted && trialStarted.toMillis() + TRIAL_DAYS * DAY > now ? 'trial' : 'free'
+  if (plan === 'free') return 'free'
+  return 'early'
+}
+
+/** Whole days left of the Pro trial, or null when not on one. */
+export function trialDaysLeft(now = Date.now()): number | null {
+  if (activePlan(now) !== 'trial' || !fields.trialStarted) return null
+  return Math.max(1, Math.ceil((fields.trialStarted.toMillis() + TRIAL_DAYS * DAY - now) / DAY))
+}
+
+export const paidUntil = () => (activePlan() === 'pro' ? fields.paidUntil ?? null : null)
+
+/** The most classes, or people on one list, the current plan allows. Undefined = no limit. */
+export function limitFor(kind: 'classes' | 'staff'): number | undefined {
+  const active = activePlan()
+  if (active === 'free') return FREE_LIMIT[getPurpose()][kind]
+  // Paid workplace plans are sold by size.
+  if (active === 'pro' && kind === 'staff' && getPurpose() === 'workplace') return fields.seats
+  return undefined
+}
+
 export function overLimit(kind: 'classes' | 'staff', count: number): boolean {
-  if (plan !== 'free') return false
-  const max = FREE_LIMIT[getPurpose()][kind]
+  const max = limitFor(kind)
   return max !== undefined && count > max
 }

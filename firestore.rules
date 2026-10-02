@@ -42,7 +42,9 @@ service cloud.firestore {
         && request.resource.data.name.size() <= 100
         // What it is for is chosen once, at sign-up. Nobody starts on a paid plan.
         && request.resource.data.get('purpose', 'education') in ['education', 'training', 'events', 'workplace']
-        && request.resource.data.get('plan', 'early') == 'early';
+        && (request.resource.data.get('plan', 'early') == 'early'
+            || (request.resource.data.plan == 'trial' && request.resource.data.trialStarted == request.time))
+        && !('paidUntil' in request.resource.data) && !('seats' in request.resource.data);
       // The purpose and the plan are what the customer pays for: not theirs to change.
       allow update: if adminOf(orgId)
         && onlyChanges(['name'])
