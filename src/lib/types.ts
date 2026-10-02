@@ -68,7 +68,7 @@ export interface Organisation {
   purpose?: Purpose
   /** What they pay for. Missing means early access (everything open). */
   plan?: Plan
-  /** When the 30-day Pro trial began. */
+  /** When the 14-day Pro trial began. */
   trialStarted?: Timestamp | null
   /** Pro runs until this moment. Written by the payment webhook only. */
   paidUntil?: Timestamp | null
