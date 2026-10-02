@@ -38,7 +38,8 @@ const record = (sessionId: string, key: string, extra = {}) => ({
 
 beforeAll(async () => {
   env = await initializeTestEnvironment({
-    projectId: 'demo-attendance',
+    // Its own project, so a test run never wipes the data of an app using the same emulator.
+    projectId: 'demo-attendance-test',
     firestore: { rules: readFileSync('firestore.rules', 'utf8'), host: '127.0.0.1', port: 8080 },
   })
 })
@@ -485,5 +486,57 @@ describe('sign-up', () => {
   it("cannot make itself admin of someone else's organisation", async () => {
     await assertFails(setDoc(doc(as('intruder'), 'users/intruder'), profile('admin', 'orgA')))
     await assertFails(setDoc(doc(as('intruder'), 'users/intruder'), profile('admin', 'orgA', { inviteCode: 'INVITEAA' })))
+  })
+})
+
+describe('purpose and plan are fixed at sign-up', () => {
+  it('an admin can rename the organisation but not change what it is for or its plan', async () => {
+    const db = as('adminA')
+    await assertSucceeds(updateDoc(doc(db, 'organisations/orgA'), { name: 'Renamed' }))
+    await assertFails(updateDoc(doc(db, 'organisations/orgA'), { purpose: 'workplace' }))
+    await assertFails(updateDoc(doc(db, 'organisations/orgA'), { plan: 'pro' }))
+  })
+
+  it('a new organisation picks its purpose but cannot start on a paid plan', async () => {
+    const db = as('newbie')
+    await assertSucceeds(setDoc(doc(db, 'organisations/orgD'), { name: 'D', ownerId: 'newbie', inviteCode: 'X', purpose: 'workplace', plan: 'early' }))
+    await assertFails(setDoc(doc(db, 'organisations/orgE'), { name: 'E', ownerId: 'newbie', inviteCode: 'X', plan: 'pro' }))
+    await assertFails(setDoc(doc(db, 'organisations/orgF'), { name: 'F', ownerId: 'newbie', inviteCode: 'X', purpose: 'bank' }))
+  })
+})
+
+describe('clock-out (workplace)', () => {
+  const out = (key: string, extra = {}) => ({
+    sessionId: 'live', organisationId: 'orgA', ownerId: 'lecA', studentKey: key, token: 'ABC234', by: 'self', timestamp: serverTimestamp(), ...extra,
+  })
+  const byManager = (uid: string, key: string) => ({
+    sessionId: 'live', organisationId: 'orgA', ownerId: 'lecA', studentKey: key, by: uid, timestamp: serverTimestamp(),
+  })
+
+  it('someone who clocked in can clock out once, with the session token', async () => {
+    await assertSucceeds(setDoc(doc(anon(), 'clockouts/live_ST001'), out('ST001')))
+    await assertFails(setDoc(doc(anon(), 'clockouts/live_ST001'), out('ST001')))
+    await assertSucceeds(getDoc(doc(anon(), 'clockouts/live_ST001')))
+  })
+
+  it('refuses a clock-out without a clock-in, with a wrong token, or with a made-up time', async () => {
+    await assertFails(setDoc(doc(anon(), 'clockouts/live_ST009'), out('ST009')))
+    await assertFails(setDoc(doc(anon(), 'clockouts/live_ST001'), out('ST001', { token: 'WRONG1' })))
+    await assertFails(setDoc(doc(anon(), 'clockouts/live_ST001'), out('ST001', { timestamp: Timestamp.fromMillis(Date.now() - 3600_000) })))
+  })
+
+  it('needs a fresh code when the QR rotates', async () => {
+    await env.withSecurityRulesDisabled((ctx) => updateDoc(doc(ctx.firestore(), 'sessions/live'), { qrCode: 'AAAAA', qrCodePrev: 'BBBBB' }))
+    await assertFails(setDoc(doc(anon(), 'clockouts/live_ST001'), out('ST001')))
+    await assertFails(setDoc(doc(anon(), 'clockouts/live_ST001'), out('ST001', { code: 'ZZZZZ' })))
+    await assertSucceeds(setDoc(doc(anon(), 'clockouts/live_ST001'), out('ST001', { code: 'BBBBB' })))
+  })
+
+  it('the manager can clock someone out and undo it; a colleague cannot', async () => {
+    await assertFails(setDoc(doc(as('lecA2'), 'clockouts/live_ST001'), byManager('lecA2', 'ST001')))
+    await assertSucceeds(setDoc(doc(as('lecA'), 'clockouts/live_ST001'), byManager('lecA', 'ST001')))
+    await assertFails(deleteDoc(doc(as('lecA2'), 'clockouts/live_ST001')))
+    await assertFails(deleteDoc(doc(anon(), 'clockouts/live_ST001')))
+    await assertSucceeds(deleteDoc(doc(as('lecA'), 'clockouts/live_ST001')))
   })
 })

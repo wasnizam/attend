@@ -6,7 +6,8 @@ import { Button, Card, ErrorNote, Field, Logo, PageLoader, friendlyError } from 
 import { createAccount, createOrganisationProfile, joinOrganisationProfile, lookupInvite, signOut } from '../data/account'
 import { useAuth } from '../hooks/useAuth'
 import { t } from '../lib/i18n'
-import { PURPOSES, type Purpose } from '../lib/purpose'
+import { editionById, rememberEdition, rememberedEdition } from '../lib/editions'
+import { setPurpose } from '../lib/purpose'
 
 export function Signup() {
   const { loading, user, profile } = useAuth()
@@ -16,7 +17,10 @@ export function Signup() {
   const [inviteOrg, setInviteOrg] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [organisation, setOrganisation] = useState('')
-  const [purpose, setPurposeChoice] = useState<Purpose>('education')
+  // The landing page they came from decides what they are signing up for. There is no picker,
+  // and it cannot be changed afterwards.
+  const edition = editionById(params.get('for')) ?? rememberedEdition()
+  useEffect(() => rememberEdition(edition.id), [edition])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -41,6 +45,8 @@ export function Signup() {
     if (user?.displayName) setName((n) => n || user.displayName || '')
   }, [user])
 
+  if (!profile) setPurpose(edition.purpose)
+
   // While submitting, keep the form (with its busy button) on screen instead of flashing a loader.
   if (loading && !busy) return <PageLoader />
   if (user && profile) return <Navigate to="/app" replace />
@@ -59,7 +65,7 @@ export function Signup() {
         await createAccount(name, email, password)
       }
       if (joining) await joinOrganisationProfile(name, code)
-      else await createOrganisationProfile(name, organisation || `${name.trim()}'s sessions`, purpose)
+      else await createOrganisationProfile(name, organisation || `${name.trim()}'s sessions`, edition.purpose)
     } catch (err) {
       setError(friendlyError(err))
       setBusy(false)
@@ -77,31 +83,18 @@ export function Signup() {
         <p className="mt-1 text-sm text-muted">
           {joining ? t('Join your organisation as a lecturer.') : t('Free to start. Ready in under a minute.')}
         </p>
+        {!joining && (
+          <p className="mt-3 rounded-lg bg-canvas px-3 py-2 text-sm">
+            <span className="font-semibold">Attend · {t(edition.label)}</span>{' '}
+            <Link to="/" className="font-medium text-accent">{t('Not you? See the others')}</Link>
+          </p>
+        )}
         {!finishing && (
           <div className="mt-6">
             <GoogleButton onError={setError} />
           </div>
         )}
         <form onSubmit={submit} className="mt-4 space-y-4">
-          {!joining && (
-            <fieldset>
-              <legend className="mb-1.5 text-sm font-medium">{t('What will you use Attend for?')}</legend>
-              <div className="space-y-1.5">
-                {PURPOSES.map((p) => (
-                  <label
-                    key={p.id}
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2.5 transition ${purpose === p.id ? 'bg-accent-soft ring-1 ring-indigo-300 ring-inset' : 'shadow-card hover:bg-slate-50'}`}
-                  >
-                    <input type="radio" name="purpose" checked={purpose === p.id} onChange={() => setPurposeChoice(p.id)} className="mt-1 accent-accent" />
-                    <span>
-                      <span className="block text-sm font-semibold">{t(p.label)}</span>
-                      <span className="block text-xs text-muted">{t(p.text)}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          )}
           <Field label={t('Your name')} autoComplete="name" required maxLength={80} value={name} onChange={(e) => setName(e.target.value)} />
           {joining ? (
             <div>
@@ -119,7 +112,7 @@ export function Signup() {
             <Field
               label={t('Organisation')}
               hint={t('Optional')}
-              placeholder={t('e.g. Faculty of Computing')}
+              placeholder={t(edition.orgPlaceholder)}
               maxLength={100}
               value={organisation}
               onChange={(e) => setOrganisation(e.target.value)}

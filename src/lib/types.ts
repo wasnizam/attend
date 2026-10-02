@@ -65,6 +65,8 @@ export interface Organisation {
   id: string
   /** What the organisation uses Attend for. Missing means education. */
   purpose?: Purpose
+  /** What they pay for. Missing means early access (everything open). */
+  plan?: 'early' | 'free' | 'pro'
   name: string
   ownerId: string
   inviteCode: string

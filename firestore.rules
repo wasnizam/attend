@@ -39,10 +39,13 @@ service cloud.firestore {
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 100;
-      allow update: if adminOf(orgId)
-        && onlyChanges(['name', 'purpose'])
+        && request.resource.data.name.size() <= 100
+        // What it is for is chosen once, at sign-up. Nobody starts on a paid plan.
         && request.resource.data.get('purpose', 'education') in ['education', 'training', 'events', 'workplace']
+        && request.resource.data.get('plan', 'early') == 'early';
+      // The purpose and the plan are what the customer pays for: not theirs to change.
+      allow update: if adminOf(orgId)
+        && onlyChanges(['name'])
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 100;

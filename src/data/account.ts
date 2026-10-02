@@ -74,8 +74,6 @@ export function subscribeOrganisation(id: string, onData: (org: Organisation | n
   )
 }
 
-export const setOrganisationPurpose = (id: string, purpose: Purpose) => updateDoc(doc(db, 'organisations', id), { purpose })
-
 export async function renameOrganisation(org: Organisation, name: string) {
   await updateDoc(doc(db, 'organisations', org.id), { name: name.trim() })
   // Keeps the name shown to people joining with the invite link in step.
@@ -92,6 +90,7 @@ export async function createOrganisationProfile(name: string, organisationName: 
     name: organisationName.trim(),
     ownerId: user.uid,
     purpose,
+    plan: 'early',
     inviteCode,
     createdAt: serverTimestamp(),
   })

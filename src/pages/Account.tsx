@@ -1,8 +1,10 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, ErrorNote, Field, friendlyError, inputClass } from '../components/ui'
-import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, setOrganisationPurpose, signOut } from '../data/account'
-import { PURPOSES, type Purpose, getPurpose } from '../lib/purpose'
+import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, signOut } from '../data/account'
+import { editionForPurpose } from '../lib/editions'
+import { PLAN_LABEL, getPlan } from '../lib/plan'
+import { getPurpose } from '../lib/purpose'
 import { useAuth, useProfile } from '../hooks/useAuth'
 import { LANGS, getLang, setLang, t } from '../lib/i18n'
 import type { Organisation } from '../lib/types'
@@ -56,7 +58,8 @@ export function Account() {
   }, [profile.organisationId])
 
   const verifySave = useSave()
-  const purposeSave = useSave()
+  const edition = editionForPurpose(getPurpose())
+  const plan = getPlan()
 
   const submitPassword = (e: FormEvent) => {
     e.preventDefault()
@@ -144,28 +147,41 @@ export function Account() {
         ) : (
           <p className="mt-2 text-muted">{org?.name ?? '—'}</p>
         )}
-        {profile.role === 'admin' && org && (
-          <label className="mt-5 block border-t border-line pt-4">
-            <span className="mb-1.5 block text-sm font-medium">{t('What you use Attend for')}</span>
-            <select
-              value={getPurpose()}
-              onChange={(e) => purposeSave.run(() => setOrganisationPurpose(org.id, e.target.value as Purpose), '')}
-              className={inputClass}
-            >
-              {PURPOSES.map((p) => (
-                <option key={p.id} value={p.id}>{t(p.label)}</option>
-              ))}
-            </select>
-            <span className="mt-1.5 block text-xs text-muted">
-              {t('This changes the words and the features everyone in your organisation sees. Nothing is deleted.')}
-            </span>
-            <ErrorNote>{purposeSave.error}</ErrorNote>
-          </label>
-        )}
         <p className="mt-3 text-sm text-muted">
           {t('Your role')}: <span className="font-medium text-ink">{profile.role === 'admin' ? t('Admin') : t('Lecturer')}</span>
         </p>
       </Card>
+
+      {edition && (
+        <Card className="p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-semibold">{t('Your plan')}</h2>
+              <p className="mt-0.5 text-sm text-muted">Attend · {t(edition.label)}</p>
+            </div>
+            <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">{t(PLAN_LABEL[plan])}</span>
+          </div>
+          <p className="mt-3 text-sm text-slate-700">
+            {plan === 'early'
+              ? t('Everything is free during early access. We will tell you before that changes.')
+              : plan === 'free'
+                ? t('You are on the free plan.')
+                : t('You are on Pro. Thank you.')}
+          </p>
+          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+            {([['Free', edition.free], ['Pro', edition.pro]] as const).map(([name, items]) => (
+              <div key={name} className="rounded-lg bg-canvas px-3 py-2.5">
+                <p className="font-semibold">{t(name)}</p>
+                <ul className="mt-1 space-y-0.5 text-muted">
+                  {items.map((item) => (
+                    <li key={item}>{t(item)}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card className="p-5 sm:p-6">
         <label className="block">

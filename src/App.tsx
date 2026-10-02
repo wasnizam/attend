@@ -33,6 +33,10 @@ export function App() {
     <Suspense fallback={<PageLoader />}>
       <Routes key={lang}>
         <Route path="/" element={<Landing />} />
+        {/* One page, three doors: each group has its own address to share. */}
+        <Route path="/lecturers" element={<Landing show="lecturers" />} />
+        <Route path="/trainers" element={<Landing show="trainers" />} />
+        <Route path="/workplace" element={<Landing show="workplace" />} />
         <Route element={<NeedsFirebase />}>
           <Route path="/session/:token" element={<Attend />} />
           <Route path="/*" element={<Staff />} />

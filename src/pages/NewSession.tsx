@@ -7,6 +7,7 @@ import { useProfile } from '../hooks/useAuth'
 import { useMyClasses } from '../hooks/useClasses'
 import { KINDS, KIND_LABEL, WEEK, addDays, classSlots, dayName, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
+import { overLimit } from '../lib/plan'
 import { has } from '../lib/purpose'
 import type { ClassKind, Delivery, Slot, WeeklyClass } from '../lib/types'
 
@@ -121,6 +122,10 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
         await updateClass(editing.id, { ...details, kind, slots, startDate: semStart, endDate: semEnd })
         navigate('/app/timetable')
       } else if (weekly) {
+        if (overLimit('classes', (myClasses?.length ?? 0) + 1)) {
+          setBusy(false)
+          return setError(t('The free plan includes 1 class. Upgrade to Pro to add more.'))
+        }
         const id = await createClass(profile, { ...details, kind, slots, startDate: semStart, endDate: semEnd })
         navigate(`/app/timetable/${id}/students`)
       } else {

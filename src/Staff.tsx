@@ -3,7 +3,8 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { Button, PageLoader } from './components/ui'
 import { signOut, subscribeOrganisation } from './data/account'
-import { type Purpose, setPurpose } from './lib/purpose'
+import { setPlan } from './lib/plan'
+import { setPurpose } from './lib/purpose'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { MySessionsProvider } from './hooks/useSessions'
 import { t } from './lib/i18n'
@@ -28,12 +29,13 @@ import { Timetable } from './pages/Timetable'
  * redraws everything if an admin changes it. The purpose picks the words and features.
  */
 function PurposeGate({ organisationId, children }: { organisationId: string; children: ReactNode }) {
-  const [purpose, setLoaded] = useState<Purpose | null>(null)
+  const [purpose, setLoaded] = useState<string | null>(null)
   useEffect(
     () =>
       subscribeOrganisation(organisationId, (org) => {
         setPurpose(org?.purpose)
-        setLoaded(org?.purpose ?? 'education')
+        setPlan(org?.plan)
+        setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}`)
       }),
     [organisationId],
   )

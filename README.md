@@ -128,6 +128,19 @@ chosen at sign-up and changeable by an admin under Account. It decides two thing
   need: events have no timetable, class reports, class type, 80% rule or MC; training keeps
   repeating courses and MC but not class type or the barring ladder.
 
+**Editions and plans.** Attend is sold as one brand in three editions (`src/lib/editions.ts`):
+Lecturers (`/lecturers`, purpose `education`), Trainers (`/trainers`, `training`) and Workplace
+(`/workplace`, `workplace`). It is one landing page with a switch; each address opens it on its
+own tab with its own words and pricing. Sign-up takes the edition from `?for=` (or the last
+landing page visited), so there is no picker, and the security rules refuse any later change of
+`purpose`. Events still works for organisations that already have it but is not offered.
+
+An organisation also has a `plan` (`early`, `free` or `pro`; missing means `early`).
+`src/lib/plan.ts` holds the free limits (1 class for lecturers and trainers, 5 staff for
+workplace), checked when a class is created or people are added to a list. Everyone is on
+`early` (no limits) until payment exists. The client cannot write `plan`; a payment webhook
+running with admin rights will. The limits are enforced in the app only, not yet in the rules.
+
 **Workplace** adds one thing, behind `has('clock')`: clocking out. A second scan of the same QR
 writes `clockouts/{sessionId}_{studentKey}` (a manager can also clock someone out, or undo it).
 Hours are clock-out minus clock-in; lateness is worked out from the clock-in time (more than

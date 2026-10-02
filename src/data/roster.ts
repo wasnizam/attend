@@ -1,3 +1,5 @@
+import { t } from '../lib/i18n'
+import { overLimit } from '../lib/plan'
 import { collection, doc, getDoc, getDocs, increment, onSnapshot, query, where, writeBatch } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { studentKey } from '../lib/format'
@@ -43,6 +45,7 @@ const BATCH = 400
 export async function addToRoster(cls: WeeklyClass, entries: RosterEntry[], existing: RosterEntry[]) {
   const known = new Set(existing.map((e) => e.studentKey))
   const added = entries.filter((e) => !known.has(e.studentKey)).length
+  if (added > 0 && overLimit('staff', existing.length + added)) throw new Error(t('The free plan includes up to 5 staff. Upgrade to Pro to add more.'))
   for (let i = 0; i < entries.length; i += BATCH) {
     const batch = writeBatch(db)
     for (const e of entries.slice(i, i + BATCH)) {

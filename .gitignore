@@ -9,3 +9,4 @@ firestore-debug.log
 .vercel
 firebase-debug.log
 ui-debug.log
+.env.*.local

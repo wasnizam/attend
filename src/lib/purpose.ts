@@ -1,6 +1,7 @@
 /**
  * What an organisation uses Attend for. One engine serves all of them; the purpose only
- * decides which words are used and which features are shown.
+ * decides which words are used and which features are shown. It is chosen by the landing
+ * page someone signs up from (see editions.ts) and cannot be changed afterwards.
  */
 export type Purpose = 'education' | 'training' | 'events' | 'workplace'
 
@@ -66,6 +67,7 @@ const TERMS: Record<'en' | 'ms', Partial<Record<Purpose, Swap[]>>> = {
       ['Past sessions', 'Past events'], ['sessions', 'events'], ['Sessions', 'Events'], ['session', 'event'], ['Session', 'Event'],
     ]),
     workplace: swaps([
+      ['Add the classes you teach this semester once', 'Add your shifts once'],
       ['Your classes this semester', 'Your shifts'],
       ['Attendance for each class this semester', 'Attendance for each shift'],
       ['Scan this QR to mark attendance', 'Scan to clock in or out'],
@@ -98,6 +100,7 @@ const TERMS: Record<'en' | 'ms', Partial<Record<Purpose, Swap[]>>> = {
       ['Sesi', 'Acara'], ['sesi', 'acara'],
     ]),
     workplace: swaps([
+      ['Tambah kelas yang anda ajar semester ini sekali sahaja', 'Tambah syif anda sekali sahaja'],
       ['Kehadiran Disahkan', 'Rekod masuk berjaya'], ['Sahkan Kehadiran', 'Rekod masuk atau keluar'],
       ['Mula Kehadiran', 'Buka rekod masuk'], ['Tamat Kehadiran', 'Tutup untuk hari ini'],
       ['Kelas semester', 'Syif'], ['kelas semester', 'syif'], ['Semester lepas', 'Syif lepas'],
