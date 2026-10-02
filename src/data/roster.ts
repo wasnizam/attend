@@ -17,10 +17,10 @@ export function subscribeRoster(
   onData: (roster: RosterEntry[]) => void,
   onError: (e: Error) => void,
 ) {
-  const constraints = [where('organisationId', '==', organisationId)]
-  if (viewer.role !== 'admin') constraints.push(where('ownerId', '==', viewer.id))
+  // The rules allow whoever manages the class now (or an admin) to read its list.
+  void viewer
   return onSnapshot(
-    query(students(rosterId), ...constraints),
+    query(students(rosterId), where('organisationId', '==', organisationId)),
     (snap) =>
       onData(
         snap.docs
@@ -33,9 +33,8 @@ export function subscribeRoster(
 
 /** One-off read of a class list, for reports that cover several classes at once. */
 export async function fetchRoster(rosterId: string, organisationId: string, viewer: UserProfile): Promise<RosterEntry[]> {
-  const constraints = [where('organisationId', '==', organisationId)]
-  if (viewer.role !== 'admin') constraints.push(where('ownerId', '==', viewer.id))
-  const snap = await getDocs(query(students(rosterId), ...constraints))
+  void viewer
+  const snap = await getDocs(query(students(rosterId), where('organisationId', '==', organisationId)))
   return snap.docs.map((d) => d.data() as RosterEntry)
 }
 
@@ -49,7 +48,7 @@ async function staffElsewhere(cls: WeeklyClass): Promise<Set<string>> {
   await Promise.all(
     lists.docs
       .filter((d) => d.id !== cls.id)
-      .map(async (d) => (await getDocs(query(students(d.id), ...mine))).forEach((s) => keys.add(s.id))),
+      .map(async (d) => (await getDocs(query(students(d.id), where('organisationId', '==', cls.organisationId)))).forEach((s) => keys.add(s.id))),
   )
   return keys
 }

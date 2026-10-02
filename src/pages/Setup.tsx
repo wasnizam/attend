@@ -11,7 +11,8 @@ import { useRoster } from '../hooks/useRoster'
 import { WEEK, addDays, classSlots, dayName, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import { has } from '../lib/purpose'
-import type { Organisation, WeeklyClass } from '../lib/types'
+import { DEFAULT_RADIUS, RADII } from '../lib/geo'
+import type { GeoMode, Organisation, WeeklyClass } from '../lib/types'
 
 const STEP_KEY = 'attend.setup.step'
 const STEPS = ['Your company', 'Your people', 'Working rules', 'Clocking in']
@@ -199,6 +200,19 @@ function Company({ org, offices, busy, onNext }: { org: Organisation; offices: W
   const [rows, setRows] = useState<OfficeRow[]>(() =>
     offices.length ? offices.map((c) => ({ id: c.id, name: c.venue || c.name, fence: undefined })) : [{ name: t('Main office'), fence: undefined }],
   )
+  // One distance and one rule for every office: simpler to set, and to explain to staff.
+  const [radius, setRadius] = useState(offices.find((c) => c.geoPoint)?.geoRadius ?? DEFAULT_RADIUS)
+  const [mode, setMode] = useState<GeoMode>(offices.find((c) => c.geoPoint)?.geoMode ?? 'flag')
+  const located = rows.some((r) => r.fence || (r.fence === undefined && offices.find((c) => c.id === r.id)?.geoPoint))
+  const finish = () =>
+    onNext(
+      name,
+      rows.map((r) => {
+        const kept = offices.find((c) => c.id === r.id)?.geoPoint
+        const point = r.fence ? r.fence : r.fence === undefined && kept ? { lat: kept.latitude, lng: kept.longitude } : null
+        return { ...r, fence: point ? { lat: point.lat, lng: point.lng, radius, mode } : r.fence }
+      }),
+    )
   const patch = (i: number, change: Partial<OfficeRow>) => setRows((cur) => cur.map((r, j) => (j === i ? { ...r, ...change } : r)))
 
   return (
@@ -220,15 +234,35 @@ function Company({ org, offices, busy, onNext }: { org: Organisation; offices: W
                   <button type="button" aria-label={t('Remove')} onClick={() => setRows((cur) => cur.filter((_, j) => j !== i))} className="size-12 rounded-md text-muted hover:bg-bad-soft hover:text-bad">×</button>
                 )}
               </div>
-              <LocationPicker stored={offices.find((c) => c.id === row.id)} onChange={(fence) => patch(i, { fence })} />
+              <LocationPicker pointOnly stored={offices.find((c) => c.id === row.id)} onChange={(fence) => patch(i, { fence })} />
             </div>
           ))}
         </div>
         <button type="button" onClick={() => setRows((cur) => [...cur, { name: '', fence: undefined }])} disabled={rows.length >= 20} className="mt-3 text-sm font-medium text-accent">
           {t('+ Add another office')}
         </button>
+        {located && (
+          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-4">
+            <label className="block text-xs font-medium text-muted">
+              {t('How far still counts')}
+              <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} className={`${inputClass} mt-1`}>
+                {RADII.map((r) => (
+                  <option key={r} value={r}>{r} m</option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-xs font-medium text-muted">
+              {t('From further away')}
+              <select value={mode} onChange={(e) => setMode(e.target.value as GeoMode)} className={`${inputClass} mt-1`}>
+                <option value="flag">{t('Flag it for me')}</option>
+                <option value="block">{t('Refuse check-in')}</option>
+              </select>
+            </label>
+            {rows.length > 1 && <p className="col-span-2 text-xs text-muted">{t('The same for every office. One office can be set differently later, under Working hours.')}</p>}
+          </div>
+        )}
       </div>
-      <Button block size="lg" busy={busy} disabled={!name.trim() || rows.some((r) => !r.name.trim())} onClick={() => onNext(name, rows)}>{t('Continue')}</Button>
+      <Button block size="lg" busy={busy} disabled={!name.trim() || rows.some((r) => !r.name.trim())} onClick={finish}>{t('Continue')}</Button>
     </Card>
   )
 }

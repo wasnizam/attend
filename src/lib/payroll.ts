@@ -11,6 +11,8 @@ export interface PayrollRow {
   staffId: string
   name: string
   department: string
+  /** The office (or branch) whose staff list they are on. */
+  office: string
   /** Days they clocked in. */
   days: number
   /** Minutes between clock-in and clock-out, added up, overtime included. */
@@ -39,18 +41,21 @@ export function buildPayroll(
   rosters: Map<string, RosterEntry[]>,
   /** Weekly shift plans. A planned week is checked day by day; an unplanned one by days per week. */
   plans: ShiftPlan[] = [],
+  /** Staff list ID -> the name of the office it belongs to. */
+  offices: Map<string, string> = new Map(),
 ): PayrollRow[] {
   const people = new Map<string, PayrollRow>()
   const person = (key: string, staffId: string, name: string) => {
     if (!people.has(key)) {
-      people.set(key, { key, staffId, name, department: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, wrongShift: 0 })
+      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, wrongShift: 0 })
     }
     return people.get(key)!
   }
-  for (const list of rosters.values()) {
+  for (const [listId, list] of rosters) {
     for (const s of list) {
       const row = person(s.studentKey, s.studentId, s.studentName)
       if (s.department && !row.department) row.department = s.department
+      if (!row.office) row.office = offices.get(listId) ?? ''
     }
   }
   // A list is a rotating pool when any shift using it rotates. Its people are measured by the
@@ -122,7 +127,7 @@ export function buildPayroll(
       }
     }
   }
-  return [...people.values()].sort((a, b) => a.department.localeCompare(b.department) || a.name.localeCompare(b.name))
+  return [...people.values()].sort((a, b) => a.office.localeCompare(b.office) || a.department.localeCompare(b.department) || a.name.localeCompare(b.name))
 }
 
 /** Minutes as decimal hours, the way a spreadsheet wants them. */

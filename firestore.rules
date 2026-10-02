@@ -160,8 +160,15 @@ service cloud.firestore {
 
       allow update: if memberOf(resource.data.organisationId)
         && resource.data.ownerId == request.auth.uid
-        && unchanged(['ownerId', 'organisationId', 'createdAt'])
-        && validClass();
+        && validClass()
+        && (
+          unchanged(['ownerId', 'organisationId', 'createdAt'])
+          // Handing an office over to a colleague: nothing else changes, and the new manager
+          // must be an active member of the same organisation.
+          || (onlyChanges(['ownerId', 'ownerName'])
+              && get(/databases/$(database)/documents/users/$(request.resource.data.ownerId)).data.organisationId == resource.data.organisationId
+              && get(/databases/$(database)/documents/users/$(request.resource.data.ownerId)).data.status == 'active')
+        );
 
       allow delete: if memberOf(resource.data.organisationId)
         && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
@@ -171,8 +178,9 @@ service cloud.firestore {
     // name); only the class owner or an admin can see or change the list.
     match /rosters/{rosterId}/students/{key} {
       allow get: if true;
+      // A list belongs to whoever manages its class now, so it follows an office that is handed over.
       allow list: if memberOf(resource.data.organisationId)
-        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+        && (get(/databases/$(database)/documents/classes/$(rosterId)).data.ownerId == request.auth.uid || me().role == 'admin');
 
       allow create, update: if memberOf(request.resource.data.organisationId)
         && request.resource.data.ownerId == request.auth.uid
@@ -187,7 +195,7 @@ service cloud.firestore {
         && request.resource.data.studentName.size() > 0 && request.resource.data.studentName.size() <= 80;
 
       allow delete: if memberOf(resource.data.organisationId)
-        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+        && (get(/databases/$(database)/documents/classes/$(rosterId)).data.ownerId == request.auth.uid || me().role == 'admin');
     }
 
     function validClass() {
@@ -317,7 +325,7 @@ service cloud.firestore {
     // A manager's weekly plan of who works which shift. Private to the manager and admins.
     match /plans/{planId} {
       allow read, delete: if memberOf(resource.data.organisationId)
-        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+        && (get(/databases/$(database)/documents/classes/$(resource.data.rosterId)).data.ownerId == request.auth.uid || me().role == 'admin');
       allow create, update: if memberOf(request.resource.data.organisationId)
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.keys().hasOnly(['organisationId', 'ownerId', 'rosterId', 'week', 'cells', 'updatedAt'])

@@ -230,7 +230,7 @@ describe('weekly timetable', () => {
     await assertFails(setDoc(doc(db, 'classes/c4'), cls('lecA', 'orgA', { days: [] })))
     await assertFails(setDoc(doc(db, 'classes/c5'), cls('lecA', 'orgA', { days: [9] })))
     await assertFails(setDoc(doc(db, 'classes/c6'), cls('lecA', 'orgA', { slots: [] })))
-    await assertFails(updateDoc(doc(db, 'classes/c1'), { ownerId: 'lecA2' }))
+    await assertFails(updateDoc(doc(db, 'classes/c1'), { ownerId: 'lecB' }))
     await assertFails(getDoc(doc(as('lecA2'), 'classes/c1')))
     await assertFails(updateDoc(doc(as('lecA2'), 'classes/c1'), { name: 'X' }))
     await assertFails(getDoc(doc(as('adminB'), 'classes/c1')))
@@ -584,5 +584,37 @@ describe('shift plans', () => {
     await assertFails(getDoc(doc(as('lecA2'), 'plans/shift_2026-10-05')))
     await assertFails(getDoc(doc(anon(), 'plans/shift_2026-10-05')))
     await assertFails(getDoc(doc(as('adminB'), 'plans/shift_2026-10-05')))
+  })
+})
+
+describe('handing an office to a branch manager', () => {
+  const office = { organisationId: 'orgA', ownerId: 'lecA', ownerName: 'N', name: 'Penang', slots: [{ day: 1, startTime: '09:00', endTime: '17:00' }], days: [1] }
+  const entry = (owner: string) => ({ studentKey: 'E001', studentId: 'E001', studentName: 'Ahmad', organisationId: 'orgA', ownerId: owner })
+  const list = (uid: string) => getDocs(query(collection(as(uid), 'rosters/office/students'), where('organisationId', '==', 'orgA')))
+  beforeEach(() =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'classes/office'), office)
+      await setDoc(doc(ctx.firestore(), 'rosters/office/students/E001'), entry('lecA'))
+    }),
+  )
+
+  it('only to an active colleague in the same organisation, and nothing else may change with it', async () => {
+    await assertFails(updateDoc(doc(as('lecA'), 'classes/office'), { ownerId: 'lecB', ownerName: 'B' }))
+    await assertFails(updateDoc(doc(as('lecA'), 'classes/office'), { ownerId: 'offA', ownerName: 'Off' }))
+    await assertFails(updateDoc(doc(as('lecA'), 'classes/office'), { ownerId: 'lecA2', ownerName: 'A2', organisationId: 'orgB' }))
+    await assertFails(updateDoc(doc(as('lecA2'), 'classes/office'), { ownerId: 'lecA2', ownerName: 'A2' }))
+    await assertSucceeds(updateDoc(doc(as('lecA'), 'classes/office'), { ownerId: 'lecA2', ownerName: 'A2' }))
+  })
+
+  it('the staff list follows the office: the new manager reads and edits it, the old one no longer does', async () => {
+    await assertSucceeds(list('lecA'))
+    await assertFails(list('lecA2'))
+    await assertSucceeds(updateDoc(doc(as('lecA'), 'classes/office'), { ownerId: 'lecA2', ownerName: 'A2' }))
+    await assertSucceeds(list('lecA2'))
+    await assertFails(list('lecA'))
+    await assertSucceeds(list('adminA'))
+    await assertSucceeds(setDoc(doc(as('lecA2'), 'rosters/office/students/E002'), { ...entry('lecA2'), studentKey: 'E002', studentId: 'E002' }))
+    await assertSucceeds(deleteDoc(doc(as('lecA2'), 'rosters/office/students/E001')))
+    await assertFails(list('lecB'))
   })
 })

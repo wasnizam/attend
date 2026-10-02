@@ -872,4 +872,12 @@ export const ms: Record<string, string> = {
   "Where it is": "Lokasinya",
   "Which office is this screen in?": "Skrin ini berada di pejabat mana?",
   "Change": "Tukar",
+  "Office": "Pejabat",
+  "All offices": "Semua pejabat",
+  "The same for every office. One office can be set differently later, under Working hours.": "Sama untuk semua pejabat. Satu pejabat boleh ditetapkan berbeza kemudian, di bawah Waktu kerja.",
+  "Hand “{name}” over to {person}? It leaves your own pages; its past records stay with you.": "Serahkan “{name}” kepada {person}? Ia keluar daripada halaman anda; rekod lamanya kekal dengan anda.",
+  "Who manages this office": "Siapa menguruskan pejabat ini",
+  "A branch manager sees only the office handed to them. Invite them from the Admin page first.": "Pengurus cawangan hanya nampak pejabat yang diserahkan kepadanya. Jemput mereka dari halaman Admin dahulu.",
+  "Me ({name})": "Saya ({name})",
+  "Hand over": "Serahkan",
 }

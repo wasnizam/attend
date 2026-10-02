@@ -25,6 +25,7 @@ export function Payroll() {
   const classes = useMyClasses()
   const [month, setMonth] = useState(isoDate().slice(0, 7))
   const [department, setDepartment] = useState('')
+  const [office, setOffice] = useState('')
   const [rows, setRows] = useState<PayrollRow[] | null>(null)
   const [failed, setFailed] = useState(false)
 
@@ -51,7 +52,7 @@ export function Payroll() {
         ),
       ),
     ]).then(
-      ([records, outs, rosters, plans]) => !stale && setRows(buildPayroll(held, new Map(records), new Map(outs), new Map(rosters), plans.flat())),
+      ([records, outs, rosters, plans]) => !stale && setRows(buildPayroll(held, new Map(records), new Map(outs), new Map(rosters), plans.flat(), new Map((classes.data ?? []).map((c) => [c.id, c.venue || ''] as const)))),
       () => !stale && setFailed(true),
     )
     return () => {
@@ -63,16 +64,19 @@ export function Payroll() {
   if (mySessions.loading || classes.loading) return <PageLoader />
 
   const departments = [...new Set((rows ?? []).map((r) => r.department).filter(Boolean))]
-  const shown = (rows ?? []).filter((r) => !department || r.department === department)
+  const offices = [...new Set((rows ?? []).map((r) => r.office).filter(Boolean))]
+  const shown = (rows ?? []).filter((r) => (!department || r.department === department) && (!office || r.office === office))
   const sum = (list: PayrollRow[], field: 'minutes' | 'overtime' | 'late' | 'absent') => list.reduce((a, r) => a + r[field], 0)
-  const groups = [...new Set(shown.map((r) => r.department))].map((name) => ({ name, list: shown.filter((r) => r.department === name) }))
+  // Grouped by office first when there is more than one, then by department.
+  const label = (r: PayrollRow) => [offices.length > 1 ? r.office : '', r.department].filter(Boolean).join(' · ')
+  const groups = [...new Set(shown.map(label))].map((name) => ({ name, list: shown.filter((r) => label(r) === name) }))
 
   const exportCsv = () =>
     downloadCsv(
       `payroll-${month}${department ? `-${department.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : ''}-excel.csv`,
       [
-        ['Department', 'Student ID', 'Student Name', 'Days worked', 'Hours', 'Overtime hours', 'Late', 'Late minutes', 'MC', 'Excused', 'Absent', 'No clock-out', 'Wrong shift'].map((h) => t(h)),
-        ...shown.map((r) => [r.department, r.staffId, r.name, r.days, hours(r.minutes), hours(r.overtime), r.late, Math.round(r.lateMinutes), r.mc, r.leave, r.absent, r.noClockOut, r.wrongShift]),
+        ['Office', 'Department', 'Student ID', 'Student Name', 'Days worked', 'Hours', 'Overtime hours', 'Late', 'Late minutes', 'MC', 'Excused', 'Absent', 'No clock-out', 'Wrong shift'].map((h) => t(h)),
+        ...shown.map((r) => [r.office, r.department, r.staffId, r.name, r.days, hours(r.minutes), hours(r.overtime), r.late, Math.round(r.lateMinutes), r.mc, r.leave, r.absent, r.noClockOut, r.wrongShift]),
       ]
         .map((line) => line.map(csvCell).join(','))
         .join('\r\n') + '\r\n',
@@ -95,6 +99,17 @@ export function Payroll() {
           {t('Month')}
           <input type="month" value={month} max={isoDate().slice(0, 7)} onChange={(e) => e.target.value && setMonth(e.target.value)} className={`${inputClass} mt-1`} />
         </label>
+        {offices.length > 1 && (
+          <label className="block text-xs font-medium text-muted">
+            {t('Office')}
+            <select value={office} onChange={(e) => setOffice(e.target.value)} className={`${inputClass} mt-1`}>
+              <option value="">{t('All offices')}</option>
+              {offices.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
+          </label>
+        )}
         {departments.length > 0 && (
           <label className="block text-xs font-medium text-muted">
             {t('Department')}
@@ -136,7 +151,7 @@ export function Payroll() {
               <tbody className="tabular divide-y divide-line">
                 {groups.map((g) => (
                   <Fragment key={g.name}>
-                    {(departments.length > 0 || g.name) && (
+                    {(departments.length > 0 || offices.length > 1 || g.name) && (
                       <tr className="bg-slate-50/70 text-xs font-semibold">
                         <td colSpan={3} className="py-2 pr-2 pl-5">{g.name || t('No department')} <span className="font-normal text-muted">· {g.list.length}</span></td>
                         <td className="px-2 py-2 text-right whitespace-nowrap">{formatDuration(sum(g.list, 'minutes'))}</td>

@@ -6,9 +6,8 @@ import type { ShiftPlan, UserProfile, WeeklyClass } from '../lib/types'
 const plans = collection(db, 'plans')
 
 function planQuery(listId: string, viewer: UserProfile, weeks: string[]) {
-  const constraints = [where('organisationId', '==', viewer.organisationId), where('rosterId', '==', listId), where('week', 'in', weeks)]
-  if (viewer.role !== 'admin') constraints.push(where('ownerId', '==', viewer.id))
-  return query(plans, ...constraints)
+  // The rules allow whoever manages the list's class now (or an admin).
+  return query(plans, where('organisationId', '==', viewer.organisationId), where('rosterId', '==', listId), where('week', 'in', weeks))
 }
 
 const toPlan = (d: { id: string; data(): object }) => ({ id: d.id, ...d.data() }) as ShiftPlan

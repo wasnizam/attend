@@ -46,6 +46,11 @@ describe('monthly payroll figures', () => {
     expect(by.E3.days).toBe(0)
   })
 
+  it('carries the office of the list each person is on', () => {
+    const withOffice = buildPayroll([session('d1', '2026-10-01')], new Map(), new Map(), roster, [], new Map([['shift', 'Penang branch']]))
+    expect(withOffice.every((r) => r.office === 'Penang branch')).toBe(true)
+  })
+
   it('carries the department from the staff list and sorts by it', () => {
     expect(rows.map((r) => r.department)).toEqual(['Sales', 'Store', 'Store'])
   })

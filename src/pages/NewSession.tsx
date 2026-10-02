@@ -2,7 +2,10 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button, Card, EmptyState, ErrorNote, Field, PageLoader, friendlyError, inputClass } from '../components/ui'
 import { type Fence, LocationPicker } from '../components/LocationPicker'
-import { createClass, deleteClass, setClassGeofence, updateClass } from '../data/classes'
+import { subscribeOrgUsers } from '../data/account'
+import { createClass, deleteClass, handOver, setClassGeofence, updateClass } from '../data/classes'
+import { useLive } from '../hooks/useLive'
+import type { UserProfile } from '../lib/types'
 import { createSession } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
 import { useMyClasses } from '../hooks/useClasses'
@@ -409,6 +412,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
               <span className="text-accent">{editing.rosterFrom ? `${t('Shared student list')} ›` : editing.rosterCount ? `${t('{n} students', { n: editing.rosterCount })} ›` : `${t('Upload')} ›`}</span>
             </Link>
           )}
+          {editing && clock && profile.role === 'admin' && <HandOver cls={editing} onDone={() => navigate('/app/timetable')} />}
           {!hasList && (
             <Field
               label={t('Expected participants')}
@@ -492,6 +496,46 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
           )}
         </form>
       </Card>
+    </div>
+  )
+}
+
+/** An admin gives an office to the colleague who runs it; from then on only they (and admins) see it. */
+function HandOver({ cls, onDone }: { cls: WeeklyClass; onDone: () => void }) {
+  const profile = useProfile()
+  const users = useLive<UserProfile[]>((onData, onError) => subscribeOrgUsers(profile.organisationId, onData, onError), [profile.organisationId])
+  const [to, setTo] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const others = (users.data ?? []).filter((u) => u.id !== cls.ownerId && u.status === 'active')
+  if (others.length === 0) return null
+  const give = async () => {
+    const user = others.find((u) => u.id === to)
+    if (!user || !window.confirm(t('Hand “{name}” over to {person}? It leaves your own pages; its past records stay with you.', { name: cls.name, person: user.name }))) return
+    setBusy(true)
+    setError('')
+    try {
+      await handOver(cls, user)
+      onDone()
+    } catch (e) {
+      setError(friendlyError(e))
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="rounded-lg bg-canvas p-4">
+      <p className="text-sm font-medium">{t('Who manages this office')}</p>
+      <p className="mt-1 text-xs text-muted">{t('A branch manager sees only the office handed to them. Invite them from the Admin page first.')}</p>
+      <div className="mt-3 flex gap-2">
+        <select value={to} onChange={(e) => setTo(e.target.value)} className={inputClass}>
+          <option value="">{t('Me ({name})', { name: cls.ownerName })}</option>
+          {others.map((u) => (
+            <option key={u.id} value={u.id}>{u.name}</option>
+          ))}
+        </select>
+        <Button type="button" variant="secondary" busy={busy} disabled={!to} onClick={give}>{t('Hand over')}</Button>
+      </div>
+      <ErrorNote>{error}</ErrorNote>
     </div>
   )
 }

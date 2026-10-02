@@ -181,6 +181,13 @@ form has "Office or branch" and "Where it is". On a door screen with more than o
 manager picks which office that screen is in (kept on the device), and it opens only that
 office's hours.
 
+An admin can **hand an office over** to a branch manager (edit the working hours, "Who manages
+this office"): the class's `ownerId` changes, and its staff list and shift plans follow because
+the rules now go by who owns the class, not by the `ownerId` stored on each record. Past
+sessions stay with whoever ran them. The monthly report has an Office column and filter. In
+setup the distance and flag-or-refuse choice is made once for every office; the working-hours
+form can still set one office differently.
+
 **Office first, shifts as an extra.** A workplace starts as a plain office: the menu reads
 "Working hours", the form opens on Monday to Friday, nine to five, and nothing mentions shifts.
 An admin ticks "We work in shifts" on the Account page (`organisations.shifts`, `has('shifts')`)

@@ -11,7 +11,7 @@ export type Fence = { lat: number; lng: number; radius: number; mode: GeoMode } 
  * Sets an office's location from where the manager is standing, with how far still counts
  * and what happens to a clock-in from further away.
  */
-export function LocationPicker({ stored, onChange }: { stored?: Geofence; onChange: (fence: Fence) => void }) {
+export function LocationPicker({ stored, onChange, pointOnly }: { stored?: Geofence; onChange: (fence: Fence) => void; /** The distance and what happens are chosen once elsewhere, for every office. */ pointOnly?: boolean }) {
   const [point, setPoint] = useState<{ lat: number; lng: number } | null | undefined>(undefined)
   const [radius, setRadius] = useState(stored?.geoRadius ?? DEFAULT_RADIUS)
   const [mode, setMode] = useState<GeoMode>(stored?.geoMode ?? 'flag')
@@ -48,7 +48,7 @@ export function LocationPicker({ stored, onChange }: { stored?: Geofence; onChan
         )}
       </div>
       {error && <p className="mt-2 text-sm text-bad">{error}</p>}
-      {at && (
+      {at && !pointOnly && (
         <div className="mt-3 grid grid-cols-2 gap-3">
           <label className="block text-xs font-medium text-muted">
             {t('How far still counts')}

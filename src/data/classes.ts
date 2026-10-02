@@ -101,6 +101,10 @@ export const setClassGeofence = (id: string, fence: { lat: number; lng: number; 
       : { geoPoint: null, geoRadius: null, geoMode: null, geoCos: null },
   )
 
+/** Hands an office (its hours and its staff list) to another manager in the organisation. */
+export const handOver = (cls: WeeklyClass, to: Pick<UserProfile, 'id' | 'name'>) =>
+  updateDoc(doc(classes, cls.id), { ownerId: to.id, ownerName: to.name })
+
 export const deleteClass = (id: string) => deleteDoc(doc(classes, id))
 
 export function subscribeMyClasses(
