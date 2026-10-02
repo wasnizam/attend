@@ -87,9 +87,13 @@ export default function DoorEntry() {
       const mine = facts.filter((f) => f.listed && !f.clockedIn).map((f) => f.link)
       if (mine.length === 1) return go(mine[0])
       if (mine.length > 1) {
-        // On more than one open shift (people who rotate): nearest start first, and they pick.
+        // On more than one open shift (people who rotate): the time tells us which one. Someone
+        // arriving now is starting the shift whose start is nearest; the rest are offered below it.
         const near = (l: SessionLink) => Math.abs(parseDate(l.date, l.startTime).getTime() - Date.now())
-        return setChoices([...mine].sort((a, b) => near(a) - near(b)))
+        const [best, ...others] = [...mine].sort((a, b) => near(a) - near(b))
+        // Only ask when two shifts start within the same half hour of now.
+        if (near(others[0]) - near(best) >= 30 * 60_000) return go(best)
+        return setChoices([best, ...others])
       }
       const done = facts.find((f) => f.clockedOut)
       if (done) return go(done.link)

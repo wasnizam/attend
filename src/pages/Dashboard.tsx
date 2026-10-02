@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { GettingStarted } from '../components/GettingStarted'
+import { ShiftAlerts } from '../components/ShiftAlerts'
 import { TodayHero, TodaySchedule } from '../components/TodayItems'
 import { WeekSummary } from '../components/WeekSummary'
 import { Card, EmptyState, ErrorNote, PageLoader, buttonClass } from '../components/ui'
@@ -95,6 +96,7 @@ export function Dashboard() {
       ) : (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start">
           <div className="space-y-6">
+            {has('clock') && <ShiftAlerts sessions={sessions} now={now} />}
             {hero ? (
               <TodayHero item={hero} now={now} />
             ) : todays.length > 0 ? (

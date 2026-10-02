@@ -321,7 +321,10 @@ service cloud.firestore {
       return d.keys().hasOnly(['sessionId', 'organisationId', 'ownerId', 'studentKey', 'timestamp', 'token', 'by', 'code'])
         && d.studentKey is string && d.studentKey.matches('^[A-Z0-9._-]{1,40}$')
         && clockoutId == d.sessionId + '_' + d.studentKey
-        && d.timestamp == request.time
+        // Staff clock out at the moment they scan. A manager may also fill in an earlier time
+        // for someone who forgot, never a future one.
+        && (d.timestamp == request.time
+            || (d.by != 'self' && d.timestamp is timestamp && d.timestamp <= request.time))
         && d.organisationId == s.organisationId
         && d.ownerId == s.ownerId
         && exists(/databases/$(database)/documents/attendance/$(clockoutId))

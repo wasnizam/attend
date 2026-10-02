@@ -84,6 +84,8 @@ export interface Session extends CourseDetails, Geofence {
   graceMin?: number | null
   flexible?: boolean
   rotating?: boolean
+  daysPerWeek?: number | null
+  minStaff?: number | null
   id: string
   organisationId: string
   ownerId: string
@@ -191,5 +193,9 @@ export interface WeeklyClass extends CourseDetails, Geofence {
   rotating?: boolean
   /** Workplace: use another shift's staff list instead of keeping its own. */
   rosterFrom?: string | null
+  /** Workplace: how many days a week each person on this shift's list works. Used for people who rotate. */
+  daysPerWeek?: number | null
+  /** Workplace: fewer people than this clocked in raises a warning. */
+  minStaff?: number | null
   createdAt: Timestamp | null
 }

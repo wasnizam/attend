@@ -182,6 +182,15 @@ With one shift open the QR is the ordinary check-in link; with several it is
 ID once and picks the shift: the one they are clocked in to (to clock out), else the one whose
 list they are on, else they choose when they are on several.
 
+**Smart shifts (phase 1).** No weekly schedule is entered. For people who rotate, the shift that
+keeps the list sets `daysPerWeek`; the monthly report counts a week short of that (after leave
+and MC) as absences (`buildPayroll`, pools). At the door, someone on several open shifts is put
+on the one whose start is nearest; they are only asked when two start within half an hour of
+each other. `minStaff` on a shift raises a "short of people" note on Today, and people who did
+not clock out are listed there with one tap to set the shift's end time (a manager may write an
+earlier clock-out; staff cannot choose a time). Not built yet: learning rotation patterns and
+suggesting next week's schedule.
+
 Each person on a workplace list can carry a `department` (picked up from a sheet's Department
 column, or typed). The **monthly report** (`/app/reports/monthly`, `src/lib/payroll.ts`) adds up
 a month for everyone: days worked, hours, overtime (time after the shift's end), lateness, MC,

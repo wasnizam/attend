@@ -15,6 +15,7 @@ import {
   serverTimestamp,
   setDoc,
   where,
+  Timestamp,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { studentKey } from '../lib/format'
@@ -324,14 +325,15 @@ export async function clockOut(link: SessionLink, rawStudentId: string, code?: s
 }
 
 /** Manager side: clock someone out now (they forgot, or their phone is dead). */
-export const clockOutFor = (session: Session, viewer: UserProfile, key: string) =>
+export const clockOutFor = (session: Session, viewer: UserProfile, key: string, at?: Date) =>
   setDoc(doc(clockouts, `${session.id}_${key}`), {
     sessionId: session.id,
     organisationId: session.organisationId,
     ownerId: session.ownerId,
     studentKey: key,
     by: viewer.id,
-    timestamp: serverTimestamp(),
+    // Now, or an earlier time filled in for someone who forgot to clock out.
+    timestamp: at && at.getTime() < Date.now() ? Timestamp.fromDate(at) : serverTimestamp(),
   })
 
 export const undoClockOut = (session: Pick<Session, 'id'>, key: string) => deleteDoc(doc(clockouts, `${session.id}_${key}`))

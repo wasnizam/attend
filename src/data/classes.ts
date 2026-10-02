@@ -23,6 +23,8 @@ export interface ClassInput {
   flexible?: boolean
   rotating?: boolean
   rosterFrom?: string | null
+  daysPerWeek?: number | null
+  minStaff?: number | null
   name: string
   description: string
   slots: Slot[]
@@ -60,6 +62,8 @@ const clean = (input: ClassInput) => ({
   flexible: Boolean(input.flexible),
   rotating: Boolean(input.rotating),
   rosterFrom: input.rosterFrom || null,
+  daysPerWeek: input.daysPerWeek || null,
+  minStaff: input.minStaff || null,
 })
 
 export async function createClass(profile: UserProfile, input: ClassInput): Promise<string> {
@@ -121,7 +125,9 @@ export async function startClassSession(
   try {
     // A shift can borrow another shift's staff list (people who rotate between them).
     const listId = cls.rosterFrom || cls.id
-    const count = cls.rosterFrom ? ((await getDoc(doc(classes, cls.rosterFrom))).data()?.rosterCount ?? 0) : (cls.rosterCount ?? 0)
+    // The shift that keeps the list also says how many days a week its people work.
+    const source = cls.rosterFrom ? ((await getDoc(doc(classes, cls.rosterFrom))).data() as Partial<WeeklyClass> | undefined) : cls
+    const count = source?.rosterCount ?? 0
     const listed = count > 0
     await setDoc(
       ref,
@@ -142,7 +148,7 @@ export async function startClassSession(
           meetingUrl: cls.meetingUrl,
           kind: cls.kind ?? 'lecture',
           geofence: cls,
-          work: { graceMin: cls.graceMin, flexible: cls.flexible, rotating: cls.rotating },
+          work: { graceMin: cls.graceMin, flexible: cls.flexible, rotating: cls.rotating, daysPerWeek: source?.daysPerWeek ?? cls.daysPerWeek, minStaff: cls.minStaff },
         },
         cls.id,
       ),

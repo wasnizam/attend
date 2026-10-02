@@ -537,6 +537,13 @@ describe('clock-out (workplace)', () => {
     await assertSucceeds(setDoc(doc(anon(), 'clockouts/live_ST001'), out('ST001', { code: 'BBBBB' })))
   })
 
+  it('a manager may fill in an earlier clock-out, never a later one; staff cannot pick a time', async () => {
+    const earlier = Timestamp.fromMillis(Date.now() - 1800_000)
+    await assertFails(setDoc(doc(as('lecA'), 'clockouts/live_ST001'), { ...byManager('lecA', 'ST001'), timestamp: Timestamp.fromMillis(Date.now() + 3600_000) }))
+    await assertFails(setDoc(doc(anon(), 'clockouts/live_ST001'), out('ST001', { timestamp: earlier })))
+    await assertSucceeds(setDoc(doc(as('lecA'), 'clockouts/live_ST001'), { ...byManager('lecA', 'ST001'), timestamp: earlier }))
+  })
+
   it('the manager can clock someone out and undo it; a colleague cannot', async () => {
     await assertFails(setDoc(doc(as('lecA2'), 'clockouts/live_ST001'), byManager('lecA2', 'ST001')))
     await assertSucceeds(setDoc(doc(as('lecA'), 'clockouts/live_ST001'), byManager('lecA', 'ST001')))

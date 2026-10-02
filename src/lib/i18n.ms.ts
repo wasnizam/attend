@@ -791,4 +791,13 @@ export const ms: Record<string, string> = {
   "Fixed hours, two or three shifts, night shifts, rotating shifts or flexible hours. One QR at the door for all of them.": "Waktu tetap, dua atau tiga syif, syif malam, syif bergilir atau waktu anjal. Satu QR di pintu untuk semuanya.",
   "Monthly report for payroll": "Laporan bulanan untuk gaji",
   "Days, hours, overtime, lateness, MC and leave for each person, by department. Export to Excel.": "Hari, jam, lebih masa, kelewatan, MC dan cuti bagi setiap orang, mengikut jabatan. Eksport ke Excel.",
+  "Anyone on the list may clock in to whichever shift they are on. Tick this on every shift that shares the list.": "Sesiapa dalam senarai boleh merekod masuk ke syif giliran mereka. Tandakan ini pada setiap syif yang berkongsi senarai.",
+  "Each person works": "Setiap orang bekerja",
+  "{n} days a week": "{n} hari seminggu",
+  "Fewer days than this in a week, without leave or MC, counts as absent. No weekly schedule needed.": "Kurang daripada bilangan hari ini dalam seminggu, tanpa cuti atau MC, dikira tidak hadir. Jadual mingguan tidak diperlukan.",
+  "Fewest people needed": "Bilangan minimum orang diperlukan",
+  "Needs attention": "Perlu perhatian",
+  "is short of people: {n} of {min} in": "kekurangan orang: {n} daripada {min} sudah masuk",
+  "{n} did not clock out": "{n} tidak merekod keluar",
+  "Set to {time}": "Tetapkan ke {time}",
 }

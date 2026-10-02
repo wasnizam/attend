@@ -1,4 +1,7 @@
-import { endOf, minutesLate } from './format'
+import { addDays, endOf, minutesLate, parseDate } from './format'
+
+/** The Monday that starts the week a date falls in. */
+const mondayOf = (date: string) => addDays(date, -((parseDate(date).getDay() + 6) % 7))
 import type { RosterEntry } from './rosterImport'
 import type { AttendanceRecord, Session } from './types'
 
@@ -46,6 +49,9 @@ export function buildPayroll(
       if (s.department && !row.department) row.department = s.department
     }
   }
+  // A list is a rotating pool when any shift using it rotates. Its people are measured by the
+  // week (see below), not shift by shift.
+  const pools = new Set(sessions.filter((x) => x.rotating && x.rosterId).map((x) => x.rosterId!))
   for (const session of sessions) {
     const seen = new Set<string>()
     const end = endOf(session).getTime()
@@ -71,8 +77,32 @@ export function buildPayroll(
         } else row.noClockOut += 1
       }
     }
-    for (const s of (!session.rotating && session.rosterId && rosters.get(session.rosterId)) || []) {
+    for (const s of (session.rosterId && !pools.has(session.rosterId) && rosters.get(session.rosterId)) || []) {
       if (!seen.has(s.studentKey)) person(s.studentKey, s.studentId, s.studentName).absent += 1
+    }
+  }
+  for (const pool of pools) {
+    const mine = sessions.filter((x) => x.rosterId === pool)
+    const perWeek = mine.find((x) => x.daysPerWeek)?.daysPerWeek
+    if (!perWeek) continue
+    // How many weekdays the pool runs at all, and which dates it was open in each week.
+    const weekdays = new Set(mine.map((x) => parseDate(x.date).getDay())).size
+    const weeks = new Map<string, Set<string>>()
+    for (const x of mine) {
+      const key = mondayOf(x.date)
+      weeks.set(key, (weeks.get(key) ?? new Set()).add(x.date))
+    }
+    for (const member of rosters.get(pool) ?? []) {
+      const row = person(member.studentKey, member.studentId, member.studentName)
+      for (const [week, openDates] of weeks) {
+        // A part week (the month's first or last) expects its share of the days, rounded down.
+        const expected = Math.min(openDates.size, Math.floor((perWeek * openDates.size) / Math.max(weekdays, perWeek)))
+        const accounted = new Set<string>()
+        for (const x of mine) {
+          if (mondayOf(x.date) === week && (records.get(x.id) ?? []).some((r) => r.studentKey === member.studentKey)) accounted.add(x.date)
+        }
+        row.absent += Math.max(0, expected - accounted.size)
+      }
     }
   }
   return [...people.values()].sort((a, b) => a.department.localeCompare(b.department) || a.name.localeCompare(b.name))

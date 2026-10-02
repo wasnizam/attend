@@ -69,6 +69,8 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
   const [grace, setGrace] = useState(editing?.flexible ? 'flex' : String(editing?.graceMin ?? 10))
   const [rosterFrom, setRosterFrom] = useState(editing?.rosterFrom ?? '')
   const [rotating, setRotating] = useState(Boolean(editing?.rotating))
+  const [daysPerWeek, setDaysPerWeek] = useState(String(editing?.daysPerWeek ?? 6))
+  const [minStaff, setMinStaff] = useState(editing?.minStaff ? String(editing.minStaff) : '')
   const myClasses = useMyClasses().data
   const lists = (myClasses ?? []).filter((c) => (c.rosterCount ?? 0) > 0)
   // Semester dates: default to 14 weeks from today, or to the dates of the newest class
@@ -124,7 +126,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
     setBusy(true)
     try {
       const details = { name, description, code, section, venue, expected: count, delivery, meetingUrl: delivery === 'in_person' ? '' : meetingUrl }
-      const work = clock ? { graceMin: grace === 'flex' ? null : Number(grace), flexible: grace === 'flex', rotating, rosterFrom: rosterFrom || null } : {}
+      const work = clock ? { graceMin: grace === 'flex' ? null : Number(grace), flexible: grace === 'flex', rotating, rosterFrom: rosterFrom || null, daysPerWeek: rotating && !rosterFrom ? Number(daysPerWeek) : null, minStaff: Number(minStaff) > 0 ? Math.floor(Number(minStaff)) : null } : {}
       if (editing) {
         await updateClass(editing.id, { ...details, ...work, kind, slots, startDate: semStart, endDate: semEnd })
         navigate('/app/timetable')
@@ -335,9 +337,30 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
                 <input type="checkbox" checked={rotating} onChange={(e) => setRotating(e.target.checked)} className="mt-0.5 size-4 accent-accent" />
                 <span>
                   <span className="font-medium">{t('People rotate between shifts')}</span>
-                  <span className="block text-xs text-muted">{t('Anyone on the list may clock in. Nobody is marked absent from this shift.')}</span>
+                  <span className="block text-xs text-muted">{t('Anyone on the list may clock in to whichever shift they are on. Tick this on every shift that shares the list.')}</span>
                 </span>
               </label>
+              {rotating && !rosterFrom && (
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-medium">{t('Each person works')}</span>
+                  <select value={daysPerWeek} onChange={(e) => setDaysPerWeek(e.target.value)} className={inputClass}>
+                    {[7, 6, 5, 4, 3, 2, 1].map((n) => (
+                      <option key={n} value={n}>{t('{n} days a week', { n })}</option>
+                    ))}
+                  </select>
+                  <span className="mt-1.5 block text-xs text-muted">{t('Fewer days than this in a week, without leave or MC, counts as absent. No weekly schedule needed.')}</span>
+                </label>
+              )}
+              <Field
+                label={t('Fewest people needed')}
+                hint={t('Optional')}
+                type="number"
+                min={1}
+                max={10000}
+                inputMode="numeric"
+                value={minStaff}
+                onChange={(e) => setMinStaff(e.target.value)}
+              />
             </fieldset>
           )}
 
