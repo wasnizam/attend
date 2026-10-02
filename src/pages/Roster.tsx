@@ -5,6 +5,7 @@ import { Button, Card, EmptyState, ErrorNote, Field, PageLoader, friendlyError }
 import { addToRoster, removeFromRoster } from '../data/roster'
 import { useMyClasses } from '../hooks/useClasses'
 import { useRoster } from '../hooks/useRoster'
+import { downloadCsv, rosterCsv, slug } from '../lib/csv'
 import { studentKey } from '../lib/format'
 import { t } from '../lib/i18n'
 import type { WeeklyClass } from '../lib/types'
@@ -75,6 +76,11 @@ function RosterEditor({ cls }: { cls: WeeklyClass }) {
           <h2 className="font-semibold">
             {t('On the list')} <span className="tabular font-normal text-muted">· {current.length}</span>
           </h2>
+          {current.length > 0 && (
+            <button onClick={() => downloadCsv(`${slug(cls.name)}-list-excel.csv`, rosterCsv(current), true)} className="ml-auto text-sm font-medium text-accent">
+              {t('Export list')}
+            </button>
+          )}
           {current.length > 0 && (
             <button
               disabled={busy}

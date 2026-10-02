@@ -736,4 +736,5 @@ export const ms: Record<string, string> = {
   "Your plan includes up to {n} staff. Upgrade to add more.": "Pelan anda merangkumi sehingga {n} kakitangan. Naik taraf untuk menambah lagi.",
   "Currency": "Mata wang",
   "Or $90 a year: 12 months for the price of 10.": "Atau $90 setahun: 12 bulan pada harga 10 bulan.",
+  "Export list": "Eksport senarai",
 }

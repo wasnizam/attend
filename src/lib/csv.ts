@@ -18,12 +18,23 @@ export interface Absentee {
   date: string
 }
 
-export function attendanceCsv(records: AttendanceRecord[], absent: Absentee[] = []): string {
+/**
+ * `outs` (workplace) adds the time each person left and the hours between, as a decimal
+ * number a payroll sheet can add up.
+ */
+export function attendanceCsv(records: AttendanceRecord[], absent: Absentee[] = [], outs?: Map<string, { toMillis(): number }>): string {
+  const left = (r: AttendanceRecord) => {
+    const out = outs?.get(r.studentKey)
+    if (!out) return ['', '']
+    const hours = r.timestamp ? Math.max(0, out.toMillis() - r.timestamp.toMillis()) / 3_600_000 : null
+    return [formatClock24(out as never), hours === null ? '' : hours.toFixed(2)]
+  }
   const rows = [
-    ...records.map((r) => [r.studentId, r.studentName, r.sessionName, formatDate(r.date), formatClock24(r.timestamp), t(STATUS[r.status] ?? 'Present')]),
-    ...absent.map((a) => [a.studentId, a.studentName, a.sessionName, formatDate(a.date), '', t('Absent')]),
+    ...records.map((r) => [r.studentId, r.studentName, r.sessionName, formatDate(r.date), formatClock24(r.timestamp), t(STATUS[r.status] ?? 'Present'), ...(outs ? left(r) : [])]),
+    ...absent.map((a) => [a.studentId, a.studentName, a.sessionName, formatDate(a.date), '', t('Absent'), ...(outs ? ['', ''] : [])]),
   ]
-  return [HEADER.map((h) => t(h)), ...rows].map((row) => row.map(cell).join(',')).join('\r\n') + '\r\n'
+  const header = outs ? ['Student ID', 'Student Name', 'Session', 'Date', 'In', 'Status', 'Out', 'Hours'] : HEADER
+  return [header.map((h) => t(h)), ...rows].map((row) => row.map(cell).join(',')).join('\r\n') + '\r\n'
 }
 
 /**
@@ -40,6 +51,11 @@ export function downloadCsv(filename: string, csv: string, excel = false) {
   a.click()
   a.remove()
   URL.revokeObjectURL(url)
+}
+
+/** A class's list of people, as a file: ID and name. */
+export function rosterCsv(list: { studentId: string; studentName: string }[]): string {
+  return [[t('Student ID'), t('Student Name')], ...list.map((s) => [s.studentId, s.studentName])].map((row) => row.map(cell).join(',')).join('\r\n') + '\r\n'
 }
 
 export function slug(text: string): string {

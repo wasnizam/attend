@@ -41,11 +41,29 @@ export async function fetchRoster(rosterId: string, organisationId: string, view
 
 const BATCH = 400
 
+/** Everyone on this owner's other lists, by key. Only read when the plan has a limit on people. */
+async function staffElsewhere(cls: WeeklyClass): Promise<Set<string>> {
+  const mine = [where('organisationId', '==', cls.organisationId), where('ownerId', '==', cls.ownerId)]
+  const lists = await getDocs(query(collection(db, 'classes'), ...mine))
+  const keys = new Set<string>()
+  await Promise.all(
+    lists.docs
+      .filter((d) => d.id !== cls.id)
+      .map(async (d) => (await getDocs(query(students(d.id), ...mine))).forEach((s) => keys.add(s.id))),
+  )
+  return keys
+}
+
 /** Adds or updates students on a class list and keeps the class's headcount in step. */
 export async function addToRoster(cls: WeeklyClass, entries: RosterEntry[], existing: RosterEntry[]) {
   const known = new Set(existing.map((e) => e.studentKey))
   const added = entries.filter((e) => !known.has(e.studentKey)).length
-  if (added > 0 && overLimit('staff', existing.length + added)) throw new Error(t('Your plan includes up to {n} staff. Upgrade to add more.', { n: limitFor('staff') ?? 0 }))
+  if (added > 0 && limitFor('staff') !== undefined) {
+    // The plan counts people across all of this manager's lists, each person once.
+    const everyone = await staffElsewhere(cls)
+    for (const e of [...existing, ...entries]) everyone.add(e.studentKey)
+    if (overLimit('staff', everyone.size)) throw new Error(t('Your plan includes up to {n} staff. Upgrade to add more.', { n: limitFor('staff') ?? 0 }))
+  }
   for (let i = 0; i < entries.length; i += BATCH) {
     const batch = writeBatch(db)
     for (const e of entries.slice(i, i + BATCH)) {

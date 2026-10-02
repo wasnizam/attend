@@ -1,3 +1,4 @@
+import { has } from '../lib/purpose'
 import { useState } from 'react'
 import { formatDate, formatPercent } from '../lib/format'
 import { t } from '../lib/i18n'
@@ -52,8 +53,13 @@ export function AttendanceTrend({ trend }: { trend: ClassReport['trend'] }) {
             <text x={pad.l - 8} y={y(v) + 4} textAnchor="end" className="fill-slate-400 text-[11px]">{v}%</text>
           </g>
         ))}
-        <line x1={pad.l} x2={W - pad.r} y1={y(80)} y2={y(80)} stroke="#94a3b8" strokeWidth="1" />
-        <text x={W - pad.r + 6} y={y(80) + 4} className="fill-slate-500 text-[11px]">80%</text>
+        {/* The 80% line is the university rule; other kinds of organisation have no such line. */}
+        {has('barring') && (
+          <>
+            <line x1={pad.l} x2={W - pad.r} y1={y(80)} y2={y(80)} stroke="#94a3b8" strokeWidth="1" />
+            <text x={W - pad.r + 6} y={y(80) + 4} className="fill-slate-500 text-[11px]">80%</text>
+          </>
+        )}
 
         {points.length > 1 && <path d={area} fill={SERIES} opacity="0.1" />}
         {points.length > 1 && <path d={line} fill="none" stroke={SERIES} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}

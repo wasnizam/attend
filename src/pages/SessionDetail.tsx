@@ -4,6 +4,7 @@ import { ExportButtons } from '../components/ExportButtons'
 import { LiveSession } from '../components/LiveSession'
 import { SessionRecords } from '../components/SessionRecords'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, StatusBadge, friendlyError } from '../components/ui'
+import { type ClockOuts, subscribeClockOuts } from '../data/attendance'
 import { deleteSession, setPresentCount, startSession, subscribeSession } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
 import { useLive } from '../hooks/useLive'
@@ -12,6 +13,7 @@ import { useNow, useSessionAttendance } from '../hooks/useSessions'
 import { slug } from '../lib/csv'
 import { countPresent, courseLine, effectiveStatus, formatDate, formatPercent, formatRange, percent } from '../lib/format'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import { rotatePref } from '../lib/prefs'
 import type { AttendanceRecord, Session } from '../lib/types'
 
@@ -143,6 +145,13 @@ function EndedRecord({ session: s, records, loading, error, mine, busy, onReopen
   onReopen: () => void
 }) {
   const absentees = useAbsentees(s, records)
+  const profile = useProfile()
+  // Workplace: the export carries time out and hours as well.
+  const clocking = has('clock')
+  const outs = useLive<ClockOuts>(
+    clocking ? (onData, onError) => subscribeClockOuts(s, profile, onData, onError) : null,
+    [s.id, s.organisationId, profile.id, profile.role, clocking],
+  )
   const present = loading ? s.presentCount : countPresent(records)
   const excused = loading ? 0 : records.length - present
   const pct = percent(present, s.expected)
@@ -172,7 +181,7 @@ function EndedRecord({ session: s, records, loading, error, mine, busy, onReopen
         <Stat label={t('Attendance')} value={formatPercent(pct)} />
       </div>
       <div className="mt-5 flex flex-wrap items-center gap-2">
-        <ExportButtons records={records} absent={absentees} filename={`${slug(s.name)}-${s.date}`} />
+        <ExportButtons records={records} absent={absentees} outs={clocking ? outs.data ?? new Map() : undefined} filename={`${slug(s.name)}-${s.date}`} />
         {mine && (
           <Button variant="secondary" busy={busy} onClick={onReopen}>
             {t('Reopen attendance')}
