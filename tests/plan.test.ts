@@ -16,13 +16,13 @@ describe('plans', () => {
     expect(activePlan()).toBe('early')
   })
 
-  it('a trial is Pro for 30 days, then Free', () => {
+  it('a trial is Pro for 14 days, then Free', () => {
     setPurpose('education')
     setPlan({ plan: 'trial', trialStarted: at(now - 10 * DAY) })
     expect(activePlan()).toBe('trial')
     expect(trialDaysLeft()).toBe(TRIAL_DAYS - 10)
     expect(overLimit('classes', 5)).toBe(false)
-    setPlan({ plan: 'trial', trialStarted: at(now - 31 * DAY) })
+    setPlan({ plan: 'trial', trialStarted: at(now - 15 * DAY) })
     expect(activePlan()).toBe('free')
     expect(overLimit('classes', 1)).toBe(false)
     expect(overLimit('classes', 2)).toBe(true)

@@ -144,7 +144,7 @@ landing page visited), so there is no picker, and the security rules refuse any 
 | Workplace | 5 staff | RM49 / RM99 / RM179 a month for 20 / 50 / 100 staff |
 
 An organisation stores `plan` (`early`, `trial`, `free`, `pro`), `trialStarted`, `paidUntil` and
-(workplace) `seats`. `activePlan()` works out what applies now: a trial is Pro for 30 days and
+(workplace) `seats`. `activePlan()` works out what applies now: a trial is Pro for 14 days and
 then Free; Pro falls back to Free when `paidUntil` passes; nothing is ever deleted. Limits are
 checked when a class is created or people are added to a list.
 

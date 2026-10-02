@@ -3,14 +3,14 @@ import { type Purpose, getPurpose } from './purpose'
 /**
  * Payment is not connected yet. While this is false every new organisation is created on
  * `early` (everything open). Turn it on together with the payment gateway: from then on a
- * new organisation starts a 30-day Pro trial and drops to Free when it ends.
+ * new organisation starts a 14-day Pro trial and drops to Free when it ends.
  */
 export const PAYMENTS_OPEN = false
-export const TRIAL_DAYS = 30
+export const TRIAL_DAYS = 14
 
 /**
  * What is stored on the organisation. `early` = joined before payment opened, no limits.
- * `trial` = Pro until 30 days after `trialStarted`. `pro` = paid, until `paidUntil`.
+ * `trial` = Pro until 14 days after `trialStarted`. `pro` = paid, until `paidUntil`.
  * Only the server side (the payment webhook) may set `pro`, `paidUntil` or `seats`.
  */
 export type Plan = 'early' | 'trial' | 'free' | 'pro'

@@ -223,8 +223,8 @@ export function Landing({ show }: { show?: EditionId }) {
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-balance text-muted">
             {PAYMENTS_OPEN
-              ? t('Every new account gets Pro free for 30 days. No card needed. Stop paying and your records stay, ready to view and export.')
-              : t('Payment is not open yet, so everything is free for now. When it opens, every account gets Pro free for 30 days first.')}
+              ? t('Every new account gets Pro free for 14 days. No card needed. Stop paying and your records stay, ready to view and export.')
+              : t('Payment is not open yet, so everything is free for now. When it opens, every account gets Pro free for 14 days first.')}
           </p>
         </div>
       </section>
