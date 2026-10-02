@@ -64,6 +64,11 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
   )
   const [expected, setExpected] = useState(editing?.expected ? String(editing.expected) : '')
   const [rosterId, setRosterId] = useState('')
+  // Workplace: how lateness and the staff list work for this shift.
+  const clock = has('clock')
+  const [grace, setGrace] = useState(editing?.flexible ? 'flex' : String(editing?.graceMin ?? 10))
+  const [rosterFrom, setRosterFrom] = useState(editing?.rosterFrom ?? '')
+  const [rotating, setRotating] = useState(Boolean(editing?.rotating))
   const myClasses = useMyClasses().data
   const lists = (myClasses ?? []).filter((c) => (c.rosterCount ?? 0) > 0)
   // Semester dates: default to 14 weeks from today, or to the dates of the newest class
@@ -101,11 +106,12 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
     e.preventDefault()
     setError('')
     if (weekly) {
-      if (slots.some((s) => s.endTime <= s.startTime)) return setError(t('Each end time needs to be after its start time.'))
+      // A workplace shift may run past midnight; anywhere else an earlier end is a slip.
+      if (slots.some((s) => (clock ? s.endTime === s.startTime : s.endTime <= s.startTime))) return setError(t('Each end time needs to be after its start time.'))
       const seen = new Set(slots.map((s) => `${s.day}-${s.startTime}`))
       if (seen.size !== slots.length) return setError(t('Two of the times are the same. Remove one or change it.'))
       if (semEnd < semStart) return setError(t('The semester needs to end after it starts.'))
-    } else if (endTime <= startTime) {
+    } else if (clock ? endTime === startTime : endTime <= startTime) {
       return setError(t('The end time needs to be after the start time.'))
     }
     if (delivery !== 'in_person' && meetingUrl.trim() && !/^https?:\/\//i.test(meetingUrl.trim())) {
@@ -118,16 +124,17 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
     setBusy(true)
     try {
       const details = { name, description, code, section, venue, expected: count, delivery, meetingUrl: delivery === 'in_person' ? '' : meetingUrl }
+      const work = clock ? { graceMin: grace === 'flex' ? null : Number(grace), flexible: grace === 'flex', rotating, rosterFrom: rosterFrom || null } : {}
       if (editing) {
-        await updateClass(editing.id, { ...details, kind, slots, startDate: semStart, endDate: semEnd })
+        await updateClass(editing.id, { ...details, ...work, kind, slots, startDate: semStart, endDate: semEnd })
         navigate('/app/timetable')
       } else if (weekly) {
         if (overLimit('classes', (myClasses?.length ?? 0) + 1)) {
           setBusy(false)
           return setError(t('The free plan includes 1 class. Upgrade to Pro to add more.'))
         }
-        const id = await createClass(profile, { ...details, kind, slots, startDate: semStart, endDate: semEnd })
-        navigate(`/app/timetable/${id}/students`)
+        const id = await createClass(profile, { ...details, ...work, kind, slots, startDate: semStart, endDate: semEnd })
+        navigate(rosterFrom ? '/app/timetable' : `/app/timetable/${id}/students`)
       } else {
         const list = lists.find((c) => c.id === rosterId)
         const id = await createSession(profile, {
@@ -256,6 +263,24 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
               <button type="button" onClick={addSlot} disabled={slots.length >= 14} className="text-sm font-medium text-accent">
                 {t('+ Add another day or time')}
               </button>
+              {clock && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-1 text-sm">
+                  <span className="text-muted">{t('Quick fill')}:</span>
+                  {([['Mon–Fri', [1, 2, 3, 4, 5]], ['Mon–Sat', [1, 2, 3, 4, 5, 6]], ['Every day', [1, 2, 3, 4, 5, 6, 0]]] as const).map(([label, days]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setSlots((cur) => days.map((day) => ({ day, startTime: cur[0].startTime, endTime: cur[0].endTime })))}
+                      className="rounded-md bg-canvas px-2.5 py-1 font-medium hover:bg-accent-soft"
+                    >
+                      {t(label)}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {clock && slots.some((s) => s.endTime < s.startTime) && (
+                <p className="text-xs text-muted">{t('The end time is earlier than the start, so this is a night shift that ends the next day.')}</p>
+              )}
             </fieldset>
           ) : (
             <>
@@ -274,6 +299,48 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
             </div>
           )}
 
+          {weekly && clock && (
+            <fieldset className="space-y-3 rounded-lg bg-canvas p-4">
+              <legend className="sr-only">{t('How this shift works')}</legend>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">{t('Counted late after')}</span>
+                <select value={grace} onChange={(e) => setGrace(e.target.value)} className={inputClass}>
+                  {[0, 5, 10, 15, 30].map((m) => (
+                    <option key={m} value={m}>{m === 0 ? t('The start time, no grace') : t('{n} minutes', { n: m })}</option>
+                  ))}
+                  <option value="flex">{t('Never: flexible hours, only hours are counted')}</option>
+                </select>
+              </label>
+              {(myClasses ?? []).some((c) => c.id !== editing?.id && !c.rosterFrom) && (
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-medium">{t('Staff list')}</span>
+                  <select
+                    value={rosterFrom}
+                    onChange={(e) => {
+                      setRosterFrom(e.target.value)
+                      if (e.target.value) setRotating(true)
+                    }}
+                    className={inputClass}
+                  >
+                    <option value="">{t('Its own list')}</option>
+                    {(myClasses ?? [])
+                      .filter((c) => c.id !== editing?.id && !c.rosterFrom)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>{t('Same list as {name}', { name: c.name })}</option>
+                      ))}
+                  </select>
+                </label>
+              )}
+              <label className="flex items-start gap-2.5 text-sm">
+                <input type="checkbox" checked={rotating} onChange={(e) => setRotating(e.target.checked)} className="mt-0.5 size-4 accent-accent" />
+                <span>
+                  <span className="font-medium">{t('People rotate between shifts')}</span>
+                  <span className="block text-xs text-muted">{t('Anyone on the list may clock in. Nobody is marked absent from this shift.')}</span>
+                </span>
+              </label>
+            </fieldset>
+          )}
+
           {!weekly && lists.length > 0 && (
             <label className="block">
               <span className="mb-1.5 flex justify-between text-sm font-medium">
@@ -289,11 +356,11 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
           )}
           {editing && (
             <Link
-              to={`/app/timetable/${editing.id}/students`}
+              to={`/app/timetable/${editing.rosterFrom || editing.id}/students`}
               className="flex items-center justify-between rounded-lg bg-canvas px-4 py-3 text-sm hover:bg-accent-soft"
             >
               <span className="font-medium">{t('Student list')}</span>
-              <span className="text-accent">{editing.rosterCount ? `${t('{n} students', { n: editing.rosterCount })} ›` : `${t('Upload')} ›`}</span>
+              <span className="text-accent">{editing.rosterFrom ? `${t('Shared student list')} ›` : editing.rosterCount ? `${t('{n} students', { n: editing.rosterCount })} ›` : `${t('Upload')} ›`}</span>
             </Link>
           )}
           {!hasList && (

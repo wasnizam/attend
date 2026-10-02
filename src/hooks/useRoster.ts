@@ -19,9 +19,11 @@ export function useRoster(rosterId: string | null | undefined, organisationId: s
 export function useAbsentees(session: Session, records: AttendanceRecord[]): Absentee[] {
   const roster = useRoster(session.rosterId, session.organisationId)
   return useMemo(() => {
+    // People who rotate between shifts are not "absent" from the ones they are not on.
+    if (session.rotating) return []
     const present = new Set(records.map((r) => r.studentKey))
     return (roster.data ?? [])
       .filter((s) => !present.has(s.studentKey))
       .map((s) => ({ studentId: s.studentId, studentName: s.studentName, sessionName: session.name, date: session.date }))
-  }, [roster.data, records, session.name, session.date])
+  }, [roster.data, records, session.name, session.date, session.rotating])
 }

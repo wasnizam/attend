@@ -4,12 +4,12 @@ import { useNavigate } from 'react-router-dom'
 import { Logo, PageLoader } from '../components/ui'
 import { startClassSession } from '../data/classes'
 import { signOut } from '../data/account'
-import { endSession, rotateCode, startSession } from '../data/sessions'
+import { endSession, freshCode, rotateCodeTo, startSession } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
 import { useMyClasses } from '../hooks/useClasses'
 import { useMySessions, useNow, useSessionAttendance } from '../hooks/useSessions'
 import { type AgendaItem, agendaFor } from '../lib/agenda'
-import { attendUrl, countPresent, formatClock, formatRange, isoDate, parseDate } from '../lib/format'
+import { attendUrl, countPresent, doorUrl, effectiveStatus, endOf, formatClock, formatRange, isoDate, parseDate } from '../lib/format'
 import { locale, t } from '../lib/i18n'
 import type { Session } from '../lib/types'
 
@@ -28,14 +28,13 @@ export function Kiosk() {
   const classes = useMyClasses()
   const now = useNow(15_000)
   const today = isoDate(new Date(now))
-  const [pick, setPick] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
   const tried = useRef(new Set<string>())
 
   const items = sessions.data && classes.data ? agendaFor(today, sessions.data, classes.data, today) : []
   const opensAt = (i: AgendaItem) => parseDate(i.date, i.startTime).getTime() - OPEN_EARLY_MS
   const due = items.filter(
-    (i) => (i.state === 'planned' || i.state === 'scheduled') && now >= opensAt(i) && now < parseDate(i.date, i.endTime).getTime(),
+    (i) => (i.state === 'planned' || i.state === 'scheduled') && now >= opensAt(i) && now < endOf(i).getTime(),
   )
   const dueKeys = due.map((i) => i.key).join(',')
 
@@ -69,8 +68,10 @@ export function Kiosk() {
 
   if (sessions.loading || classes.loading) return <PageLoader />
 
-  const open = items.filter((i) => i.state === 'active' && i.session)
-  const shown = open.find((i) => i.key === pick) ?? open[0]
+  // Everything that is open, whatever day it started: a night shift is still open after midnight.
+  const open = (sessions.data ?? [])
+    .filter((x) => effectiveStatus(x, now) === 'active' && x.token)
+    .sort((a, b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`))
   const next = items.find((i) => (i.state === 'planned' || i.state === 'scheduled') && now < opensAt(i))
   const clock = new Date(now)
 
@@ -85,8 +86,8 @@ export function Kiosk() {
       </header>
 
       <main className="flex min-h-0 flex-1 flex-col items-center justify-center gap-[2vh] p-5 text-center">
-        {shown ? (
-          <Door key={shown.session!.id} session={shown.session!} />
+        {open.length > 0 ? (
+          <Door sessions={open} />
         ) : (
           <>
             <h1 className="text-[clamp(1.5rem,4vw,3rem)] font-semibold tracking-tight">{t('Nothing is open right now')}</h1>
@@ -102,18 +103,7 @@ export function Kiosk() {
       </main>
 
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-3 text-sm">
-        <div className="flex flex-wrap gap-2">
-          {open.length > 1 &&
-            open.map((i) => (
-              <button
-                key={i.key}
-                onClick={() => setPick(i.key)}
-                className={`rounded-full px-3 py-1.5 font-medium ${i.key === shown?.key ? 'bg-ink text-white' : 'bg-canvas'}`}
-              >
-                {i.name}
-              </button>
-            ))}
-        </div>
+        <span />
         <ExitControl />
       </footer>
     </div>
@@ -200,51 +190,80 @@ function ExitControl() {
   )
 }
 
-/** One open session at the door: a big QR, the count, and who scanned last. */
-function Door({ session }: { session: Session }) {
-  const profile = useProfile()
-  const records = useSessionAttendance(session, profile).data ?? []
-  const latest = records[records.length - 1]
-  const url = attendUrl(session.token!) + (session.qrCode ? `?c=${session.qrCode}` : '')
+/**
+ * What is open, at the door: one big QR, however many shifts are running. With several
+ * open (a handover), the QR leads to a page that works out which shift the person is on.
+ */
+function Door({ sessions }: { sessions: Session[] }) {
+  const current = useRef(sessions)
+  current.current = sessions
+  const ids = sessions.map((x) => x.id).join(',')
+  const code = sessions[0].qrCode
+  const inStep = sessions.every((x) => x.qrCode === code)
 
-  // This screen issues the new code every 45 seconds.
-  const current = useRef(session)
-  current.current = session
+  // This screen issues one new code every 45 seconds and gives it to every open shift,
+  // straight away when the set of open shifts changes.
   useEffect(() => {
-    if (!session.qrCode) return
-    const id = setInterval(() => rotateCode(current.current).catch(() => {}), ROTATE_EVERY_MS)
+    const turn = () => {
+      const next = freshCode()
+      current.current.forEach((x) => rotateCodeTo(x, next).catch(() => {}))
+    }
+    if (!inStep) turn()
+    const id = setInterval(turn, ROTATE_EVERY_MS)
     return () => clearInterval(id)
-  }, [session.id, Boolean(session.qrCode)])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ids])
 
-  // Close for the day when the window lapses.
-  const expiresAt = session.expiresAt?.toMillis()
+  // Close each one for the day when its window lapses.
+  const expiries = sessions.map((x) => x.expiresAt?.toMillis() ?? 0).join(',')
   useEffect(() => {
-    if (!expiresAt) return
-    const wait = expiresAt - Date.now()
-    if (wait > 2 ** 31 - 1) return
-    const id = setTimeout(() => endSession(current.current).catch(() => {}), Math.max(0, wait))
-    return () => clearTimeout(id)
-  }, [session.id, expiresAt])
+    const timers = current.current.map((x) => {
+      const wait = (x.expiresAt?.toMillis() ?? 0) - Date.now()
+      return wait > 2 ** 31 - 1 ? null : setTimeout(() => endSession(x).catch(() => {}), Math.max(0, wait))
+    })
+    return () => timers.forEach((id) => id && clearTimeout(id))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ids, expiries])
+
+  const one = sessions.length === 1
+  const url = one ? attendUrl(sessions[0].token!) + (code ? `?c=${code}` : '') : doorUrl(sessions.map((x) => x.token!), code)
 
   return (
     <>
-      <div>
-        <h1 className="text-[clamp(1.5rem,4vw,3rem)] font-semibold tracking-tight">{session.name}</h1>
-        <p className="tabular text-[clamp(0.9rem,1.6vw,1.25rem)] text-muted">{formatRange(session)}</p>
-      </div>
-      <QRCodeSVG value={url} level="M" marginSize={2} style={{ width: 'min(52vh, 86vw)', height: 'min(52vh, 86vw)' }} />
+      {one && (
+        <div>
+          <h1 className="text-[clamp(1.5rem,4vw,3rem)] font-semibold tracking-tight">{sessions[0].name}</h1>
+          <p className="tabular text-[clamp(0.9rem,1.6vw,1.25rem)] text-muted">{formatRange(sessions[0])}</p>
+        </div>
+      )}
+      <QRCodeSVG value={url} level="M" marginSize={2} style={{ width: 'min(50vh, 86vw)', height: 'min(50vh, 86vw)' }} />
       <p className="text-[clamp(1rem,2vw,1.6rem)]">{t('Scan this QR to mark attendance')}</p>
-      {session.qrCode && (
+      {code && (
         <p className="text-[clamp(0.9rem,1.6vw,1.25rem)]">
           <span className="text-muted">{t('Code')}: </span>
-          <span className="font-mono font-semibold tracking-[0.3em]">{session.qrCode}</span>
+          <span className="font-mono font-semibold tracking-[0.3em]">{code}</span>
         </p>
       )}
-      <p className="tabular text-[clamp(1rem,2vw,1.5rem)] font-semibold">
-        {countPresent(records)}
-        {session.expected ? ` / ${session.expected}` : ''} <span className="font-normal text-muted">{t('PRESENT')}</span>
-        {latest && <span className="ml-4 font-normal text-good">✓ {latest.studentName}</span>}
-      </p>
+      <ul className="flex flex-wrap justify-center gap-x-8 gap-y-1">
+        {sessions.map((x) => (
+          <Tally key={x.id} session={x} named={!one} />
+        ))}
+      </ul>
     </>
+  )
+}
+
+/** How many are in for one shift, and who scanned last. */
+function Tally({ session, named }: { session: Session; named: boolean }) {
+  const profile = useProfile()
+  const records = useSessionAttendance(session, profile).data ?? []
+  const latest = records[records.length - 1]
+  return (
+    <li className="tabular text-[clamp(1rem,2vw,1.5rem)] font-semibold">
+      {named && <span className="font-normal text-muted">{session.name} · </span>}
+      {countPresent(records)}
+      {session.expected ? ` / ${session.expected}` : ''} <span className="font-normal text-muted">{t('PRESENT')}</span>
+      {latest && <span className="ml-3 font-normal text-good">✓ {latest.studentName}</span>}
+    </li>
   )
 }

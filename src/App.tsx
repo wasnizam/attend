@@ -8,6 +8,7 @@ import { Landing } from './pages/Landing'
 // The participant check-in page and the lecturer app are separate bundles, so a
 // student scanning the QR downloads only what the check-in form needs.
 const Attend = lazy(() => import('./pages/Attend'))
+const DoorEntry = lazy(() => import('./pages/DoorEntry'))
 const Staff = lazy(() => import('./Staff'))
 
 function SetupNeeded() {
@@ -39,6 +40,7 @@ export function App() {
         <Route path="/workplace" element={<Landing show="workplace" />} />
         <Route element={<NeedsFirebase />}>
           <Route path="/session/:token" element={<Attend />} />
+          <Route path="/door" element={<DoorEntry />} />
           <Route path="/*" element={<Staff />} />
         </Route>
       </Routes>

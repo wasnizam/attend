@@ -80,6 +80,10 @@ export interface Organisation {
 }
 
 export interface Session extends CourseDetails, Geofence {
+  /** Copied from the shift when the day is opened: see WeeklyClass. */
+  graceMin?: number | null
+  flexible?: boolean
+  rotating?: boolean
   id: string
   organisationId: string
   ownerId: string
@@ -179,5 +183,13 @@ export interface WeeklyClass extends CourseDetails, Geofence {
   barPct?: number
   /** Meetings that were called off: key is meetingKey(date, slot), value is the reason. */
   cancelled?: Record<string, string>
+  /** Workplace: minutes after the start before a clock-in counts as late. Missing means 10. */
+  graceMin?: number | null
+  /** Workplace: flexible hours, so nobody is ever late. */
+  flexible?: boolean
+  /** Workplace: people rotate between shifts, so who is missing from this one is not counted. */
+  rotating?: boolean
+  /** Workplace: use another shift's staff list instead of keeping its own. */
+  rosterFrom?: string | null
   createdAt: Timestamp | null
 }

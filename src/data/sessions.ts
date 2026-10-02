@@ -38,6 +38,8 @@ export interface NewSession {
   kind?: ClassKind
   /** Location check carried over from the class, if it has one. */
   geofence?: Geofence
+  /** Workplace rules carried over from the shift. */
+  work?: { graceMin?: number | null; flexible?: boolean; rotating?: boolean }
 }
 
 const sessions = collection(db, 'sessions')
@@ -65,6 +67,9 @@ export function newSessionData(profile: UserProfile, input: NewSession, classId:
     geoRadius: input.geofence?.geoRadius ?? null,
     geoCos: input.geofence?.geoCos ?? null,
     geoMode: input.geofence?.geoPoint ? (input.geofence.geoMode ?? null) : null,
+    ...(input.work?.graceMin != null ? { graceMin: input.work.graceMin } : {}),
+    ...(input.work?.flexible ? { flexible: true } : {}),
+    ...(input.work?.rotating ? { rotating: true } : {}),
     mode: 'qr',
     classId,
     rosterId: input.rosterId ?? null,
@@ -269,6 +274,12 @@ export function subscribeSessionLink(token: string, onData: (link: SessionLink |
 /** Moves the rotating QR to its next code. The previous one stays valid for one more turn. */
 export const rotateCode = (session: Session) =>
   updateDoc(doc(db, 'sessions', session.id), { qrCode: newCode(), qrCodePrev: session.qrCode ?? null })
+
+/** The door screen gives every open shift the same code, so one QR serves them all. */
+export const rotateCodeTo = (session: Session, code: string) =>
+  updateDoc(doc(db, 'sessions', session.id), { qrCode: code, qrCodePrev: session.qrCode ?? null })
+
+export const freshCode = () => newCode()
 
 /** Closes attendance. The token is dead from this point on. */
 export async function endSession(session: Session): Promise<void> {

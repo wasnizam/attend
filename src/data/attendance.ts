@@ -283,6 +283,12 @@ export function subscribeLocations(
   )
 }
 
+/** Participant side: when (if ever) this person checked in to the session. */
+export async function getCheckIn(link: SessionLink, rawStudentId: string): Promise<Date | null> {
+  const snap = await getDoc(doc(attendance, `${link.sessionId}_${studentKey(rawStudentId)}`))
+  return snap.exists() ? (toRecord(snap.id, snap.data()).timestamp?.toDate() ?? new Date()) : null
+}
+
 // ---- clock-out (workplace) ----
 
 const clockouts = collection(db, 'clockouts')

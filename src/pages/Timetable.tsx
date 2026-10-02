@@ -9,8 +9,8 @@ function ClassLinks({ c }: { c: WeeklyClass }) {
   const pill = 'rounded-md bg-canvas px-3 py-1.5 text-sm font-medium text-accent hover:bg-accent-soft'
   return (
     <div className="flex shrink-0 flex-wrap gap-1.5 sm:justify-end">
-      <Link to={`/app/timetable/${c.id}/students`} className={pill}>
-        {c.rosterCount ? t('{n} students', { n: c.rosterCount }) : t('+ Student list')}
+      <Link to={`/app/timetable/${c.rosterFrom || c.id}/students`} className={pill}>
+        {c.rosterFrom ? t('Shared student list') : c.rosterCount ? t('{n} students', { n: c.rosterCount }) : t('+ Student list')}
       </Link>
       <Link to={`/app/timetable/${c.id}/report`} className={pill}>
         {t('Report')}

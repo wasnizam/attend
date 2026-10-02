@@ -1,3 +1,4 @@
+import { has } from './purpose'
 import type { Timestamp } from 'firebase/firestore'
 import { locale, t } from './i18n'
 import type { CourseDetails, Session, SessionStatus, Slot, WeeklyClass } from './types'
@@ -86,6 +87,12 @@ export function randomToken(length = 6): string {
   return Array.from(bytes, (b) => TOKEN_ALPHABET[b % TOKEN_ALPHABET.length]).join('')
 }
 
+/** One QR for several open shifts: the page it opens works out which one the person belongs to. */
+export function doorUrl(tokens: string[], code: string | null | undefined): string {
+  const base = (import.meta.env.VITE_PUBLIC_URL as string | undefined)?.replace(/\/$/, '') || window.location.origin
+  return `${base}/door?t=${tokens.join(',')}${code ? `&c=${code}` : ''}`
+}
+
 export function attendUrl(token: string): string {
   const base = (import.meta.env.VITE_PUBLIC_URL as string | undefined)?.replace(/\/$/, '') || window.location.origin
   return `${base}/session/${token}`
@@ -118,7 +125,8 @@ export const KIND_LABEL = { lecture: 'Lecture', tutorial: 'Tutorial', lab: 'Lab'
 
 /** "Lecture · SECJ3303 · Section 02 · N28 Lab 3" — only the parts that were filled in. */
 export function courseLine(c: CourseDetails): string {
-  return [c.kind && t(KIND_LABEL[c.kind]), c.code, c.section && `${t('Sec')} ${c.section}`, c.venue].filter(Boolean).join(' · ')
+  // Lecture / tutorial / lab only means something to a university.
+  return [has('classKind') && c.kind && t(KIND_LABEL[c.kind]), c.code, c.section && `${t('Sec')} ${c.section}`, c.venue].filter(Boolean).join(' · ')
 }
 
 export const dayName = (d: number) => t(DAY_NAMES[d])
@@ -147,10 +155,21 @@ export function weekStart(iso: string): string {
 export const LATE_GRACE_MIN = 10
 
 /** Minutes late for a clock-in, or 0 when it was on time (within the grace period). */
-export function minutesLate(clockIn: Timestamp | null | undefined, session: Pick<Session, 'date' | 'startTime'>): number {
-  if (!clockIn) return 0
+export function minutesLate(
+  clockIn: Timestamp | null | undefined,
+  session: Pick<Session, 'date' | 'startTime' | 'graceMin' | 'flexible'>,
+): number {
+  // Flexible hours have no start to be late for.
+  if (!clockIn || session.flexible) return 0
   const late = Math.floor((clockIn.toMillis() - parseDate(session.date, session.startTime).getTime()) / 60_000)
-  return late > LATE_GRACE_MIN ? late : 0
+  return late > (session.graceMin ?? LATE_GRACE_MIN) ? late : 0
+}
+
+/** When something ends. An end time at or before the start means it runs past midnight (a night shift). */
+export function endOf(item: { date: string; startTime: string; endTime: string }): Date {
+  const end = parseDate(item.date, item.endTime)
+  if (item.endTime <= item.startTime) end.setDate(end.getDate() + 1)
+  return end
 }
 
 /** 545 -> "9 h 05 min" */

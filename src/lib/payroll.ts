@@ -1,4 +1,4 @@
-import { minutesLate, parseDate } from './format'
+import { endOf, minutesLate } from './format'
 import type { RosterEntry } from './rosterImport'
 import type { AttendanceRecord, Session } from './types'
 
@@ -48,7 +48,7 @@ export function buildPayroll(
   }
   for (const session of sessions) {
     const seen = new Set<string>()
-    const end = parseDate(session.date, session.endTime).getTime()
+    const end = endOf(session).getTime()
     for (const r of records.get(session.id) ?? []) {
       seen.add(r.studentKey)
       const row = person(r.studentKey, r.studentId, r.studentName)
@@ -71,7 +71,7 @@ export function buildPayroll(
         } else row.noClockOut += 1
       }
     }
-    for (const s of (session.rosterId && rosters.get(session.rosterId)) || []) {
+    for (const s of (!session.rotating && session.rosterId && rosters.get(session.rosterId)) || []) {
       if (!seen.has(s.studentKey)) person(s.studentKey, s.studentId, s.studentName).absent += 1
     }
   }

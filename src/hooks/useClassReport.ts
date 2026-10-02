@@ -11,7 +11,7 @@ import { useMySessions } from './useSessions'
 export function useClassReport(cls: WeeklyClass): { report: ClassReport | null; loading: boolean; failed: boolean } {
   const profile = useProfile()
   const mySessions = useMySessions()
-  const roster = useRoster(cls.id, cls.organisationId)
+  const roster = useRoster(cls.rosterFrom || cls.id, cls.organisationId)
   const [records, setRecords] = useState<Map<string, AttendanceRecord[]> | null>(null)
   const [failed, setFailed] = useState(false)
   const [outs, setOuts] = useState<Map<string, ClockOuts> | null>(null)

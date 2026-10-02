@@ -116,8 +116,9 @@ export function buildReport(
     }
   }
   for (const row of people.values()) {
-    row.absent = Math.max(0, held.length - row.present - row.late - row.excused - row.mc)
-    row.rate = percent(row.present + row.late, held.length - row.excused - row.mc)
+    // On a rotating shift nobody is expected every day, so nothing is counted as missed.
+    row.absent = cls.rotating ? 0 : Math.max(0, held.length - row.present - row.late - row.excused - row.mc)
+    row.rate = cls.rotating ? null : percent(row.present + row.late, held.length - row.excused - row.mc)
     row.level = row.absent >= barAfter ? 'barring' : row.absent >= warnAfter ? 'warning' : 'ok'
     row.canMiss = Math.max(0, barAfter - 1 - row.absent)
   }

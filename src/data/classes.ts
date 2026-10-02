@@ -18,6 +18,11 @@ import type { ClassKind, Delivery, Session, Slot, UserProfile, WeeklyClass } fro
 import { newSessionData, startSession } from './sessions'
 
 export interface ClassInput {
+  /** Workplace only: see WeeklyClass. */
+  graceMin?: number | null
+  flexible?: boolean
+  rotating?: boolean
+  rosterFrom?: string | null
   name: string
   description: string
   slots: Slot[]
@@ -51,6 +56,10 @@ const clean = (input: ClassInput) => ({
   delivery: input.delivery,
   meetingUrl: input.meetingUrl.trim(),
   kind: input.kind,
+  graceMin: input.graceMin ?? null,
+  flexible: Boolean(input.flexible),
+  rotating: Boolean(input.rotating),
+  rosterFrom: input.rosterFrom || null,
 })
 
 export async function createClass(profile: UserProfile, input: ClassInput): Promise<string> {
@@ -110,7 +119,10 @@ export async function startClassSession(
 ): Promise<string> {
   const ref = doc(db, 'sessions', classSessionId(cls.id, date, slot))
   try {
-    const listed = cls.rosterCount && cls.rosterCount > 0
+    // A shift can borrow another shift's staff list (people who rotate between them).
+    const listId = cls.rosterFrom || cls.id
+    const count = cls.rosterFrom ? ((await getDoc(doc(classes, cls.rosterFrom))).data()?.rosterCount ?? 0) : (cls.rosterCount ?? 0)
+    const listed = count > 0
     await setDoc(
       ref,
       newSessionData(
@@ -121,8 +133,8 @@ export async function startClassSession(
           date,
           startTime: slot.startTime,
           endTime: slot.endTime,
-          rosterId: listed ? cls.id : null,
-          expected: listed ? cls.rosterCount! : cls.expected,
+          rosterId: listed ? listId : null,
+          expected: listed && !cls.rotating ? count : cls.expected,
           code: cls.code,
           section: cls.section,
           venue: cls.venue,
@@ -130,6 +142,7 @@ export async function startClassSession(
           meetingUrl: cls.meetingUrl,
           kind: cls.kind ?? 'lecture',
           geofence: cls,
+          work: { graceMin: cls.graceMin, flexible: cls.flexible, rotating: cls.rotating },
         },
         cls.id,
       ),

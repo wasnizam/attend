@@ -189,10 +189,10 @@ export const EDITIONS: Edition[] = [
     features: [
       [ICON.clock, 'Clock in and out', 'Staff scan the QR when they arrive and again when they leave. It takes seconds.'],
       [ICON.bolt, 'Hours worked out for you', 'Time in, time out and total hours for each person, every day.'],
-      [ICON.pencil, 'Lateness without arguments', 'Anyone more than 10 minutes late is flagged by itself, with the minutes.'],
+      [ICON.pencil, 'Lateness without arguments', 'Anyone who clocks in late is flagged by itself, with the minutes. You choose the grace period.'],
       [ICON.upload, 'Upload your staff list', 'Excel, CSV or PDF. Staff type only their ID, and you see who has not come in by name.'],
-      [ICON.calendar, 'MC with proof', 'Record an MC with its number, the clinic and a photo of the slip.'],
-      [ICON.chart, 'Timesheet export', 'Hours, lateness and MC for each person. Export to Excel.'],
+      [ICON.calendar, 'Office hours or shifts', 'Fixed hours, two or three shifts, night shifts, rotating shifts or flexible hours. One QR at the door for all of them.'],
+      [ICON.chart, 'Monthly report for payroll', 'Days, hours, overtime, lateness, MC and leave for each person, by department. Export to Excel.'],
     ],
     steps: [
       ['1. Create', 'Add your shift and your staff list.'],

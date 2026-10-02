@@ -169,6 +169,19 @@ tablet: anything on today's timetable opens by itself 30 minutes before its star
 the rotating QR, and closes when its window lapses. It needs the manager to be signed in on
 that device, and the page to stay open (it asks the browser to keep the screen awake).
 
+**Working patterns.** A shift (a class, for workplaces) carries how it works: `graceMin` (minutes
+before a clock-in is late; default 10), `flexible` (never late, only hours), `rotating` (nobody
+is counted absent) and `rosterFrom` (use another shift's staff list). These are copied onto the
+session when the day is opened. An end time at or before the start means a night shift ending
+the next day (`endOf()`). The form has "Mon–Fri / Mon–Sat / Every day" quick fills for office
+hours.
+
+**One QR for every open shift.** The door screen gives all open shifts the same rotating code.
+With one shift open the QR is the ordinary check-in link; with several it is
+`/door?t=TOKEN,TOKEN&c=CODE` (`src/pages/DoorEntry.tsx`), a public page that asks for the staff
+ID once and picks the shift: the one they are clocked in to (to clock out), else the one whose
+list they are on, else they choose when they are on several.
+
 Each person on a workplace list can carry a `department` (picked up from a sheet's Department
 column, or typed). The **monthly report** (`/app/reports/monthly`, `src/lib/payroll.ts`) adds up
 a month for everyone: days worked, hours, overtime (time after the shift's end), lateness, MC,
