@@ -169,6 +169,11 @@ tablet: anything on today's timetable opens by itself 30 minutes before its star
 the rotating QR, and closes when its window lapses. It needs the manager to be signed in on
 that device, and the page to stay open (it asks the browser to keep the screen awake).
 
+**Office first, shifts as an extra.** A workplace starts as a plain office: the menu reads
+"Working hours", the form opens on Monday to Friday, nine to five, and nothing mentions shifts.
+An admin ticks "We work in shifts" on the Account page (`organisations.shifts`, `has('shifts')`)
+to get the shift wording, shared staff lists, rotation, minimum staffing and the Shift plan.
+
 **Working patterns.** A shift (a class, for workplaces) carries how it works: `graceMin` (minutes
 before a clock-in is late; default 10), `flexible` (never late, only hours), `rotating` (nobody
 is counted absent) and `rosterFrom` (use another shift's staff list). These are copied onto the

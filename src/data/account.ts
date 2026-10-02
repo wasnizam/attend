@@ -75,6 +75,9 @@ export function subscribeOrganisation(id: string, onData: (org: Organisation | n
   )
 }
 
+/** Workplace: turn the advanced shift features on or off for everyone in the organisation. */
+export const setShifts = (id: string, on: boolean) => updateDoc(doc(db, 'organisations', id), { shifts: on })
+
 export async function renameOrganisation(org: Organisation, name: string) {
   await updateDoc(doc(db, 'organisations', org.id), { name: name.trim() })
   // Keeps the name shown to people joining with the invite link in step.

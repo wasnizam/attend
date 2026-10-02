@@ -48,8 +48,11 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
   const [params] = useSearchParams()
   // Organisations without repeating classes (events) only ever create one-off sessions.
   const canRepeat = has('recurring')
-  const [weekly, setWeekly] = useState(canRepeat && (Boolean(editing) || params.has('weekly')))
-  const [name, setName] = useState(editing?.name ?? '')
+  // A workplace nearly always wants its regular hours, not a single date.
+  const [weekly, setWeekly] = useState(canRepeat && (Boolean(editing) || params.has('weekly') || has('clock')))
+  // An office without shifts starts from the usual week: Monday to Friday, nine to five.
+  const office = has('clock') && !has('shifts')
+  const [name, setName] = useState(editing?.name ?? (office ? t('Office hours') : ''))
   const [description, setDescription] = useState(editing?.description ?? '')
   const [code, setCode] = useState(editing?.code ?? '')
   const [section, setSection] = useState(editing?.section ?? '')
@@ -60,7 +63,11 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
   const [date, setDate] = useState(isoDate())
   const [{ startTime, endTime }, setTimes] = useState(defaultTimes)
   const [slots, setSlots] = useState<Slot[]>(() =>
-    editing ? classSlots(editing) : [{ day: new Date().getDay(), ...defaultTimes() }],
+    editing
+      ? classSlots(editing)
+      : office
+        ? [1, 2, 3, 4, 5].map((day) => ({ day, startTime: '09:00', endTime: '17:00' }))
+        : [{ day: new Date().getDay(), ...defaultTimes() }],
   )
   const [expected, setExpected] = useState(editing?.expected ? String(editing.expected) : '')
   const [rosterId, setRosterId] = useState('')
@@ -313,7 +320,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
                   <option value="flex">{t('Never: flexible hours, only hours are counted')}</option>
                 </select>
               </label>
-              {(myClasses ?? []).some((c) => c.id !== editing?.id && !c.rosterFrom) && (
+              {has('shifts') && (myClasses ?? []).some((c) => c.id !== editing?.id && !c.rosterFrom) && (
                 <label className="block">
                   <span className="mb-1.5 block text-sm font-medium">{t('Staff list')}</span>
                   <select
@@ -333,14 +340,14 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
                   </select>
                 </label>
               )}
-              <label className="flex items-start gap-2.5 text-sm">
+              {has('shifts') && <label className="flex items-start gap-2.5 text-sm">
                 <input type="checkbox" checked={rotating} onChange={(e) => setRotating(e.target.checked)} className="mt-0.5 size-4 accent-accent" />
                 <span>
                   <span className="font-medium">{t('People rotate between shifts')}</span>
                   <span className="block text-xs text-muted">{t('Anyone on the list may clock in to whichever shift they are on. Tick this on every shift that shares the list.')}</span>
                 </span>
-              </label>
-              {rotating && !rosterFrom && (
+              </label>}
+              {has('shifts') && rotating && !rosterFrom && (
                 <label className="block">
                   <span className="mb-1.5 block text-sm font-medium">{t('Each person works')}</span>
                   <select value={daysPerWeek} onChange={(e) => setDaysPerWeek(e.target.value)} className={inputClass}>
@@ -351,16 +358,18 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
                   <span className="mt-1.5 block text-xs text-muted">{t('Fewer days than this in a week, without leave or MC, counts as absent. No weekly schedule needed.')}</span>
                 </label>
               )}
-              <Field
-                label={t('Fewest people needed')}
-                hint={t('Optional')}
-                type="number"
-                min={1}
-                max={10000}
-                inputMode="numeric"
-                value={minStaff}
-                onChange={(e) => setMinStaff(e.target.value)}
-              />
+              {has('shifts') && (
+                <Field
+                  label={t('Fewest people needed')}
+                  hint={t('Optional')}
+                  type="number"
+                  min={1}
+                  max={10000}
+                  inputMode="numeric"
+                  value={minStaff}
+                  onChange={(e) => setMinStaff(e.target.value)}
+                />
+              )}
             </fieldset>
           )}
 

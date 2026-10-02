@@ -821,4 +821,7 @@ export const ms: Record<string, string> = {
   "“—” means not planned: that day is not checked. “Off” is a rest day. A red number is a shift with fewer people than it needs.": "“—” bermaksud belum dirancang: hari itu tidak disemak. “Rehat” ialah hari rehat. Nombor merah ialah syif yang kurang orang daripada yang diperlukan.",
   "{n} on another shift": "{n} di syif lain",
   "Wrong shift": "Salah syif",
+  "We work in shifts": "Kami bekerja mengikut syif",
+  "Adds several shifts, people who rotate between them, and a weekly shift plan. Leave it off for ordinary office hours.": "Menambah beberapa syif, kakitangan yang bergilir antara syif, dan jadual syif mingguan. Biarkan mati untuk waktu pejabat biasa.",
+  "Office hours": "Waktu pejabat",
 }

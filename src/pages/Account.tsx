@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, ErrorNote, Field, friendlyError, inputClass } from '../components/ui'
-import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, signOut } from '../data/account'
+import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, setShifts, signOut } from '../data/account'
 import { useCurrency } from '../lib/currency'
 import { editionForPurpose } from '../lib/editions'
 import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, paidUntil, trialDaysLeft } from '../lib/plan'
@@ -148,6 +148,26 @@ export function Account() {
           </form>
         ) : (
           <p className="mt-2 text-muted">{org?.name ?? '—'}</p>
+        )}
+        {profile.role === 'admin' && org && getPurpose() === 'workplace' && (
+          <label className="mt-5 flex items-start gap-3 border-t border-line pt-4">
+            <input
+              type="checkbox"
+              checked={Boolean(org.shifts)}
+              onChange={(e) => {
+                const on = e.target.checked
+                orgSave.run(async () => {
+                  await setShifts(org.id, on)
+                  setOrg({ ...org, shifts: on })
+                }, '')
+              }}
+              className="mt-1 size-4 accent-accent"
+            />
+            <span>
+              <span className="block text-sm font-medium">{t('We work in shifts')}</span>
+              <span className="block text-xs text-muted">{t('Adds several shifts, people who rotate between them, and a weekly shift plan. Leave it off for ordinary office hours.')}</span>
+            </span>
+          </label>
         )}
         <p className="mt-3 text-sm text-muted">
           {t('Your role')}: <span className="font-medium text-ink">{profile.role === 'admin' ? t('Admin') : t('Lecturer')}</span>

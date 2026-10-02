@@ -74,6 +74,8 @@ export interface Organisation {
   paidUntil?: Timestamp | null
   /** Workplace Pro: staff covered by the paid tier. */
   seats?: number
+  /** Workplace: shifts are switched on (several shifts, rotation, the shift plan). */
+  shifts?: boolean
   name: string
   ownerId: string
   inviteCode: string

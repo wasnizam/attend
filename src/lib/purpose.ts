@@ -24,6 +24,11 @@ export type Feature =
   | 'mc'
   /** Clock-out as well as clock-in: hours worked, and lateness worked out from the time. */
   | 'clock'
+  /**
+   * Workplace, advanced: several shifts, people rotating between them, and the weekly shift
+   * plan. Off by default: an ordinary office just has its working hours.
+   */
+  | 'shifts'
 
 const FEATURES: Record<Purpose, Feature[]> = {
   education: ['recurring', 'classKind', 'barring', 'mc'],
@@ -38,7 +43,14 @@ export const getPurpose = () => purpose
 export const setPurpose = (next: Purpose | undefined | null) => {
   purpose = next && next in FEATURES ? next : 'education'
 }
-export const has = (feature: Feature) => FEATURES[purpose].includes(feature)
+// Whether a workplace has switched shifts on (the organisation's `shifts` setting).
+let shiftMode = false
+export const setShiftMode = (on: boolean | undefined | null) => {
+  shiftMode = Boolean(on)
+}
+
+export const has = (feature: Feature) =>
+  feature === 'shifts' ? purpose === 'workplace' && shiftMode : FEATURES[purpose].includes(feature)
 
 // Word swaps, applied to finished interface text. Longest phrases first, so "Student ID"
 // is handled before "Student". Education is the wording the app is written in.
@@ -67,6 +79,8 @@ const TERMS: Record<'en' | 'ms', Partial<Record<Purpose, Swap[]>>> = {
       ['Past sessions', 'Past events'], ['sessions', 'events'], ['Sessions', 'Events'], ['session', 'event'], ['Session', 'Event'],
     ]),
     workplace: swaps([
+      // The menu, in a workplace's own words. (An office without shifts then reads "Working hours".)
+      ['Add to timetable', 'Save'], ['Back to timetable', 'Back'], ['Timetable', 'Shifts'], ['New session', 'Add shift'],
       ['When it meets each week', 'Working days and hours'], ['Expected participants', 'Number of staff'],
       ['Repeats every week of the semester', 'Repeats every week'],
       ['Add the classes you teach this semester once', 'Add your shifts once'],
@@ -103,6 +117,7 @@ const TERMS: Record<'en' | 'ms', Partial<Record<Purpose, Swap[]>>> = {
       ['Sesi', 'Acara'], ['sesi', 'acara'],
     ]),
     workplace: swaps([
+      ['Tambah ke jadual', 'Simpan'], ['Kembali ke jadual', 'Kembali'], ['Sesi baharu', 'Tambah syif'], ['Jadual(?! syif)', 'Syif'],
       ['Tambah kelas yang anda ajar semester ini sekali sahaja', 'Tambah syif anda sekali sahaja'],
       ['Kehadiran Disahkan', 'Rekod masuk berjaya'], ['Sahkan Kehadiran', 'Rekod masuk atau keluar'],
       ['Mula Kehadiran', 'Buka rekod masuk'], ['Tamat Kehadiran', 'Tutup untuk hari ini'],
@@ -117,11 +132,22 @@ const TERMS: Record<'en' | 'ms', Partial<Record<Purpose, Swap[]>>> = {
   },
 }
 
+const OFFICE: Record<'en' | 'ms', Swap[]> = {
+  en: swaps([
+    ['Add shift', 'Add working hours'], ['Shift report', 'Report'], ['Past shifts', 'Earlier'], ['Your shifts', 'Your working hours'],
+    ['an extra shift', 'an extra day'], ['Shift name', 'Name'],
+    ['Shifts', 'Working hours'], ['shifts', 'working hours'], ['Shift', 'Working hours'], ['shift', 'working hours'],
+  ]),
+  ms: swaps([['Tambah syif', 'Tambah waktu kerja'], ['Syif', 'Waktu kerja'], ['syif', 'waktu kerja']]),
+}
+
 /** Rewrites interface text into the current purpose's vocabulary. */
 export function applyTerms(text: string, lang: 'en' | 'ms'): string {
   const rules = TERMS[lang][purpose]
   if (!rules) return text
   let out = text
   for (const [pattern, to] of rules) out = out.replace(pattern, to)
+  // An office without shifts never reads the word: what it has is its working hours.
+  if (purpose === 'workplace' && !shiftMode) for (const [pattern, to] of OFFICE[lang]) out = out.replace(pattern, to)
   return out
 }

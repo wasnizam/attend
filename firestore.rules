@@ -47,7 +47,8 @@ service cloud.firestore {
         && !('paidUntil' in request.resource.data) && !('seats' in request.resource.data);
       // The purpose and the plan are what the customer pays for: not theirs to change.
       allow update: if adminOf(orgId)
-        && onlyChanges(['name'])
+        && onlyChanges(['name', 'shifts'])
+        && request.resource.data.get('shifts', false) is bool
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 100;

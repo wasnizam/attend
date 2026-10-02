@@ -4,7 +4,7 @@ import { AppShell } from './components/AppShell'
 import { Button, PageLoader } from './components/ui'
 import { signOut, subscribeOrganisation } from './data/account'
 import { setPlan } from './lib/plan'
-import { setPurpose } from './lib/purpose'
+import { setPurpose, setShiftMode } from './lib/purpose'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { MySessionsProvider } from './hooks/useSessions'
 import { t } from './lib/i18n'
@@ -38,7 +38,8 @@ function PurposeGate({ organisationId, children }: { organisationId: string; chi
       subscribeOrganisation(organisationId, (org) => {
         setPurpose(org?.purpose)
         setPlan(org)
-        setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}:${org?.seats ?? ''}`)
+        setShiftMode(org?.shifts)
+        setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}:${org?.seats ?? ''}:${org?.shifts ? 's' : ''}`)
       }),
     [organisationId],
   )
