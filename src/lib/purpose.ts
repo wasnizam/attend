@@ -67,6 +67,8 @@ const TERMS: Record<'en' | 'ms', Partial<Record<Purpose, Swap[]>>> = {
       ['Past sessions', 'Past events'], ['sessions', 'events'], ['Sessions', 'Events'], ['session', 'event'], ['Session', 'Event'],
     ]),
     workplace: swaps([
+      ['When it meets each week', 'Working days and hours'], ['Expected participants', 'Number of staff'],
+      ['Repeats every week of the semester', 'Repeats every week'],
       ['Add the classes you teach this semester once', 'Add your shifts once'],
       ['Your classes this semester', 'Your shifts'],
       ['Attendance for each class this semester', 'Attendance for each shift'],

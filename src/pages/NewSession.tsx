@@ -205,7 +205,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
           <Field
             id="session-name"
             label={weekly ? t('Class name') : t('Session / class name')}
-            placeholder={t('e.g. Database Systems')}
+            placeholder={clock ? t('e.g. Morning shift') : t('e.g. Database Systems')}
             required
             maxLength={120}
             value={name}
@@ -399,59 +399,64 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
             />
           )}
 
-          <div>
-            <p className="mb-1.5 text-sm font-medium">{t('How it is held')}</p>
-            <div role="radiogroup" aria-label={t('How it is held')} className="grid grid-cols-3 gap-1 rounded-md bg-canvas p-1">
-              {([['in_person', 'In person'], ['online', 'Online'], ['hybrid', 'Hybrid']] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  role="radio"
-                  aria-checked={delivery === value}
-                  onClick={() => setDelivery(value)}
-                  className={`h-10 rounded-md text-sm font-semibold transition ${delivery === value ? 'bg-white text-ink shadow-sm' : 'text-muted'}`}
-                >
-                  {t(label)}
-                </button>
-              ))}
+          {/* A workplace shift is always on site, and has no course details to fill in. */}
+          {!clock && (
+            <div>
+              <p className="mb-1.5 text-sm font-medium">{t('How it is held')}</p>
+              <div role="radiogroup" aria-label={t('How it is held')} className="grid grid-cols-3 gap-1 rounded-md bg-canvas p-1">
+                {([['in_person', 'In person'], ['online', 'Online'], ['hybrid', 'Hybrid']] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={delivery === value}
+                    onClick={() => setDelivery(value)}
+                    className={`h-10 rounded-md text-sm font-semibold transition ${delivery === value ? 'bg-white text-ink shadow-sm' : 'text-muted'}`}
+                  >
+                    {t(label)}
+                  </button>
+                ))}
+              </div>
+              {delivery !== 'in_person' && (
+                <>
+                  <p className="mt-2 text-xs text-muted">
+                    {t('Students open the attendance link from the meeting chat and type the code you show on screen. The code changes every 45 seconds.')}
+                  </p>
+                  <Field
+                    className="mt-3"
+                    label={t('Meeting link')}
+                    hint={t('Optional')}
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://zoom.us/j/…"
+                    maxLength={300}
+                    value={meetingUrl}
+                    onChange={(e) => setMeetingUrl(e.target.value)}
+                  />
+                </>
+              )}
             </div>
-            {delivery !== 'in_person' && (
-              <>
-                <p className="mt-2 text-xs text-muted">
-                  {t('Students open the attendance link from the meeting chat and type the code you show on screen. The code changes every 45 seconds.')}
-                </p>
-                <Field
-                  className="mt-3"
-                  label={t('Meeting link')}
-                  hint={t('Optional')}
-                  type="url"
-                  inputMode="url"
-                  placeholder="https://zoom.us/j/…"
-                  maxLength={300}
-                  value={meetingUrl}
-                  onChange={(e) => setMeetingUrl(e.target.value)}
-                />
-              </>
-            )}
-          </div>
+          )}
 
           {/* Everything a lecturer does not need to get started lives here. */}
-          <details className="rounded-lg bg-canvas" open={Boolean(code || section || venue || description)}>
-            <summary className="cursor-pointer px-4 py-3 text-sm font-medium select-none">
-              {t('More details')} <span className="font-normal text-muted">· {has('classKind') ? t('course code, section, venue') : t('venue, description')}</span>
-            </summary>
-            <div className="space-y-3 px-4 pb-4">
-              <div className={has('classKind') ? 'grid grid-cols-2 gap-3' : 'hidden'}>
-                <Field label={t('Course code')} placeholder="SECJ3303" maxLength={20} value={code} onChange={(e) => setCode(e.target.value)} />
-                <Field label={t('Section')} placeholder="02" maxLength={10} value={section} onChange={(e) => setSection(e.target.value)} />
+          {!clock && (
+            <details className="rounded-lg bg-canvas" open={Boolean(code || section || venue || description)}>
+              <summary className="cursor-pointer px-4 py-3 text-sm font-medium select-none">
+                {t('More details')} <span className="font-normal text-muted">· {has('classKind') ? t('course code, section, venue') : t('venue, description')}</span>
+              </summary>
+              <div className="space-y-3 px-4 pb-4">
+                <div className={has('classKind') ? 'grid grid-cols-2 gap-3' : 'hidden'}>
+                  <Field label={t('Course code')} placeholder="SECJ3303" maxLength={20} value={code} onChange={(e) => setCode(e.target.value)} />
+                  <Field label={t('Section')} placeholder="02" maxLength={10} value={section} onChange={(e) => setSection(e.target.value)} />
+                </div>
+                <Field label={t('Venue')} placeholder={t('e.g. Lecture Hall 2')} maxLength={60} value={venue} onChange={(e) => setVenue(e.target.value)} />
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-medium">{t('Description')}</span>
+                  <textarea rows={2} maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} className={`${inputClass} h-auto py-3`} />
+                </label>
               </div>
-              <Field label={t('Venue')} placeholder={t('e.g. Lecture Hall 2')} maxLength={60} value={venue} onChange={(e) => setVenue(e.target.value)} />
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium">{t('Description')}</span>
-                <textarea rows={2} maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} className={`${inputClass} h-auto py-3`} />
-              </label>
-            </div>
-          </details>
+            </details>
+          )}
 
           <ErrorNote>{error}</ErrorNote>
           <Button type="submit" size="lg" block busy={busy}>

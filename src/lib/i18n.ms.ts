@@ -800,4 +800,5 @@ export const ms: Record<string, string> = {
   "is short of people: {n} of {min} in": "kekurangan orang: {n} daripada {min} sudah masuk",
   "{n} did not clock out": "{n} tidak merekod keluar",
   "Set to {time}": "Tetapkan ke {time}",
+  "e.g. Morning shift": "cth. Syif pagi",
 }
