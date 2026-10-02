@@ -18,6 +18,16 @@ const ICON = {
   screen: 'M3 5h18v11H3zM8 20h8M12 16v4',
 }
 
+export type TrustVisual = 'qr' | 'geo' | 'presence' | 'clock'
+
+interface ShotRow {
+  cells: string[]
+  /** Colours the last cell (a status). */
+  tone?: 'good' | 'warn' | 'bad'
+  /** Minutes late, shown under the second cell. */
+  late?: number
+}
+
 export interface Edition {
   id: EditionId
   /** What the organisation is set up as when someone signs up from this edition. */
@@ -33,6 +43,14 @@ export interface Edition {
   features: [string, string, string][]
   steps: [string, string][]
   cta: string
+  /** The selling points: why this record can be trusted. [drawing, title, text] */
+  trust: { title: string; sub: string; cards: [TrustVisual, string, string][] }
+  /** Two more made-up screens: the participant's phone and the report. */
+  shots: {
+    title: string
+    phone: { heading: string; session: string; time: string; out?: boolean; caption: string }
+    report: { name: string; kind: string; head: string[]; rows: ShotRow[]; caption: string }
+  }
   /** The made-up screen in the hero. */
   preview: { title: string; time: string; counted: string; rows: [string, string, string][] }
   orgPlaceholder: string
@@ -66,6 +84,28 @@ export const EDITIONS: Edition[] = [
       ['3. Done', 'Attendance is recorded instantly.'],
     ],
     cta: 'Take attendance in your next class.',
+    trust: {
+      title: 'No more signing in for a friend',
+      sub: 'Paper lists and plain QR codes are easy to cheat. Attend closes the gaps.',
+      cards: [
+        ['qr', 'A QR that changes every 45 seconds', 'A photo or a forwarded link of the QR is useless a moment later. Only students in front of your screen can check in.'],
+        ['geo', 'Location check (geofence)', 'Set a distance around your class. A check-in from outside it is flagged for you, or refused.'],
+        ['presence', '“Still here?” check', 'Ask the class to confirm again at any time. You see who scanned and then left.'],
+      ],
+    },
+    shots: {
+      title: 'What you and your students see',
+      phone: { heading: 'Attendance Confirmed', session: 'Database Systems', time: '10:03 AM', caption: 'On the student’s phone: scan, type the ID, done.' },
+      report: {
+        name: 'DATABASE SYSTEMS', kind: 'Semester report', head: ['Student', 'Absent', '%', 'Status'],
+        rows: [
+          { cells: ['Ahmad bin Ali', '0', '100%', 'On track'], tone: 'good' },
+          { cells: ['Siti Aminah', '2', '85.7%', 'Warning due'], tone: 'warn' },
+          { cells: ['Kumar Raj', '3', '78.6%', 'Barring due'], tone: 'bad' },
+        ],
+        caption: 'Your semester report: who is getting close to the 80% rule.',
+      },
+    },
     preview: { title: 'DATABASE SYSTEMS', time: '10:00 AM – 12:00 PM', counted: 'PRESENT', rows: [['ST003', 'Kumar', '10:07'], ['ST002', 'Siti', '10:05'], ['ST001', 'Ahmad', '10:03']] },
     orgPlaceholder: 'e.g. Faculty of Computing',
     free: ['1 class', 'Unlimited students', 'Every feature included'],
@@ -95,6 +135,28 @@ export const EDITIONS: Edition[] = [
       ['3. Done', 'Attendance is recorded instantly.'],
     ],
     cta: 'Take attendance at your next session.',
+    trust: {
+      title: 'Proof that people were really there',
+      sub: 'Clients and sponsors want attendance they can trust. Attend gives you that.',
+      cards: [
+        ['qr', 'A QR that changes every 45 seconds', 'A photo or a forwarded link of the QR is useless a moment later. Only participants in front of your screen can check in.'],
+        ['geo', 'Location check (geofence)', 'Set a distance around your venue. A check-in from outside it is flagged for you, or refused.'],
+        ['presence', '“Still here?” check', 'Ask everyone to confirm again at any time. You see who scanned and then left.'],
+      ],
+    },
+    shots: {
+      title: 'What you and your participants see',
+      phone: { heading: 'Attendance Confirmed', session: 'Excel for Managers', time: '9:03 AM', caption: 'On the participant’s phone: scan, type the ID, done.' },
+      report: {
+        name: 'EXCEL FOR MANAGERS', kind: 'Course report', head: ['Participant', 'Attended', '%'],
+        rows: [
+          { cells: ['Ahmad bin Ali', '5 / 5', '100%'] },
+          { cells: ['Siti Aminah', '4 / 5', '80%'] },
+          { cells: ['Kumar Raj', '3 / 5', '60%'] },
+        ],
+        caption: 'Your course report: attendance for every participant.',
+      },
+    },
     preview: { title: 'EXCEL FOR MANAGERS', time: '9:00 AM – 5:00 PM', counted: 'PRESENT', rows: [['P003', 'Kumar', '9:07'], ['P002', 'Siti', '9:05'], ['P001', 'Ahmad', '9:03']] },
     orgPlaceholder: 'e.g. Bright Training Sdn Bhd',
     free: ['1 course', 'Unlimited participants', 'Every feature included'],
@@ -124,6 +186,28 @@ export const EDITIONS: Edition[] = [
       ['3. Done', 'Hours and lateness are ready.'],
     ],
     cta: 'Start clocking in tomorrow morning.',
+    trust: {
+      title: 'No more clocking in for a friend',
+      sub: 'Punch cards and plain QR codes are easy to cheat. Attend closes the gaps.',
+      cards: [
+        ['qr', 'A QR that changes every 45 seconds', 'A photo of the QR is useless a moment later. Only staff standing at your screen can clock in or out.'],
+        ['geo', 'Location check (geofence)', 'Set a distance around your workplace. A clock-in from outside it is flagged for you, or refused.'],
+        ['clock', 'A time nobody can change', 'The time is recorded by our server, not by the phone. Changing the clock on a phone does nothing.'],
+      ],
+    },
+    shots: {
+      title: 'What you and your staff see',
+      phone: { heading: 'Clocked in', session: 'Morning shift', time: '8:55 AM', out: true, caption: 'On the staff phone: scan in, scan out.' },
+      report: {
+        name: 'MORNING SHIFT', kind: 'Today', head: ['Staff', 'In', 'Out', 'Hours'],
+        rows: [
+          { cells: ['Ahmad bin Ali', '8:55', '18:02', '9 h 07 min'] },
+          { cells: ['Siti Aminah', '8:58', '18:00', '9 h 02 min'] },
+          { cells: ['Kumar Raj', '9:22', '18:05', '8 h 43 min'], late: 22 },
+        ],
+        caption: 'Your daily record: time in, time out, hours and lateness.',
+      },
+    },
     preview: { title: 'MORNING SHIFT', time: '9:00 AM – 6:00 PM', counted: 'IN', rows: [['E003', 'Kumar', '9:07'], ['E002', 'Siti', '8:58'], ['E001', 'Ahmad', '8:55']] },
     orgPlaceholder: 'e.g. Kedai Kopi Maju',
     free: ['Up to 5 staff', 'Unlimited shifts', 'Every feature included'],

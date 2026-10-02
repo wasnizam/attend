@@ -1,6 +1,7 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { Snapshots, TrustSection } from '../components/LandingProof'
 import { LanguageSwitch } from '../components/LanguageSwitch'
 import { Logo, buttonClass } from '../components/ui'
 import { EDITIONS, type Edition, type EditionId, editionById, rememberEdition } from '../lib/editions'
@@ -73,6 +74,7 @@ export function Landing({ show }: { show?: EditionId }) {
           <div className="flex items-center gap-8">
             <Logo />
             <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
+              <a href="#trust" className="hover:text-ink">{t('Why Attend')}</a>
               <a href="#features" className="hover:text-ink">{t('Features')}</a>
               <a href="#how" className="hover:text-ink">{t('How it works')}</a>
               <a href="#pricing" className="hover:text-ink">{t('Pricing')}</a>
@@ -125,6 +127,9 @@ export function Landing({ show }: { show?: EditionId }) {
         <p className="mt-4 text-sm text-muted">{t(edition.note)}</p>
         <ProductPreview edition={edition} />
       </section>
+
+      <TrustSection edition={edition} />
+      <Snapshots edition={edition} />
 
       <section id="features" className="scroll-mt-16 border-y border-line bg-canvas py-20">
         <div className="mx-auto max-w-6xl px-5">
