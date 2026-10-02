@@ -8,6 +8,14 @@ import { EDITIONS, type Edition, type EditionId, editionById, rememberEdition } 
 import { t } from '../lib/i18n'
 import { setPurpose } from '../lib/purpose'
 
+const FAQ = [
+  ['Do people need to install an app or make an account?', 'No. They scan the QR with their phone camera and type their ID. That is all.'],
+  ['Can someone send the QR to a friend who is not there?', 'With the rotating QR, a photo or a shared link stops working within a minute. Turn on the location check as well to flag or refuse anyone who is somewhere else.'],
+  ['What if someone has no phone or no internet?', 'You can mark them present by hand in two taps, during the session or after it.'],
+  ['Is it really free?', 'Yes. Everything is free during early access. After that there will still be a free plan, and we will tell you before anything changes.'],
+  ['Can I get my data out?', 'Yes. Every list and report can be exported to Excel.'],
+]
+
 /** An illustration of the live screen, built from the same pieces the product uses. */
 function ProductPreview({ edition }: { edition: Edition }) {
   const { rows, title, time, counted } = edition.preview
@@ -124,7 +132,16 @@ export function Landing({ show }: { show?: EditionId }) {
             {t('See How It Works')}
           </a>
         </div>
-        <p className="mt-4 text-sm text-muted">{t(edition.note)}</p>
+        <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-600">
+          {[edition.note, 'Free to start. No card needed.', 'Works on any phone.'].map((line) => (
+            <li key={line} className="flex items-center gap-1.5">
+              <svg viewBox="0 0 20 20" className="size-4 text-good" fill="currentColor" aria-hidden>
+                <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.700-9.300a1 1 0 0 0-1.400-1.400L9 10.600 7.700 9.300a1 1 0 0 0-1.400 1.400l2 2a1 1 0 0 0 1.400 0l4-4Z" clipRule="evenodd" />
+              </svg>
+              {t(line)}
+            </li>
+          ))}
+        </ul>
         <ProductPreview edition={edition} />
       </section>
 
@@ -135,7 +152,7 @@ export function Landing({ show }: { show?: EditionId }) {
         <div className="mx-auto max-w-6xl px-5">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold text-accent">{t('Features')}</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{t(edition.featuresTitle)}</h2>
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t(edition.featuresTitle)}</h2>
           </div>
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {edition.features.map(([icon, title, text]) => (
@@ -157,13 +174,14 @@ export function Landing({ show }: { show?: EditionId }) {
         <div className="mx-auto max-w-6xl px-5">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold text-accent">{t('How it works')}</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{t('Three steps. About a minute.')}</h2>
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t('Three steps. About a minute.')}</h2>
           </div>
-          <ol className="mt-12 grid gap-8 sm:grid-cols-3">
-            {edition.steps.map(([title, text]) => (
-              <li key={title} className="border-t-2 border-accent pt-5">
-                <h3 className="text-xl font-semibold tracking-tight">{t(title)}</h3>
-                <p className="mt-2 text-slate-600">{t(text)}</p>
+          <ol className="mt-12 grid gap-4 sm:grid-cols-3">
+            {edition.steps.map(([title, text], i) => (
+              <li key={title} className="rounded-xl bg-canvas p-6">
+                <span className="tabular flex size-9 items-center justify-center rounded-full bg-accent text-sm font-semibold text-white">{i + 1}</span>
+                <h3 className="mt-4 text-lg font-semibold tracking-tight">{t(title).replace(/^\d+\.\s*/, '')}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{t(text)}</p>
               </li>
             ))}
           </ol>
@@ -174,15 +192,18 @@ export function Landing({ show }: { show?: EditionId }) {
         <div className="mx-auto max-w-4xl px-5">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold text-accent">{t('Pricing')} · {t(edition.label)}</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{t('Start free. Pay only when you need more.')}</h2>
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t('Start free. Pay only when you need more.')}</h2>
           </div>
           <div className="mt-12 grid gap-4 sm:grid-cols-2">
             {([['Free', 'RM0', 'Free forever', edition.free], ['Pro', '', edition.billing, edition.pro]] as const).map(([name, price, billing, items]) => (
-              <div key={name} className={`flex flex-col rounded-xl bg-white p-6 shadow-card ${name === 'Pro' ? 'ring-2 ring-accent' : ''}`}>
-                <h3 className="font-semibold tracking-tight">{t(name)}</h3>
-                <p className={`mt-3 font-semibold tracking-tight ${price ? 'tabular text-4xl' : 'text-2xl leading-10'}`}>{price || t('Price announced soon')}</p>
-                <p className="mt-1 text-sm text-muted">{t(billing)}</p>
-                <ul className="mt-5 flex-1 space-y-2 text-sm text-slate-700">
+              <div key={name} className={`flex flex-col rounded-2xl bg-white p-7 ${name === 'Pro' ? 'shadow-pop ring-2 ring-accent' : 'shadow-card'}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold tracking-tight">{t(name)}</h3>
+                  {name === 'Pro' && <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">{t('Early access')}</span>}
+                </div>
+                <p className="tabular mt-4 text-4xl font-semibold tracking-tight">{price || t('Free for now')}</p>
+                <p className="mt-1.5 text-sm text-muted">{t(billing)}</p>
+                <ul className="mt-6 flex-1 space-y-2.5 border-t border-line pt-6 text-sm text-slate-700">
                   {items.map((item) => (
                     <li key={item} className="flex gap-2">
                       <span className="text-good" aria-hidden>✓</span>
@@ -196,11 +217,31 @@ export function Landing({ show }: { show?: EditionId }) {
               </div>
             ))}
           </div>
-          <p className="mt-6 text-center text-sm text-muted">{t('Early access: everything is free for everyone for now. We will tell you before that changes.')}</p>
+          <p className="mt-6 text-center text-sm text-muted">{t('Early access: everything is free for everyone for now. The Pro price will be announced before that changes.')}</p>
         </div>
       </section>
 
-      <section className="px-5 pt-20 pb-20">
+      <section id="faq" className="scroll-mt-16 py-20">
+        <div className="mx-auto max-w-3xl px-5">
+          <div className="text-center">
+            <p className="text-sm font-semibold text-accent">{t('Questions')}</p>
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t('Good to know before you start')}</h2>
+          </div>
+          <div className="mt-10 divide-y divide-line border-y border-line">
+            {FAQ.map(([q, a]) => (
+              <details key={q} className="group py-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
+                  {t(q)}
+                  <span aria-hidden className="text-xl font-normal text-muted transition group-open:rotate-45">+</span>
+                </summary>
+                <p className="mt-3 leading-relaxed text-slate-600">{t(a)}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 pb-20">
         <div className="mx-auto max-w-6xl rounded-2xl bg-ink px-6 py-14 text-center text-white sm:py-16">
           <h2 className="mx-auto max-w-2xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
             {t(edition.cta)}
@@ -213,14 +254,35 @@ export function Landing({ show }: { show?: EditionId }) {
       </section>
 
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 text-sm text-muted sm:flex-row">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 text-sm sm:grid-cols-[1fr_auto_auto] sm:gap-16">
+          <div>
             <Logo className="!text-base text-ink" />
-            <span>{t('Start a session. Share the QR. Attendance is done.')}</span>
+            <p className="mt-3 max-w-xs text-muted">{t('Start a session. Share the QR. Attendance is done.')}</p>
           </div>
-          <div className="flex items-center gap-4">
-            <LanguageSwitch />
+          <div>
+            <p className="font-semibold">{t('Attend for')}</p>
+            <ul className="mt-3 space-y-2 text-slate-600">
+              {EDITIONS.map((e) => (
+                <li key={e.id}>
+                  <Link to={`/${e.id}`} className="hover:text-ink">{t(e.label)}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold">{t('Product')}</p>
+            <ul className="mt-3 space-y-2 text-slate-600">
+              <li><a href="#trust" className="hover:text-ink">{t('Why Attend')}</a></li>
+              <li><a href="#pricing" className="hover:text-ink">{t('Pricing')}</a></li>
+              <li><a href="#faq" className="hover:text-ink">{t('Questions')}</a></li>
+              <li><Link to="/login" className="hover:text-ink">{t('Log in')}</Link></li>
+            </ul>
+          </div>
+        </div>
+        <div className="border-t border-line">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 text-sm text-muted">
             <span>© {new Date().getFullYear()} Attend</span>
+            <LanguageSwitch />
           </div>
         </div>
       </footer>

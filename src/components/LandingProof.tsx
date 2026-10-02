@@ -65,12 +65,12 @@ export function TrustSection({ edition }: { edition: Edition }) {
         </div>
         <div className="mt-12 grid gap-4 lg:grid-cols-3">
           {edition.trust.cards.map(([visual, title, text]) => (
-            <div key={title} className="rounded-xl bg-white p-6 text-ink">
-              <div aria-hidden className="flex h-20 items-center">
+            <div key={title} className="rounded-2xl bg-white p-5 text-ink">
+              <div aria-hidden className="flex h-28 items-center justify-center rounded-lg bg-canvas">
                 <Visual kind={visual} />
               </div>
-              <h3 className="mt-4 text-lg font-semibold tracking-tight">{t(title)}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{t(text)}</p>
+              <h3 className="mt-5 px-1 text-lg font-semibold tracking-tight">{t(title)}</h3>
+              <p className="mt-1.5 px-1 pb-1 text-sm leading-relaxed text-slate-600">{t(text)}</p>
             </div>
           ))}
         </div>
@@ -89,14 +89,14 @@ export function Snapshots({ edition }: { edition: Edition }) {
       <div className="mx-auto max-w-6xl px-5">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold text-accent">{t('The product')}</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{t(title)}</h2>
+          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t(title)}</h2>
         </div>
-        <div className="mt-12 grid items-center gap-10 lg:grid-cols-[18rem_1fr]">
+        <div className="mt-12 grid items-center gap-10 rounded-3xl bg-gradient-to-b from-indigo-50 to-canvas px-5 py-10 sm:px-10 lg:grid-cols-[17rem_1fr] lg:gap-12 lg:py-14">
           <figure>
             <div aria-hidden className="mx-auto w-60 rounded-[2.2rem] bg-ink p-2.5 shadow-pop">
               <div className="rounded-[1.7rem] bg-white px-5 pt-10 pb-8 text-center">
                 <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-good text-2xl text-white">✓</span>
-                <p className="mt-4 text-lg font-semibold tracking-tight">{t(phone.heading)}</p>
+                <p className="mt-4 font-semibold tracking-tight">{t(phone.heading)}</p>
                 <p className="mt-3 text-sm">{phone.session}</p>
                 <p className="tabular text-2xl font-semibold">{phone.time}</p>
                 <p className="mt-2 text-xs text-muted">AHMAD BIN ALI</p>
@@ -105,7 +105,7 @@ export function Snapshots({ edition }: { edition: Edition }) {
                 )}
               </div>
             </div>
-            <figcaption className="mt-4 text-center text-sm text-muted">{t(phone.caption)}</figcaption>
+            <figcaption className="mt-5 text-center text-sm text-slate-600">{t(phone.caption)}</figcaption>
           </figure>
           <figure className="min-w-0">
             <div aria-hidden className="overflow-x-auto rounded-xl bg-white shadow-pop">
@@ -132,7 +132,7 @@ export function Snapshots({ edition }: { edition: Edition }) {
                 </tbody>
               </table>
             </div>
-            <figcaption className="mt-4 text-center text-sm text-muted">{t(report.caption)}</figcaption>
+            <figcaption className="mt-5 text-center text-sm text-slate-600">{t(report.caption)}</figcaption>
           </figure>
         </div>
       </div>
