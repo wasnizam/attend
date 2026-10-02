@@ -73,9 +73,16 @@ export function Reports() {
           <p className="text-sm text-muted">{t('Attendance for each class this semester')}</p>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('Reports')}</h1>
         </div>
-        <Link to="/app/history" className={buttonClass({ variant: 'secondary' })}>
-          {t('Past sessions')}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {has('clock') && (
+            <Link to="/app/reports/monthly" className={buttonClass()}>
+              {t('Monthly report')}
+            </Link>
+          )}
+          <Link to="/app/history" className={buttonClass({ variant: 'secondary' })}>
+            {t('Past sessions')}
+          </Link>
+        </div>
       </div>
 
       {all.length === 0 ? (

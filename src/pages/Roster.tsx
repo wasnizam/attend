@@ -8,6 +8,7 @@ import { useRoster } from '../hooks/useRoster'
 import { downloadCsv, rosterCsv, slug } from '../lib/csv'
 import { studentKey } from '../lib/format'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import type { WeeklyClass } from '../lib/types'
 
 export function Roster() {
@@ -31,6 +32,8 @@ function RosterEditor({ cls }: { cls: WeeklyClass }) {
   const roster = useRoster(cls.id, cls.organisationId)
   const [newId, setNewId] = useState('')
   const [newName, setNewName] = useState('')
+  const [newDept, setNewDept] = useState('')
+  const withDept = has('clock')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -53,7 +56,7 @@ function RosterEditor({ cls }: { cls: WeeklyClass }) {
     const key = studentKey(newId)
     if (!key || !newName.trim()) return
     run(async () => {
-      await addToRoster(cls, [{ studentKey: key, studentId: newId.trim().toUpperCase(), studentName: newName.trim() }], current)
+      await addToRoster(cls, [{ studentKey: key, studentId: newId.trim().toUpperCase(), studentName: newName.trim(), ...(newDept.trim() ? { department: newDept.trim() } : {}) }], current)
       setNewId('')
       setNewName('')
     })
@@ -95,9 +98,10 @@ function RosterEditor({ cls }: { cls: WeeklyClass }) {
             </button>
           )}
         </div>
-        <form onSubmit={addOne} className="mt-4 grid gap-2 sm:grid-cols-[10rem_1fr_auto] sm:items-end">
+        <form onSubmit={addOne} className={`mt-4 grid gap-2 sm:items-end ${withDept ? 'sm:grid-cols-[9rem_1fr_10rem_auto]' : 'sm:grid-cols-[10rem_1fr_auto]'}`}>
           <Field label={t('Student ID')} maxLength={40} value={newId} onChange={(e) => setNewId(e.target.value)} />
           <Field label={t('Name')} maxLength={80} value={newName} onChange={(e) => setNewName(e.target.value)} />
+          {withDept && <Field label={t('Department')} hint={t('Optional')} maxLength={60} value={newDept} onChange={(e) => setNewDept(e.target.value)} />}
           <Button type="submit" variant="secondary" className="!h-12" disabled={busy || !newId.trim() || !newName.trim()}>{t('Add')}</Button>
         </form>
         <div className="mt-4">
@@ -114,7 +118,10 @@ function RosterEditor({ cls }: { cls: WeeklyClass }) {
               {current.map((s) => (
                 <li key={s.studentKey} className="flex items-center gap-3 py-1 pr-2 pl-4">
                   <span className="tabular w-28 shrink-0 font-medium break-all">{s.studentId}</span>
-                  <span className="min-w-0 flex-1 break-words">{s.studentName}</span>
+                  <span className="min-w-0 flex-1 break-words">
+                    {s.studentName}
+                    {s.department && <span className="block text-xs text-muted">{s.department}</span>}
+                  </span>
                   <button
                     disabled={busy}
                     aria-label={t('Remove {name}', { name: s.studentName })}

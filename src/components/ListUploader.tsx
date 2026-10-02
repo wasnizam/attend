@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from 'react'
 import { addToRoster } from '../data/roster'
 import { t } from '../lib/i18n'
-import { type ImportGrid, type RosterEntry, parseFile, parseText, toRoster } from '../lib/rosterImport'
+import { type ImportGrid, type RosterEntry, parseFile, parseText, toRoster, detectDepartment } from '../lib/rosterImport'
+import { has } from '../lib/purpose'
 import type { WeeklyClass } from '../lib/types'
 import { Button, Card, ErrorNote, friendlyError, inputClass } from './ui'
 
@@ -27,7 +28,7 @@ export function ListUploader({ cls, current, after }: Props) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
-  const found = useMemo(() => (grid ? toRoster(grid.rows, grid.idCol, grid.nameCol) : []), [grid])
+  const found = useMemo(() => (grid ? toRoster(grid.rows, grid.idCol, grid.nameCol, grid.deptCol ?? -1) : []), [grid])
   const width = grid ? Math.max(0, ...grid.rows.map((r) => r.length)) : 0
 
   const run = async (fn: () => Promise<void>) => {
@@ -45,7 +46,8 @@ export function ListUploader({ cls, current, after }: Props) {
 
   const preview = (next: ImportGrid, from: string) => {
     if (next.rows.length === 0) throw new Error(t('We could not find any students in {from}. Try an Excel or CSV file, or paste the list.', { from }))
-    setGrid(next)
+    // Workplaces keep a department with each person when the sheet has one.
+    setGrid({ ...next, deptCol: has('clock') ? detectDepartment(next.rows, next.idCol, next.nameCol) : -1 })
     setSource(from)
   }
 
@@ -82,15 +84,16 @@ export function ListUploader({ cls, current, after }: Props) {
             </p>
           </div>
           {width > 2 && (
-            <div className="grid grid-cols-2 gap-3">
-              {(['idCol', 'nameCol'] as const).map((field) => (
+            <div className={`grid gap-3 ${has('clock') ? 'sm:grid-cols-3' : 'grid-cols-2'}`}>
+              {(has('clock') ? (['idCol', 'nameCol', 'deptCol'] as const) : (['idCol', 'nameCol'] as const)).map((field) => (
                 <label key={field} className="block text-xs font-medium text-muted">
-                  {field === 'idCol' ? t('Student ID column') : t('Name column')}
+                  {field === 'idCol' ? t('Student ID column') : field === 'nameCol' ? t('Name column') : t('Department column')}
                   <select
-                    value={grid[field]}
+                    value={grid[field] ?? -1}
                     onChange={(e) => setGrid({ ...grid, [field]: Number(e.target.value) })}
                     className={`${inputClass} mt-1`}
                   >
+                    {field === 'deptCol' && <option value={-1}>{t('None')}</option>}
                     {Array.from({ length: width }, (_, i) => (
                       <option key={i} value={i}>
                         {`${t('Column')} ${i + 1}: ${grid.rows.slice(0, 6).map((r) => r[i]).filter(Boolean).slice(0, 2).join(', ').slice(0, 28) || t('empty')}`}
@@ -113,6 +116,7 @@ export function ListUploader({ cls, current, after }: Props) {
                     <tr key={s.studentKey}>
                       <td className="tabular w-36 px-4 py-2 font-medium break-all">{s.studentId}</td>
                       <td className="px-4 py-2 break-words">{s.studentName}</td>
+                      {s.department && <td className="px-4 py-2 text-muted">{s.department}</td>}
                     </tr>
                   ))}
                 </tbody>

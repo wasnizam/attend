@@ -4,6 +4,8 @@ export interface RosterEntry {
   studentKey: string
   studentId: string
   studentName: string
+  /** Workplace: the department or branch the person belongs to. */
+  department?: string
 }
 
 /** A file or pasted text, reduced to a grid of text cells for the lecturer to confirm. */
@@ -11,6 +13,8 @@ export interface ImportGrid {
   rows: string[][]
   idCol: number
   nameCol: number
+  /** Column holding the department, or -1. */
+  deptCol?: number
 }
 
 const ID_CELL = /^[A-Za-z0-9._/-]{3,40}$/
@@ -43,15 +47,27 @@ export function detectColumns(rows: string[][]): { idCol: number; nameCol: numbe
   return { idCol, nameCol }
 }
 
+const DEPT_HEADER = /\bdep(t|artment)?\b|jabatan|bahagian|division|\bunit\b|cawangan|branch|team/i
+
+/** Finds a department column by its heading. -1 when the sheet has none. */
+export function detectDepartment(rows: string[][], idCol: number, nameCol: number): number {
+  for (const row of rows.slice(0, 8)) {
+    const col = row.findIndex((cell, i) => i !== idCol && i !== nameCol && cell.length < 30 && DEPT_HEADER.test(cell))
+    if (col >= 0) return col
+  }
+  return -1
+}
+
 /** Turns the confirmed grid into a clean, de-duplicated student list. Header and junk rows drop out. */
-export function toRoster(rows: string[][], idCol: number, nameCol: number): RosterEntry[] {
+export function toRoster(rows: string[][], idCol: number, nameCol: number, deptCol = -1): RosterEntry[] {
   const seen = new Map<string, RosterEntry>()
   for (const row of rows) {
     const id = (row[idCol] ?? '').trim()
     const name = (row[nameCol] ?? '').trim()
     if (!looksLikeId(id) || !looksLikeName(name)) continue
     const key = studentKey(id)
-    if (!seen.has(key)) seen.set(key, { studentKey: key, studentId: id.toUpperCase(), studentName: name.slice(0, 80) })
+    const department = deptCol >= 0 ? (row[deptCol] ?? '').trim().slice(0, 60) : ''
+    if (!seen.has(key)) seen.set(key, { studentKey: key, studentId: id.toUpperCase(), studentName: name.slice(0, 80), ...(department ? { department } : {}) })
   }
   return [...seen.values()]
 }

@@ -169,6 +169,13 @@ tablet: anything on today's timetable opens by itself 30 minutes before its star
 the rotating QR, and closes when its window lapses. It needs the manager to be signed in on
 that device, and the page to stay open (it asks the browser to keep the screen awake).
 
+Each person on a workplace list can carry a `department` (picked up from a sheet's Department
+column, or typed). The **monthly report** (`/app/reports/monthly`, `src/lib/payroll.ts`) adds up
+a month for everyone: days worked, hours, overtime (time after the shift's end), lateness, MC,
+leave and absences, grouped by department, with an Excel export. "Excused" reads "On leave" for
+workplaces. A public holiday is handled by cancelling that day's shift. The door screen can be
+locked with a PIN kept on the device.
+
 Apart from that, the data model and the security rules are the same for every purpose. To add a purpose, add it
 to `PURPOSES`, `FEATURES` and `TERMS` in that file and to the allowed values in `firestore.rules`.
 

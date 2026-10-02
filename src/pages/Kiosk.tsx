@@ -1,8 +1,9 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Logo, PageLoader } from '../components/ui'
 import { startClassSession } from '../data/classes'
+import { signOut } from '../data/account'
 import { endSession, rotateCode, startSession } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
 import { useMyClasses } from '../hooks/useClasses'
@@ -113,9 +114,89 @@ export function Kiosk() {
               </button>
             ))}
         </div>
-        <Link to="/app" className="rounded-md bg-canvas px-4 py-2 font-medium">{t('Exit door screen')}</Link>
+        <ExitControl />
       </footer>
     </div>
+  )
+}
+
+const PIN_KEY = 'attend.doorPin'
+const readPin = () => {
+  try {
+    return localStorage.getItem(PIN_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Leaving the door screen lands in the manager's account, so it can be locked with a PIN
+ * kept on this device. A forgotten PIN is solved by logging out, which is safe for a
+ * tablet anyone can pick up.
+ */
+function ExitControl() {
+  const navigate = useNavigate()
+  const [pin, setPin] = useState(readPin)
+  const [mode, setMode] = useState<'idle' | 'ask' | 'set'>('idle')
+  const [typed, setTyped] = useState('')
+  const [wrong, setWrong] = useState(false)
+  const button = 'rounded-md bg-canvas px-4 py-2 font-medium'
+
+  const submit = () => {
+    if (mode === 'set') {
+      if (!/^\d{4,6}$/.test(typed)) return setWrong(true)
+      try {
+        localStorage.setItem(PIN_KEY, typed)
+      } catch {
+        // Not remembered on this device; the screen simply stays unlocked.
+      }
+      setPin(typed)
+      setMode('idle')
+    } else if (typed === pin) navigate('/app')
+    else {
+      // Start again with an empty box, so the next try is not added to the wrong digits.
+      setTyped('')
+      return setWrong(true)
+    }
+    setTyped('')
+    setWrong(false)
+  }
+
+  if (mode === 'idle') {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        {!pin && <button onClick={() => setMode('set')} className="px-2 py-2 font-medium text-accent">{t('Lock with a PIN')}</button>}
+        <button onClick={() => (pin ? setMode('ask') : navigate('/app'))} className={button}>{t('Exit door screen')}</button>
+      </div>
+    )
+  }
+  return (
+    <form
+      className="flex flex-wrap items-center gap-2"
+      onSubmit={(e) => {
+        e.preventDefault()
+        submit()
+      }}
+    >
+      <label className="flex items-center gap-2">
+        <span className={wrong ? 'text-bad' : 'text-muted'}>
+          {mode === 'set' ? (wrong ? t('Use 4 to 6 digits') : t('Choose a PIN')) : wrong ? t('Wrong PIN') : t('PIN')}
+        </span>
+        <input
+          autoFocus
+          type="password"
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={6}
+          value={typed}
+          onChange={(e) => setTyped(e.target.value.replace(/\D/g, ''))}
+          className="tabular h-10 w-28 rounded-md border border-line px-3 text-center tracking-[0.3em]"
+        />
+      </label>
+      <button type="submit" className="rounded-md bg-ink px-4 py-2 font-medium text-white">{mode === 'set' ? t('Save') : t('Exit')}</button>
+      <button type="button" onClick={() => { setMode('idle'); setTyped(''); setWrong(false) }} className={button}>{t('Cancel')}</button>
+      {mode === 'ask' && <button type="button" onClick={() => signOut()} className="px-2 py-2 font-medium text-accent">{t('Forgot the PIN? Log out')}</button>}
+    </form>
   )
 }
 

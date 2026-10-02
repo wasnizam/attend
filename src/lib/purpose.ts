@@ -83,6 +83,7 @@ const TERMS: Record<'en' | 'ms', Partial<Record<Purpose, Swap[]>>> = {
       ['Lecturers', 'Managers'], ['lecturers', 'managers'], ['Lecturer', 'Manager'], ['lecturer', 'manager'],
       ['Classes', 'Shifts'], ['classes', 'shifts'], ['Class', 'Shift'], ['class', 'shift'],
       ['PRESENT', 'IN'], ['Session Active', 'Open'],
+      ['Excused', 'On leave'], ['excused', 'on leave'],
     ]),
   },
   ms: {
@@ -109,6 +110,7 @@ const TERMS: Record<'en' | 'ms', Partial<Record<Purpose, Swap[]>>> = {
       ['Pelajar', 'Pekerja'], ['pelajar', 'pekerja'],
       ['Pensyarah', 'Pengurus'], ['pensyarah', 'pengurus'],
       ['Kelas', 'Syif'], ['kelas', 'syif'],
+      ['Dikecualikan', 'Bercuti'], ['dikecualikan', 'bercuti'],
     ]),
   },
 }

@@ -545,3 +545,17 @@ describe('clock-out (workplace)', () => {
     await assertSucceeds(deleteDoc(doc(as('lecA'), 'clockouts/live_ST001')))
   })
 })
+
+describe('departments on a staff list', () => {
+  const entry = (extra = {}) => ({ studentKey: 'E001', studentId: 'E001', studentName: 'Ahmad', organisationId: 'orgA', ownerId: 'lecA', ...extra })
+  beforeEach(() =>
+    env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'classes/shift'), { organisationId: 'orgA', ownerId: 'lecA', name: 'Shift' })),
+  )
+
+  it('accepts a short department and refuses anything else extra', async () => {
+    await assertSucceeds(setDoc(doc(as('lecA'), 'rosters/shift/students/E001'), entry({ department: 'Sales' })))
+    await assertSucceeds(setDoc(doc(as('lecA'), 'rosters/shift/students/E001'), entry()))
+    await assertFails(setDoc(doc(as('lecA'), 'rosters/shift/students/E001'), entry({ department: 'x'.repeat(61) })))
+    await assertFails(setDoc(doc(as('lecA'), 'rosters/shift/students/E001'), entry({ salary: 5000 })))
+  })
+})

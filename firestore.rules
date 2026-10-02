@@ -176,7 +176,9 @@ service cloud.firestore {
       allow create, update: if memberOf(request.resource.data.organisationId)
         && request.resource.data.ownerId == request.auth.uid
         && get(/databases/$(database)/documents/classes/$(rosterId)).data.ownerId == request.auth.uid
-        && request.resource.data.keys().hasOnly(['studentKey', 'studentId', 'studentName', 'organisationId', 'ownerId'])
+        && request.resource.data.keys().hasOnly(['studentKey', 'studentId', 'studentName', 'department', 'organisationId', 'ownerId'])
+        && request.resource.data.get('department', '') is string
+        && request.resource.data.get('department', '').size() <= 60
         && request.resource.data.studentKey == key
         && key.matches('^[A-Z0-9._-]{1,40}$')
         && request.resource.data.studentId is string && request.resource.data.studentId.size() <= 40

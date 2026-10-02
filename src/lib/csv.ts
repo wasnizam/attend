@@ -54,8 +54,9 @@ export function downloadCsv(filename: string, csv: string, excel = false) {
 }
 
 /** A class's list of people, as a file: ID and name. */
-export function rosterCsv(list: { studentId: string; studentName: string }[]): string {
-  return [[t('Student ID'), t('Student Name')], ...list.map((s) => [s.studentId, s.studentName])].map((row) => row.map(cell).join(',')).join('\r\n') + '\r\n'
+export function rosterCsv(list: { studentId: string; studentName: string; department?: string }[]): string {
+  const dept = list.some((s) => s.department)
+  return [[t('Student ID'), t('Student Name'), ...(dept ? [t('Department')] : [])], ...list.map((s) => [s.studentId, s.studentName, ...(dept ? [s.department ?? ''] : [])])].map((row) => row.map(cell).join(',')).join('\r\n') + '\r\n'
 }
 
 export function slug(text: string): string {
