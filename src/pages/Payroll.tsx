@@ -130,6 +130,23 @@ const COLUMNS: Column[] = [
     ),
     total: (l) => total(l, (r) => r.early),
   },
+  {
+    id: 'shifts', label: 'Shifts', csvHead: ['Shifts', 'Night shifts'],
+    csv: (r) => [Object.entries(r.shifts).map(([n, d]) => `${n} ${d}`).join('; '), r.nightDays],
+    text: (r) => [...Object.entries(r.shifts).map(([n, d]) => `${n} ${d}`), r.nightDays ? t('{n} nights', { n: r.nightDays }) : ''].filter(Boolean).join('\n'),
+    cell: (r) => (
+      <span className="block text-left">
+        {Object.entries(r.shifts).map(([n, d]) => (
+          <span key={n} className="block text-xs">{n} <span className="font-semibold">{d}</span></span>
+        ))}
+        {r.nightDays > 0 && <span className="block text-xs text-accent">{t('{n} nights', { n: r.nightDays })}</span>}
+      </span>
+    ),
+    total: (l) => {
+      const n = total(l, (r) => r.nightDays)
+      return n ? t('{n} nights', { n }) : ''
+    },
+  },
   { id: 'mc', label: 'MC', csvHead: ['MC'], csv: (r) => [r.mc], text: (r) => String(r.mc), cell: (r) => r.mc, total: (l) => total(l, (r) => r.mc) },
   {
     id: 'leave', label: 'Excused', csvHead: ['Excused', 'Half days', ...LEAVE_KINDS.map((k) => LEAVE_LABEL[k])], csv: (r) => [r.leave, r.halfDays, ...LEAVE_KINDS.map((k) => r.leaveBy[k])],
@@ -151,7 +168,7 @@ interface Setup {
   columns: string[]
   groupBy: GroupBy
 }
-const DEFAULT_SETUP: Setup = { sections: ['charts', 'attention', 'table'], columns: ['days', 'rate', 'hours', 'overtime', 'late', 'early', 'mc', 'leave', 'absent'], groupBy: 'both' }
+const DEFAULT_SETUP: Setup = { sections: ['charts', 'attention', 'table'], columns: ['days', 'rate', 'hours', 'overtime', 'shifts', 'late', 'early', 'mc', 'leave', 'absent'], groupBy: 'both' }
 const SETUP_KEY = 'attend.reportSetup'
 const loadSetup = (): Setup => {
   try {
@@ -284,7 +301,9 @@ export function Payroll() {
   if (source.loading || classes.loading) return <PageLoader />
 
   const has = (x: Section) => setup.sections.includes(x)
-  const columns = COLUMNS.filter((c) => setup.columns.includes(c.id))
+  // The shifts column only means something when people work more than one kind of shift.
+  const manyShifts = (rows ?? []).some((r) => Object.keys(r.shifts).length > 1 || r.nightDays > 0)
+  const columns = COLUMNS.filter((c) => setup.columns.includes(c.id) && (c.id !== 'shifts' || manyShifts))
   const departments = [...new Set((rows ?? []).map((r) => r.department).filter(Boolean))]
   const offices = [...new Set((rows ?? []).map((r) => r.office).filter(Boolean))]
   const shown = (rows ?? []).filter((r) => (!department || r.department === department) && (!office || r.office === office))

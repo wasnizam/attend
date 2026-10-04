@@ -21,15 +21,19 @@ export function useRoster(rosterId: string | null | undefined, organisationId: s
 export function useAbsentees(session: Session, records: AttendanceRecord[]): Absentee[] {
   const roster = useRoster(session.rosterId, session.organisationId)
   const viewer = useProfile()
-  // People who rotate are only expected on a shift when the week's plan puts them on it.
-  const planned = session.rotating && session.rosterId ? session.rosterId : null
+  // People who rotate are only expected on a shift when the week's plan puts them on it. On fixed
+  // hours everyone is expected, unless the plan puts them on another shift or gives them the day off.
+  const planned = session.rosterId ?? null
   const plan = useLive<ShiftPlan | null>(
     planned ? (onData, onError) => subscribePlan(planned, weekStart(session.date), viewer, onData, onError) : null,
     [planned, session.date, viewer.id, viewer.role],
   )
   return useMemo(() => {
     if (session.rotating && !plan.data) return []
-    const due = (key: string) => !session.rotating || plan.data?.cells[key]?.[session.date] === session.classId
+    const due = (key: string) => {
+      const cell = plan.data?.cells[key]?.[session.date]
+      return session.rotating ? cell === session.classId : !cell || cell === session.classId
+    }
     const present = new Set(records.map((r) => r.studentKey))
     return (roster.data ?? [])
       .filter((s) => !present.has(s.studentKey) && due(s.studentKey))

@@ -225,3 +225,57 @@ describe('hours that are not in yet', () => {
     expect(by.E1.entries[1].open).toBe(true)
   })
 })
+
+describe('office hours with a rotating night shift on the same list', () => {
+  const day = (id: string, date: string) => ({ id, date, startTime: '09:00', endTime: '18:00', rosterId: 'shift', classId: 'office' }) as never
+  const night = (id: string, date: string) => ({ id, date, startTime: '22:00', endTime: '06:00', rosterId: 'shift', classId: 'night', rotating: true, name: 'Night shift' }) as never
+  const rows = build(
+    [day('d1', '2026-10-01'), night('n1', '2026-10-01')],
+    new Map([
+      ['d1', [rec('E1', '2026-10-01', '09:00')]],
+      ['n1', [rec('E2', '2026-10-01', '21:55')]],
+    ]) as never,
+    new Map([['n1', new Map([['E2', at('2026-10-02', '06:05')]])]]) as never,
+    roster as never,
+    [],
+    new Map(),
+    LATER,
+    new Map(),
+    new Map([['office', { days: [1, 2, 3, 4, 5], off: new Set<string>() }], ['night', { days: [0, 1, 2, 3, 4, 5, 6], off: new Set<string>() }]]),
+  )
+  const by = Object.fromEntries(rows.map((r) => [r.key, r]))
+
+  it('still counts someone absent who came to neither', () => {
+    expect(by.E3.absent).toBe(1)
+  })
+
+  it('does not count the night worker absent from the day, nor the day worker from the night', () => {
+    expect(by.E2.absent).toBe(0)
+    expect(by.E1.absent).toBe(0)
+  })
+
+  it('counts night shifts for an allowance, and hours across midnight', () => {
+    expect(by.E2.nightDays).toBe(1)
+    expect(by.E2.shifts).toEqual({ 'Night shift': 1 })
+    // From the 22:00 start to the 06:05 clock-out the next morning (no unpaid break set here).
+    expect(Math.round(by.E2.minutes)).toBe(485)
+  })
+})
+
+describe('the shift plan on fixed hours', () => {
+  it('does not count someone absent on a day the plan gives them off', () => {
+    const rows = build(
+      [{ id: 'd1', date: '2026-10-01', startTime: '09:00', endTime: '18:00', rosterId: 'shift', classId: 'office' } as never, { id: 'n1', date: '2026-10-01', startTime: '22:00', endTime: '06:00', rosterId: 'shift', classId: 'night', rotating: true } as never],
+      new Map([['d1', [rec('E1', '2026-10-01', '09:00')]], ['n1', []]]) as never,
+      new Map() as never,
+      roster as never,
+      [{ id: 'p', organisationId: 'o', ownerId: 'm', rosterId: 'shift', week: '2026-09-28', cells: { E2: { '2026-10-01': 'off' }, E3: { '2026-10-01': 'night' } } }] as never,
+      new Map(),
+      LATER,
+    )
+    const by = Object.fromEntries(rows.map((r) => [r.key, r]))
+    expect(by.E2.absent).toBe(0)
+    // Planned on the night shift and came to nothing that day: absent once, not twice.
+    expect(by.E3.absent).toBe(1)
+  })
+})

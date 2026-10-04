@@ -404,18 +404,39 @@ function CompanyDay({ sessions, records, rangeLabel }: { sessions: Session[]; re
   const byOffice = new Map<string, Row>()
   const recordsOf = new Map<string, AttendanceRecord[]>()
   for (const r of records) recordsOf.set(r.sessionId, [...(recordsOf.get(r.sessionId) ?? []), r])
+  // One staff list on one date is one working day for its people, however many shifts ran: someone on
+  // the night shift is not missing from the day shift, and is not expected twice.
+  const groups = new Map<string, Session[]>()
   for (const s of sessions) {
-    const office = s.venue || s.name
+    const key = s.rosterId ? `${s.rosterId}|${s.date}` : s.id
+    groups.set(key, [...(groups.get(key) ?? []), s])
+  }
+  for (const group of groups.values()) {
+    const fixed = group.filter((s) => !s.rotating)
+    const lead = fixed[0] ?? group[0]
+    const office = lead.venue || lead.name
     const row = byOffice.get(office) ?? { office, days: 0, expected: 0, came: 0, late: 0, away: 0, absent: 0 }
-    const list = recordsOf.get(s.id) ?? []
-    const came = list.filter((r) => !isAway(r.status))
+    const list = group.flatMap((s) => (recordsOf.get(s.id) ?? []).map((r) => ({ r, s })))
+    const came = new Set(list.filter(({ r }) => !isAway(r.status)).map(({ r }) => r.studentKey))
+    const anyRecord = new Set(list.map(({ r }) => r.studentKey))
     row.days += 1
-    row.expected += s.expected ?? came.length
-    row.came += came.length
-    row.late += came.filter((r) => r.halfDay !== 'am' && (r.status === 'late' || lateFor(r, s) > 0)).length
-    row.away += list.length - came.length
-    // Absence is only judged once the day is over.
-    if (endOf(s).getTime() <= Date.now() && s.expected) row.absent += Math.max(0, s.expected - list.length)
+    row.came += came.size
+    row.late += list.filter(({ r, s }) => !isAway(r.status) && r.halfDay !== 'am' && (r.status === 'late' || lateFor(r, s) > 0)).length
+    row.away += [...anyRecord].filter((k) => !came.has(k)).length
+    if (fixed.length) {
+      // Fixed hours expect the whole list; a rotating shift beside them adds nobody new.
+      const expected = Math.max(...fixed.map((s) => s.expected ?? 0))
+      row.expected += expected || came.size
+      // Absence is only judged once the day is over.
+      if (expected && fixed.every((s) => endOf(s).getTime() <= Date.now())) row.absent += Math.max(0, expected - anyRecord.size)
+    } else {
+      // Only rotating shifts: each expects its own crew.
+      for (const s of group) {
+        const mine = recordsOf.get(s.id) ?? []
+        row.expected += s.expected ?? mine.filter((r) => !isAway(r.status)).length
+        if (endOf(s).getTime() <= Date.now() && s.expected) row.absent += Math.max(0, s.expected - mine.length)
+      }
+    }
     byOffice.set(office, row)
   }
   const rows = [...byOffice.values()].sort((a, b) => a.office.localeCompare(b.office))

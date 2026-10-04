@@ -1,6 +1,6 @@
 // Fills the LOCAL EMULATOR with a realistic month for a workplace: two offices, ~22 staff,
 // September 2026 plus the first days of October. Never touches a real project.
-// Usage: node scripts/seed-workplace.mjs <organisationId> <ownerUid> <ownerName> <hqClassId> <branchClassId>
+// Usage: node scripts/seed-workplace.mjs <organisationId> <ownerUid> <ownerName> <hqClassId> <branchClassId> [nightShiftClassId]
 //
 // What is in it, so the reports can be checked against it:
 // - HQ Kuala Lumpur: Mon–Fri 09:00–18:00, 1 h unpaid lunch. Penang branch: Mon–Fri 09:00–18:00, Sat 09:00–13:00.
@@ -8,10 +8,12 @@
 // - Sat 19 Sep: HQ stock-take, four people come in (rest-day work).
 // - Leave (annual, emergency, unpaid), MC, half days, allowed early leave, people who are often late,
 //   people who forget to clock out, a few days absent without leave, overtime in operations.
+// - With a night shift ID: 21–25 Sep, Daniel and Haziq work the rotating night shift (22:00–06:00,
+//   sharing the HQ list) instead of the day.
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing'
 import { Timestamp, doc, writeBatch } from 'firebase/firestore'
 
-const [org, owner, ownerName = 'Manager', hq, branch] = process.argv.slice(2)
+const [org, owner, ownerName = 'Manager', hq, branch, nightShift] = process.argv.slice(2)
 if (!org || !owner || !hq || !branch) throw new Error('Usage: node scripts/seed-workplace.mjs <organisationId> <ownerUid> <ownerName> <hqClassId> <branchClassId>')
 
 const env = await initializeTestEnvironment({ projectId: 'demo-attendance', firestore: { host: '127.0.0.1', port: 8080 } })
@@ -171,5 +173,28 @@ await env.withSecurityRulesDisabled(async (ctx) => {
     }
   }
 })
+if (nightShift) {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore()
+    const base = { organisationId: org, ownerId: owner }
+    const crew = HQ_STAFF.filter((s) => ['E009', 'E013'].includes(s.studentKey))
+    for (const d of [21, 22, 23, 24, 25]) {
+      const date = `2026-09-${d}`
+      const sid = `${nightShift}_${date}_2200`
+      const b = writeBatch(db)
+      for (const s of crew) {
+        // On nights, so not on the day shift.
+        b.delete(doc(db, 'attendance', `${hq}_${date}_0900_${s.studentKey}`))
+        b.delete(doc(db, 'clockouts', `${hq}_${date}_0900_${s.studentKey}`))
+        b.set(doc(db, 'attendance', `${sid}_${s.studentKey}`), { ...base, sessionId: sid, sessionName: 'Night shift', date, token: 'SEED00', studentKey: s.studentKey, studentId: s.studentId, studentName: s.studentName, status: 'present', method: 'qr', device: `DEV-${s.studentKey}`, timestamp: Timestamp.fromDate(new Date(2026, 8, d, 21, 50)) })
+        b.set(doc(db, 'clockouts', `${sid}_${s.studentKey}`), { ...base, sessionId: sid, studentKey: s.studentKey, by: 'self', token: 'SEED00', timestamp: Timestamp.fromDate(new Date(2026, 8, d + 1, 6, 10)) })
+      }
+      const at = (h, m, plus = 0) => Timestamp.fromDate(new Date(2026, 8, d + plus, h, m))
+      b.set(doc(db, 'sessions', sid), { ...base, ownerName, name: 'Night shift', description: '', code: '', section: '', venue: 'HQ Kuala Lumpur', delivery: 'in_person', kind: 'lecture', meetingUrl: '', geoPoint: null, geoRadius: null, geoCos: null, geoMode: null, graceMin: 10, breakMin: 60, rotating: true, mode: 'qr', classId: nightShift, rosterId: hq, date, startTime: '22:00', endTime: '06:00', expected: crew.length, presentCount: crew.length, status: 'ended', token: 'SEED00', createdAt: at(21, 30), startedAt: at(21, 30), endedAt: at(10, 0, 1), expiresAt: at(10, 0, 1) })
+      await b.commit()
+      counts.sessions++
+    }
+  })
+}
 await env.cleanup()
 console.log('Seeded', counts)

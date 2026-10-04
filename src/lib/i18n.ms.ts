@@ -1136,4 +1136,6 @@ export const ms: Record<string, string> = {
   "{n} more in the table": "{n} lagi dalam jadual",
   "1 on leave": "1 bercuti",
   "{n} on leave": "{n} bercuti",
+  "{n} nights": "{n} malam",
+  "Night shifts": "Syif malam",
 }

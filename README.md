@@ -379,5 +379,13 @@ fills two offices (16 + 6 staff) with September 2026 and 1–3 October: Mon–Fr
 1 h unpaid lunch (Penang also Sat 09:00–13:00), Malaysia Day 16 Sep as a public holiday with two
 people working it, a Saturday stock-take, annual / emergency / unpaid leave, MC, half days, allowed
 and unallowed early leave, habitual lateness, forgotten clock-outs and four days absent without
-leave. It uses a fixed random seed, so the same month comes out every time.
+leave. A sixth argument (a night shift's ID) adds a week of rotating night shifts on the HQ list.
+It uses a fixed random seed, so the same month comes out every time.
+
+**Shifts in the reports.** A staff list with fixed hours and a rotating shift beside it (an office
+with a night shift) is checked day by day: a day on any of its shifts accounts for the person, and
+the Shift plan's days off and other shifts are respected; only lists where every shift rotates are
+measured by the week. Rest days and holidays use the shift's own calendar. The report's Shifts
+column shows days on each shift and nights worked (for a night allowance); the Admin overview counts
+a list once per date, not once per shift.
 

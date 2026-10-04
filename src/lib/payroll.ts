@@ -29,6 +29,10 @@ export interface PayrollRow {
   noClockOut: number
   /** Of `days`, those on a rest day or a public holiday: extra days, not part of the attendance rate. */
   extraDays: number
+  /** Days worked on each shift (or office hours), by its name. */
+  shifts: Record<string, number>
+  /** Days worked on a shift that runs past midnight, for a night allowance. */
+  nightDays: number
   /** Days clocked in today (or any day not over yet) and not clocked out: still at work, hours to come. */
   openDays: number
   /** Days whose hours are counted (clocked in and out). */
@@ -94,13 +98,13 @@ export function buildPayroll(
   now = Date.now(),
   /** Session ID -> staff key -> the kind of leave recorded for that day. */
   leaveTypes: Map<string, Map<string, LeaveKind>> = new Map(),
-  /** Staff list -> its working days and its days off (public holidays), to tell rest-day and holiday work apart. */
+  /** Working hours (or staff list) -> its working days and its days off (public holidays), to tell rest-day and holiday work apart. */
   calendars: Map<string, { days: number[]; off: Set<string> }> = new Map(),
 ): PayrollRow[] {
   const people = new Map<string, PayrollRow>()
   const person = (key: string, staffId: string, name: string) => {
     if (!people.has(key)) {
-      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, openDays: 0, timedDays: 0, extraDays: 0, wrongShift: 0, early: 0, earlyMinutes: 0, earlyApproved: 0, halfDays: 0, leaveBy: { annual: 0, emergency: 0, unpaid: 0, other: 0 }, restMinutes: 0, holidayMinutes: 0, rate: null, entries: [] })
+      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, openDays: 0, timedDays: 0, extraDays: 0, shifts: {}, nightDays: 0, wrongShift: 0, early: 0, earlyMinutes: 0, earlyApproved: 0, halfDays: 0, leaveBy: { annual: 0, emergency: 0, unpaid: 0, other: 0 }, restMinutes: 0, holidayMinutes: 0, rate: null, entries: [] })
     }
     return people.get(key)!
   }
@@ -111,16 +115,29 @@ export function buildPayroll(
       if (!row.office) row.office = offices.get(listId) ?? ''
     }
   }
-  // A list is a rotating pool when any shift using it rotates. Its people are measured by the
-  // week (see below), not shift by shift.
-  const pools = new Set(sessions.filter((x) => x.rotating && x.rosterId).map((x) => x.rosterId!))
+  // A list is a rotating pool when every shift using it rotates: its people are measured by the week
+  // (see below), not shift by shift. A list that also has fixed hours (an office with a night shift
+  // beside it) is checked day by day, and a day on any of its shifts accounts for the person.
+  const fixed = new Set(sessions.filter((x) => !x.rotating && x.rosterId).map((x) => x.rosterId!))
+  const pools = new Set(sessions.filter((x) => x.rotating && x.rosterId && !fixed.has(x.rosterId)).map((x) => x.rosterId!))
+  const cameOn = new Map<string, Set<string>>()
+  for (const x of sessions) {
+    if (!x.rosterId) continue
+    const k = `${x.rosterId}|${x.date}`
+    const set = cameOn.get(k) ?? new Set<string>()
+    for (const r of records.get(x.id) ?? []) set.add(r.studentKey)
+    cameOn.set(k, set)
+  }
   for (const session of sessions) {
     const seen = new Set<string>()
     const end = endOf(session).getTime()
     const over = end <= now
     // Work on a day off counts apart: rest days and public holidays are paid at other rates.
-    const cal = session.rosterId && !pools.has(session.rosterId) ? calendars.get(session.rosterId) : undefined
-    const dayType: DayType = !cal ? 'normal' : cal.off.has(session.date) ? 'holiday' : cal.days.includes(parseDate(session.date).getDay()) ? 'normal' : 'rest'
+    // The shift's own calendar first (a night shift runs on its own days), else its list's.
+    const cal = calendars.get(session.classId ?? '') ?? (session.rosterId ? calendars.get(session.rosterId) : undefined)
+    // A rotating shift has no fixed rest days of its own, but a public holiday is still one.
+    const dayType: DayType = !cal ? 'normal' : cal.off.has(session.date) ? 'holiday' : session.rotating || cal.days.includes(parseDate(session.date).getDay()) ? 'normal' : 'rest'
+    const night = session.endTime <= session.startTime
     const entry = (r: { studentKey: string; studentId: string; studentName: string }, e: Omit<DayEntry, 'date' | 'sessionId' | 'sessionName' | 'dayType'>) =>
       person(r.studentKey, r.studentId, r.studentName).entries.push({ date: session.date, sessionId: session.id, sessionName: session.name, dayType, ...e })
     for (const r of records.get(session.id) ?? []) {
@@ -139,6 +156,8 @@ export function buildPayroll(
       else {
         row.days += 1
         if (dayType !== 'normal') row.extraDays += 1
+        row.shifts[session.name] = (row.shifts[session.name] ?? 0) + 1
+        if (night) row.nightDays += 1
         if (r.halfDay) row.halfDays += 1
         const late = lateFor(r, session)
         if (late || (status === 'late' && r.halfDay !== 'am')) {
@@ -181,8 +200,12 @@ export function buildPayroll(
       }
     }
     // Nobody is due on a rest day or a public holiday, so missing one is not an absence.
-    for (const s of (over && dayType === 'normal' && session.rosterId && !pools.has(session.rosterId) && rosters.get(session.rosterId)) || []) {
-      if (!seen.has(s.studentKey)) {
+    // A rotating shift beside fixed hours expects nobody in particular: only the fixed hours do.
+    for (const s of (over && dayType === 'normal' && !session.rotating && session.rosterId && !pools.has(session.rosterId) && rosters.get(session.rosterId)) || []) {
+      // Accounted for by any shift on the list that day, or planned off / onto another shift.
+      const cell = plans.find((p) => p.rosterId === session.rosterId && p.week === mondayOf(session.date))?.cells[s.studentKey]?.[session.date]
+      if (cell === 'off') continue
+      if (!seen.has(s.studentKey) && !cameOn.get(`${session.rosterId}|${session.date}`)?.has(s.studentKey)) {
         person(s.studentKey, s.studentId, s.studentName).absent += 1
         entry(s, { mark: 'absent', minutes: 0, late: 0, early: 0, noClockOut: false })
       }
