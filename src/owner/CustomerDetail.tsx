@@ -1,7 +1,9 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Button, Card, EmptyState, inputClass } from '../components/ui'
-import { type Price, Timestamp, addNote, addTask, can, fetchLastActivity, monthly, resetPassword, setTaskDone, setUserStatus, updateCustomer, voidInvoice } from '../data/platform'
+import { type Coupon, type Price, Timestamp, addNote, addTask, afterDiscount, applyCouponToCustomer, can, couponLabel, couponUsable, discountLive, fetchLastActivity, monthly, resetPassword, setTaskDone, setUserStatus, subscribeCoupons, updateCustomer, voidInvoice } from '../data/platform'
+import { useLive } from '../hooks/useLive'
+import { CYCLE_LABEL, useCatalog } from '../lib/pricing'
 import { addDays, formatDate, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import { downloadInvoicePdf } from '../lib/invoicePdf'
@@ -166,6 +168,19 @@ function Subscription({ c }: { c: C }) {
   useEffect(() => {
     if (paidMs) setUntil(isoDate(new Date(paidMs)))
   }, [paidMs])
+  // The edition's plans from the price list, to fill the form in one go.
+  const catalog = useCatalog()
+  const edKey = org.purpose === 'workplace' ? 'workplace' : org.purpose === 'training' ? 'trainers' : 'lecturers'
+  const edPlans = (catalog[edKey] ?? []).filter((p) => p.cycle !== 'free')
+  const pick = (id: string) => {
+    const p = edPlans.find((x) => x.id === id)
+    if (!p) return
+    setPlan('pro')
+    setCurrency('MYR')
+    setAmount(String(p.priceMyr))
+    setCycle(p.cycle === 'free' ? 'month' : p.cycle)
+    if (workplace && p.seats) setSeats(String(p.seats))
+  }
   const save = (e: FormEvent) => {
     e.preventDefault()
     if (plan === 'pro' && paidMs > Date.now() && new Date(`${until}T23:59:59`).getTime() < paidMs && !window.confirm(t('This ends their paid period earlier, on {date} instead of {old}. Continue?', { date: formatDate(until), old: dateOf(paidMs) }))) return
@@ -191,6 +206,15 @@ function Subscription({ c }: { c: C }) {
       <div className="grid gap-4 lg:grid-cols-3">
         <Section title={t('Plan and price')} className="lg:col-span-2" sub={moneyOk ? undefined : t('Your role can see this but not change it.')}>
           <form onSubmit={save} className="space-y-3">
+            {moneyOk && edPlans.length > 0 && (
+              <label className={label}>
+                {t('Fill in from the price list')}
+                <select value="" onChange={(e) => pick(e.target.value)} className={`${inputClass} mt-1`}>
+                  <option value="">{t('Choose a plan…')}</option>
+                  {edPlans.map((p) => <option key={p.id} value={p.id}>{p.name} · RM{p.priceMyr} / US${p.priceUsd} {t(CYCLE_LABEL[p.cycle])}{p.hidden ? ` (${t('hidden')})` : ''}</option>)}
+                </select>
+              </label>
+            )}
             <fieldset disabled={!moneyOk} className="grid gap-3 sm:grid-cols-3">
               <label className={label}>{t('Plan')}<select value={plan} onChange={(e) => setPlan(e.target.value as typeof plan)} className={`${inputClass} mt-1`}>{(['early', 'trial', 'free', 'pro'] as const).map((p) => <option key={p} value={p}>{t(PLAN_LABEL[p])}</option>)}</select></label>
               {plan === 'pro' && <label className={label}>{t('Paid until')}<input type="date" value={until} onChange={(e) => setUntil(e.target.value)} className={`${inputClass} mt-1`} /></label>}
@@ -206,6 +230,7 @@ function Subscription({ c }: { c: C }) {
           </form>
         </Section>
         <div className="space-y-4">
+          <StandingDiscount c={c} />
           <Section title={t('Trial')}>
             <p className="text-sm text-muted">{c.status === 'trial' ? t('On trial, {until}.', { until: planUntil(c) }) : t('A {n}-day Pro trial.', { n: TRIAL_DAYS })}</p>
             {can(me.role, 'support') && (
@@ -416,5 +441,82 @@ function NotesTab({ c }: { c: C }) {
         </Section>
       </div>
     </>
+  )
+}
+
+/** A discount on everything this customer pays, from a code or set by hand, until a date. */
+function StandingDiscount({ c }: { c: C }) {
+  const { me } = useOwner()
+  const org = c.org
+  const coupons = useLive<Coupon[]>((d, e) => subscribeCoupons(d, e), [])
+  const { busy, run, messages, setError } = useAction()
+  const edKey = org.purpose === 'workplace' ? 'workplace' : org.purpose === 'training' ? 'trainers' : 'lecturers'
+  const usable = (coupons.data ?? []).filter((x) => couponUsable(x, edKey) && x.duration !== 'once')
+  const [mode, setMode] = useState<'code' | 'custom'>('code')
+  const [code, setCode] = useState('')
+  const [kind, setKind] = useState<'percent' | 'amount'>('percent')
+  const [value, setValue] = useState('10')
+  const [reason, setReason] = useState('')
+  const [until, setUntil] = useState('')
+  const d = org.discount
+  const live = discountLive(d)
+  const months = org.price?.cycle === 'year' ? 12 : org.price?.cycle === 'semester' ? 6 : 1
+  const apply = () => {
+    if (mode === 'code') {
+      const cp = usable.find((x) => x.code === code)
+      if (!cp) return setError(t('Choose a code.'))
+      let end = ''
+      if (cp.duration === 'repeating') {
+        const x = new Date()
+        x.setMonth(x.getMonth() + (cp.cycles ?? 1) * months)
+        end = isoDate(x)
+      }
+      const discount = { kind: cp.kind, value: cp.value, label: couponLabel(cp), code: cp.code, ...(end ? { until: end } : {}) }
+      return run('apply', () => applyCouponToCustomer(org, cp.code, discount, me), t('Discount applied.'))
+    }
+    const v = Number(value)
+    if (!(v > 0) || (kind === 'percent' && v > 100)) return setError(t('Enter a discount between 1 and 100%, or an amount above zero.'))
+    if (!reason.trim()) return setError(t('Say why, for the record.'))
+    const discount = { kind, value: v, label: `${kind === 'percent' ? `${v}%` : `${org.price?.currency === 'USD' ? 'US$' : 'RM'}${v}`} off: ${reason.trim()}`, ...(until ? { until } : {}) }
+    run('apply', () => updateCustomer(org, { discount }, me, 'discount', `Discount ${discount.label}${until ? ` until ${until}` : ''}`), t('Discount applied.'))
+  }
+  return (
+    <Section title={t('Discount')}>
+      {messages}
+      {live && d ? (
+        <div className="space-y-2 text-sm">
+          <p><span className="font-medium">{d.label}</span>{d.until ? <span className="text-muted"> · {t('until {date}', { date: formatDate(d.until) })}</span> : <span className="text-muted"> · {t('no end date')}</span>}</p>
+          {org.price && <p className="text-muted">{t('They pay {amount} instead of {full}.', { amount: money(afterDiscount(org.price.amount, d), org.price.currency), full: money(org.price.amount, org.price.currency) })}</p>}
+          {can(me.role, 'money') && <Button variant="secondary" busy={busy === 'remove'} onClick={() => run('remove', () => updateCustomer(org, { discount: null }, me, 'discount', 'Discount removed'), t('Discount removed.'), t('Remove this discount?'))}>{t('Remove discount')}</Button>}
+        </div>
+      ) : can(me.role, 'money') ? (
+        <div className="space-y-2">
+          {org.discount?.until && !live && <p className="text-xs text-muted">{t('An earlier discount ended on {date}.', { date: formatDate(org.discount.until) })}</p>}
+          <div className="flex gap-3 text-sm">
+            <label className="flex items-center gap-1.5"><input type="radio" checked={mode === 'code'} onChange={() => setMode('code')} className="accent-accent" />{t('A discount code')}</label>
+            <label className="flex items-center gap-1.5"><input type="radio" checked={mode === 'custom'} onChange={() => setMode('custom')} className="accent-accent" />{t('Set by hand')}</label>
+          </div>
+          {mode === 'code' ? (
+            usable.length ? (
+              <select value={code} onChange={(e) => setCode(e.target.value)} className={inputClass}><option value="">{t('Choose a code…')}</option>{usable.map((x) => <option key={x.code} value={x.code}>{couponLabel(x)}</option>)}</select>
+            ) : (
+              <p className="text-xs text-muted">{t('No codes that last more than one invoice. Create one under Pricing, or set a discount by hand.')}</p>
+            )
+          ) : (
+            <>
+              <div className="flex gap-2">
+                <select value={kind} onChange={(e) => setKind(e.target.value as 'percent' | 'amount')} className={`${inputClass} w-28`}><option value="percent">%</option><option value="amount">{org.price?.currency === 'USD' ? 'US$' : 'RM'}</option></select>
+                <input type="number" min="0" step="0.01" value={value} onChange={(e) => setValue(e.target.value)} className={inputClass} aria-label={t('Discount')} />
+              </div>
+              <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={80} placeholder={t('Why, e.g. School partner')} className={inputClass} />
+              <label className="block text-xs font-medium text-muted">{t('Until (optional)')}<input type="date" value={until} onChange={(e) => setUntil(e.target.value)} className={`${inputClass} mt-1`} /></label>
+            </>
+          )}
+          <Button variant="secondary" busy={busy === 'apply'} onClick={apply}>{t('Apply discount')}</Button>
+        </div>
+      ) : (
+        <p className="text-sm text-muted">{t('No discount.')}</p>
+      )}
+    </Section>
   )
 }

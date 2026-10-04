@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { Button, inputClass } from '../components/ui'
-import { type InvoiceItem, Timestamp, createInvoice, invoiceTotals, recordPayment, recordRefund } from '../data/platform'
+import { type Coupon, type InvoiceItem, Timestamp, couponLabel, couponUsable, createInvoice, discountLive, discountOff, invoiceTotals, recordPayment, recordRefund, subscribeCoupons } from '../data/platform'
+import { useLive } from '../hooks/useLive'
 import { addDays, formatDate, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import type { Organisation } from '../lib/types'
@@ -27,7 +28,27 @@ export function InvoiceForm({ c, onDone }: { c: Customer; onDone: (message?: str
     { description: `Attend ${editionName(c.org)} Pro${price ? ` (${CYCLE[price.cycle]})` : ''}${c.org.purpose === 'workplace' && c.org.seats ? `, up to ${c.org.seats} staff` : ''}`, qty: '1', unitPrice: price ? String(price.amount) : '' },
   ])
   const parsed: InvoiceItem[] = items.filter((i) => i.description.trim()).map((i) => ({ description: i.description.trim(), qty: Math.max(0, Number(i.qty) || 0), unitPrice: Math.max(0, Number(i.unitPrice) || 0) }))
-  const totals = invoiceTotals(parsed, Number(taxRate) || 0)
+  // Discount: the customer's standing one by default, or a code, or one set by hand.
+  const coupons = useLive<Coupon[]>((d, e) => subscribeCoupons(d, e), [])
+  const edKey = c.org.purpose === 'workplace' ? 'workplace' : c.org.purpose === 'training' ? 'trainers' : 'lecturers'
+  const standing = discountLive(c.org.discount) ? c.org.discount : null
+  const [dMode, setDMode] = useState<'none' | 'standing' | 'code' | 'custom'>(standing ? 'standing' : 'none')
+  const [dCode, setDCode] = useState('')
+  const [dKind, setDKind] = useState<'percent' | 'amount'>('percent')
+  const [dValue, setDValue] = useState('10')
+  const [dLabel, setDLabel] = useState('')
+  const usable = (coupons.data ?? []).filter((x) => couponUsable(x, edKey) && (x.kind === 'percent' || (x.currency ?? 'MYR') === currency))
+  const gross = invoiceTotals(parsed, 0).subtotal
+  const chosen = usable.find((x) => x.code === dCode)
+  const discount =
+    dMode === 'standing' && standing
+      ? { label: standing.label, amount: discountOff(standing, gross) }
+      : dMode === 'code' && chosen
+        ? { label: couponLabel(chosen), amount: discountOff(chosen, gross), code: chosen.code }
+        : dMode === 'custom' && Number(dValue) > 0
+          ? { label: dLabel.trim() || (dKind === 'percent' ? `${dValue}% off` : 'Discount'), amount: discountOff({ kind: dKind, value: Math.min(dKind === 'percent' ? 100 : Infinity, Number(dValue)) }, gross) }
+          : null
+  const totals = invoiceTotals(parsed, Number(taxRate) || 0, discount)
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (!parsed.length || totals.total <= 0) return setError(t('Add at least one line with an amount.'))
@@ -35,7 +56,7 @@ export function InvoiceForm({ c, onDone }: { c: Customer; onDone: (message?: str
     run(
       'save',
       async () => {
-        const number = await createInvoice(c.org, { billTo: { name: billName.trim(), email: billEmail.trim(), address: billAddress.trim() }, items: parsed, currency, taxRate: Number(taxRate) || 0, issueDate, dueDate, note: note.trim() }, settings.invoicePrefix, me)
+        const number = await createInvoice(c.org, { billTo: { name: billName.trim(), email: billEmail.trim(), address: billAddress.trim() }, items: parsed, currency, taxRate: Number(taxRate) || 0, issueDate, dueDate, note: note.trim(), discount: discount && discount.amount > 0 ? discount : null }, settings.invoicePrefix, me)
         onDone(t('Invoice {n} issued.', { n: number }))
       },
       t('Invoice issued.'),
@@ -67,9 +88,28 @@ export function InvoiceForm({ c, onDone }: { c: Customer; onDone: (message?: str
         <label className={label}>{t('Issue date')}<input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className={`${inputClass} mt-1`} /></label>
         <label className={label}>{t('Due date')}<input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={`${inputClass} mt-1`} /></label>
       </div>
+      <fieldset className="space-y-2 rounded-lg border border-line p-3">
+        <legend className="px-1 text-xs font-medium text-muted">{t('Discount')}</legend>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <label className="flex items-center gap-1.5"><input type="radio" checked={dMode === 'none'} onChange={() => setDMode('none')} className="accent-accent" />{t('None')}</label>
+          {standing && <label className="flex items-center gap-1.5"><input type="radio" checked={dMode === 'standing'} onChange={() => setDMode('standing')} className="accent-accent" />{t('Their discount: {label}', { label: standing.label })}</label>}
+          <label className="flex items-center gap-1.5"><input type="radio" checked={dMode === 'code'} onChange={() => setDMode('code')} className="accent-accent" />{t('A code')}</label>
+          <label className="flex items-center gap-1.5"><input type="radio" checked={dMode === 'custom'} onChange={() => setDMode('custom')} className="accent-accent" />{t('One-off')}</label>
+        </div>
+        {dMode === 'code' && (usable.length ? (
+          <select value={dCode} onChange={(e) => setDCode(e.target.value)} className={inputClass}><option value="">{t('Choose a code…')}</option>{usable.map((x) => <option key={x.code} value={x.code}>{couponLabel(x)}{x.maxUses ? ` · ${x.maxUses - (x.uses ?? 0)} left` : ''}</option>)}</select>
+        ) : <p className="text-xs text-muted">{t('No codes can be used for this customer today.')}</p>)}
+        {dMode === 'custom' && (
+          <div className="flex flex-wrap gap-2">
+            <select value={dKind} onChange={(e) => setDKind(e.target.value as 'percent' | 'amount')} className={`${inputClass} w-24`}><option value="percent">%</option><option value="amount">{currency === 'USD' ? 'US$' : 'RM'}</option></select>
+            <input type="number" min="0" step="0.01" value={dValue} onChange={(e) => setDValue(e.target.value)} className={`${inputClass} w-28`} aria-label={t('Discount')} />
+            <input value={dLabel} onChange={(e) => setDLabel(e.target.value)} maxLength={60} placeholder={t('Shown on the invoice, e.g. Launch offer')} className={`${inputClass} min-w-48 flex-1`} />
+          </div>
+        )}
+      </fieldset>
       <label className={label}>{t('Note on the invoice (optional)')}<input value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} className={`${inputClass} mt-1`} /></label>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-canvas px-4 py-3 text-sm">
-        <span className="text-muted">{t('Subtotal')} {money(totals.subtotal, currency)}{Number(taxRate) > 0 ? ` · SST ${money(totals.tax, currency)}` : ''}</span>
+        <span className="text-muted">{t('Subtotal')} {money(totals.subtotal, currency)}{totals.discountAmount > 0 ? ` · ${t('Discount')} −${money(totals.discountAmount, currency)}` : ''}{Number(taxRate) > 0 ? ` · SST ${money(totals.tax, currency)}` : ''}</span>
         <span className="text-base font-semibold">{t('Total')} {money(totals.total, currency)}</span>
       </div>
       {messages}

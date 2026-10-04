@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { Button, inputClass } from '../components/ui'
 import { type PlatformSettings, can, saveSettings } from '../data/platform'
-import { EDITIONS as EDITION_LIST } from '../lib/editions'
+import { Link } from 'react-router-dom'
 import { t } from '../lib/i18n'
 import { useOwner } from './context'
 import { PageHead, Section, useAction } from './ui'
@@ -53,17 +53,8 @@ export default function Settings() {
         </Section>
         {edit && <div className="lg:col-span-2"><Button type="submit" busy={busy === 'save'}>{t('Save settings')}</Button></div>}
       </form>
-      <Section title={t('Price list (from the website)')} sub={t('What the landing page offers. Use these when you set a customer’s price.')}>
-        <div className="grid gap-4 md:grid-cols-3">
-          {EDITION_LIST.map((e) => (
-            <div key={e.id} className="rounded-lg bg-canvas p-3 text-sm">
-              <p className="font-semibold">{e.label}</p>
-              <ul className="mt-1 space-y-0.5">
-                {e.plans.map((p) => <li key={p.name} className="flex justify-between gap-2"><span>{t(p.name)}</span><span className="text-right text-muted">{p.price.myr} / {p.price.usd} <span className="block text-xs">{t(p.per)}</span></span></li>)}
-              </ul>
-            </div>
-          ))}
-        </div>
+      <Section title={t('Prices and discounts')} sub={t('Plans, prices and discount codes are managed on their own page.')}>
+        <Link to="/owner/pricing" className="text-sm font-medium text-accent">{t('Open Pricing')} →</Link>
       </Section>
     </>
   )

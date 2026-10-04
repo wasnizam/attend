@@ -17,6 +17,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { auth } from '../lib/auth'
+import { isoDate } from '../lib/format'
 import { db } from '../lib/firebase'
 import type { Organisation, Session, UserProfile, WeeklyClass } from '../lib/types'
 
@@ -146,10 +147,22 @@ export interface Price {
   currency: 'MYR' | 'USD'
   cycle: 'month' | 'semester' | 'year'
 }
-/** A price as money per month, for recurring revenue. A semester counts as six months. */
-export const monthly = (p: Price) => (p.cycle === 'month' ? p.amount : p.cycle === 'semester' ? p.amount / 6 : p.amount / 12)
+export type Discount = NonNullable<Organisation['discount']>
 
-export type CustomerPatch = Partial<Pick<Organisation, 'plan' | 'seats' | 'tags' | 'accountManager' | 'price'>> & {
+/** Whether a standing discount still applies on a date. */
+export const discountLive = (d: Discount | null | undefined, on = isoDate()): d is Discount => Boolean(d && (!d.until || d.until >= on))
+
+/** A price after a discount (never below zero). */
+export const afterDiscount = (amount: number, d: Discount | null | undefined) =>
+  !discountLive(d) ? amount : Math.max(0, Math.round((d.kind === 'percent' ? amount * (1 - d.value / 100) : amount - d.value) * 100) / 100)
+
+/** A price as money per month, for recurring revenue, after any standing discount. A semester counts as six months. */
+export const monthly = (p: Price, d?: Discount | null) => {
+  const amount = afterDiscount(p.amount, d)
+  return p.cycle === 'month' ? amount : p.cycle === 'semester' ? amount / 6 : amount / 12
+}
+
+export type CustomerPatch = Partial<Pick<Organisation, 'plan' | 'seats' | 'tags' | 'accountManager' | 'price' | 'discount'>> & {
   trialStarted?: Timestamp | null
   paidUntil?: Timestamp | null
   suspended?: boolean
@@ -224,6 +237,8 @@ export interface Invoice {
   issueDate: string
   dueDate: string
   status: 'unpaid' | 'paid' | 'void'
+  /** Money off the subtotal, before SST. */
+  discount?: { label: string; amount: number; code?: string } | null
   note?: string
   voidReason?: string
   paidAt?: Timestamp | null
@@ -233,10 +248,13 @@ export interface Invoice {
 }
 export const subscribeInvoices = live<Invoice>('invoices', (d) => ({ id: d.id, ...d.data() }) as Invoice)
 
-export const invoiceTotals = (items: InvoiceItem[], taxRate: number) => {
+/** Subtotal, then any discount off it, then SST on what is left. */
+export const invoiceTotals = (items: InvoiceItem[], taxRate: number, discount?: { amount: number } | null) => {
   const subtotal = Math.round(items.reduce((a, i) => a + i.qty * i.unitPrice, 0) * 100) / 100
-  const tax = Math.round(subtotal * taxRate) / 100
-  return { subtotal, tax, total: Math.round((subtotal + tax) * 100) / 100 }
+  const off = Math.min(subtotal, Math.round((discount?.amount ?? 0) * 100) / 100)
+  const taxable = Math.round((subtotal - off) * 100) / 100
+  const tax = Math.round(taxable * taxRate) / 100
+  return { subtotal, discountAmount: off, tax, total: Math.round((taxable + tax) * 100) / 100 }
 }
 
 /** Issues the next numbered invoice (the counter and the invoice are written together). */
@@ -244,12 +262,19 @@ export async function createInvoice(org: Organisation, draft: Omit<Invoice, 'id'
   const counter = doc(db, 'platformConfig', 'counters')
   const ref = doc(collection(db, 'invoices'))
   const number = await runTransaction(db, async (tx) => {
+    // Every read first (the database requires it), then the writes.
     const snap = await tx.get(counter)
+    const cref = draft.discount?.code ? doc(db, 'coupons', draft.discount.code) : null
+    const coupon = cref ? await tx.get(cref) : null
+    // A discount code is counted as used, and refused once it has run out.
+    if (cref && (!coupon?.exists() || !couponUsable(coupon.data() as Coupon))) throw Object.assign(new Error(), { message: `The code ${draft.discount!.code} can no longer be used.` })
     const next = (snap.exists() ? (snap.data().invoice as number) : 0) + 1
     if (snap.exists()) tx.update(counter, { invoice: next })
     else tx.set(counter, { invoice: 1 })
+    if (cref && coupon) tx.update(cref, { uses: ((coupon.data() as Coupon).uses ?? 0) + 1 })
     const no = `${prefix || 'INV'}-${draft.issueDate.slice(0, 4)}-${String(next).padStart(4, '0')}`
-    tx.set(ref, { ...draft, ...invoiceTotals(draft.items, draft.taxRate), number: no, organisationId: org.id, organisationName: org.name, status: 'unpaid', by: me.id, at: serverTimestamp() })
+    const { discountAmount, ...totals } = invoiceTotals(draft.items, draft.taxRate, draft.discount)
+    tx.set(ref, { ...draft, ...totals, discount: draft.discount ? { ...draft.discount, amount: discountAmount } : null, number: no, organisationId: org.id, organisationName: org.name, status: 'unpaid', by: me.id, at: serverTimestamp() })
     return no
   })
   await audit(me, 'invoice', `Issued ${number}`, org)
@@ -261,6 +286,77 @@ export async function voidInvoice(inv: Invoice, reason: string, me: Actor) {
   batch.update(doc(db, 'invoices', inv.id), { status: 'void', voidReason: reason.slice(0, 300) })
   batch.set(doc(collection(db, 'platformAudit')), auditDoc(me, 'invoice', `Voided ${inv.number}: ${reason}`, { id: inv.organisationId, name: inv.organisationName }))
   await batch.commit()
+}
+
+// ---------- prices and discount codes ----------
+
+export async function savePricing(catalog: import('../lib/pricing').Catalog, me: Actor, what: string) {
+  // The database refuses empty (undefined) fields, such as a staff limit on a teaching plan: drop them.
+  const clean = JSON.parse(JSON.stringify(catalog)) as typeof catalog
+  await setDoc(doc(db, 'platformConfig', 'pricing'), { ...clean, updatedBy: me.id, updatedAt: serverTimestamp() })
+  await audit(me, 'pricing', what)
+}
+
+export interface Coupon {
+  code: string
+  kind: 'percent' | 'amount'
+  value: number
+  /** For an amount off: which currency it is in. */
+  currency?: 'MYR' | 'USD'
+  /** Editions it may be used for; empty means all. */
+  editions: string[]
+  /** once: one invoice. repeating: for `cycles` billing periods. forever: for as long as they pay. */
+  duration: 'once' | 'repeating' | 'forever'
+  cycles?: number
+  validFrom?: string
+  validTo?: string
+  /** 0 = no limit. */
+  maxUses: number
+  uses: number
+  active: boolean
+  note?: string
+  by?: string
+  at?: Timestamp | null
+}
+export const subscribeCoupons = live<Coupon>('coupons', (d) => ({ ...d.data(), code: d.id }) as Coupon)
+
+/** Whether a code can be used today (on, within its dates, not used up) — and, given an edition, for it. */
+export function couponUsable(c: Coupon, edition?: string, today = isoDate()) {
+  return (
+    c.active &&
+    (!c.validFrom || c.validFrom <= today) &&
+    (!c.validTo || c.validTo >= today) &&
+    (!c.maxUses || (c.uses ?? 0) < c.maxUses) &&
+    (!edition || !c.editions?.length || c.editions.includes(edition))
+  )
+}
+
+export const couponLabel = (c: Pick<Coupon, 'code' | 'kind' | 'value' | 'currency'>) => `${c.code} (${c.kind === 'percent' ? `${c.value}% off` : `${c.currency === 'USD' ? 'US$' : 'RM'}${c.value} off`})`
+
+/** How much a discount takes off an amount. */
+export const discountOff = (d: { kind: 'percent' | 'amount'; value: number }, amount: number) =>
+  Math.min(amount, Math.round((d.kind === 'percent' ? (amount * d.value) / 100 : d.value) * 100) / 100)
+
+export async function saveCoupon(c: Coupon, me: Actor, isNew: boolean) {
+  const { at: _at, ...data } = c
+  await setDoc(doc(db, 'coupons', c.code), { ...data, by: me.id, at: serverTimestamp() })
+  await audit(me, 'discount code', `${isNew ? 'Created' : 'Updated'} ${couponLabel(c)}${c.active ? '' : ' (off)'}`)
+}
+/** Gives a customer a standing discount from a code, and counts the code as used — in one step. */
+export async function applyCouponToCustomer(org: Organisation, code: string, discount: Discount, me: Actor) {
+  const cref = doc(db, 'coupons', code)
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(cref)
+    if (!snap.exists() || !couponUsable(snap.data() as Coupon)) throw Object.assign(new Error(), { message: `The code ${code} can no longer be used.` })
+    tx.update(cref, { uses: ((snap.data() as Coupon).uses ?? 0) + 1 })
+    tx.update(doc(db, 'organisations', org.id), { discount })
+    tx.set(doc(collection(db, 'platformAudit')), auditDoc(me, 'discount', `Discount ${discount.label}${discount.until ? ` until ${discount.until}` : ''}`, org))
+  })
+}
+
+export async function deleteCoupon(c: Coupon, me: Actor) {
+  await deleteDoc(doc(db, 'coupons', c.code))
+  await audit(me, 'discount code', `Deleted ${c.code}`)
 }
 
 // ---------- support ----------

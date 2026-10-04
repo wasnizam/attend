@@ -155,7 +155,7 @@ export function OwnerDataProvider({ me, children, loading, failed }: { me: Actor
           weekly,
           health,
           healthWhy,
-          mrr: status === 'pro' && org.price ? monthly(org.price) : 0,
+          mrr: status === 'pro' && org.price ? monthly(org.price, org.discount) : 0,
         }
       })
       .sort((a, b) => (b.joined ?? 0) - (a.joined ?? 0))

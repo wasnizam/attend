@@ -58,12 +58,13 @@ export async function downloadInvoicePdf(inv: Invoice, seller: PlatformSettings)
   y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6
   const totals: [string, string, boolean][] = [
     ['Subtotal', amt(inv.subtotal), false],
+    ...(inv.discount && inv.discount.amount > 0 ? ([[plain(`Discount: ${inv.discount.label}`).slice(0, 42), `- ${amt(inv.discount.amount)}`, false]] as [string, string, boolean][]) : []),
     ...(inv.taxRate > 0 ? ([[`SST ${inv.taxRate}%`, amt(inv.tax), false]] as [string, string, boolean][]) : []),
     ['Total', amt(inv.total), true],
   ]
   totals.forEach(([k, v, bold], i) => {
     doc.setFont('helvetica', bold ? 'bold' : 'normal').setFontSize(bold ? 11 : 9.5).setTextColor(...(bold ? ink : muted))
-    doc.text(k, W - M - 50, y + i * 6.5)
+    doc.text(k, W - M - 50, y + i * 6.5, { align: 'right', maxWidth: 80 } as never)
     doc.setTextColor(...ink).text(v, W - M, y + i * 6.5, { align: 'right' })
   })
   y += totals.length * 6.5 + 8

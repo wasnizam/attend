@@ -90,6 +90,8 @@ export interface Organisation {
   tags?: string[]
   accountManager?: string
   price?: { amount: number; currency: 'MYR' | 'USD'; cycle: 'month' | 'semester' | 'year' }
+  /** A standing discount on what they pay, until a date (none = for as long as it lasts). */
+  discount?: { kind: 'percent' | 'amount'; value: number; label: string; code?: string; until?: string } | null
   createdAt?: Timestamp | null
   name: string
   ownerId: string

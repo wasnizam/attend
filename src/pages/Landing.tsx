@@ -1,3 +1,4 @@
+import { usePlans } from '../lib/pricing'
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
@@ -70,6 +71,8 @@ function ProductPreview({ edition }: { edition: Edition }) {
 
 export function Landing({ show }: { show?: EditionId }) {
   const edition = editionById(show) ?? EDITIONS[0]
+  // Prices come from the back office's price list (the code's prices until one is saved).
+  const plans = usePlans(edition)
   const signup = `/signup?for=${edition.id}`
   const currency = useCurrency()
   // The page is written in each group's own words already; no vocabulary swaps on top.
@@ -212,8 +215,8 @@ export function Landing({ show }: { show?: EditionId }) {
               </div>
             </div>
           </div>
-          <div className={`mt-12 grid gap-4 sm:grid-cols-2 ${edition.plans.length > 2 ? 'lg:grid-cols-4' : 'mx-auto max-w-4xl'}`}>
-            {edition.plans.map((plan) => (
+          <div className={`mt-12 grid gap-4 sm:grid-cols-2 ${plans.length > 2 ? 'lg:grid-cols-4' : 'mx-auto max-w-4xl'}`}>
+            {plans.map((plan) => (
               <div key={plan.name} className={`flex flex-col rounded-2xl bg-white p-6 ${plan.best ? 'shadow-pop ring-2 ring-accent' : 'shadow-card'}`}>
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-lg font-semibold tracking-tight">{t(plan.name)}</h3>

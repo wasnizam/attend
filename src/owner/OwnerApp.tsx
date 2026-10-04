@@ -21,6 +21,7 @@ const Audit = lazy(() => import('./Audit'))
 const Announcements = lazy(() => import('./Announcements'))
 const Settings = lazy(() => import('./Settings'))
 const Account = lazy(() => import('./Account'))
+const Pricing = lazy(() => import('./Pricing'))
 
 /**
  * Attend's back office, separate from the customers' app: its own address (/owner), sign-in, frame
@@ -72,6 +73,7 @@ export default function OwnerApp() {
           <Route path="customers/:id" element={<CustomerDetail />} />
           <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="billing" element={<Billing />} />
+          <Route path="pricing" element={<Pricing />} />
           <Route path="users" element={<Users />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="team" element={<Team />} />
@@ -92,6 +94,7 @@ const ICON: Record<string, string> = {
   customers: 'M3 21V7l9-4 9 4v14M9 21v-6h6v6',
   subscriptions: 'M4 7h16M4 12h16M4 17h10',
   billing: 'M4 5h16v14H4zM4 10h16M8 15h3',
+  pricing: 'M20 12l-8 8-9-9V3h8l9 9ZM7.5 7.5h.01',
   users: 'M16 19v-1a4 4 0 0 0-8 0v1M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
   tasks: 'M9 11l2 2 4-4M5 4h14v16H5z',
   team: 'M17 20v-1a4 4 0 0 0-3-3.9M7 20v-1a4 4 0 0 1 8 0v1M11 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM17 8a3 3 0 0 1 0 5',
@@ -106,6 +109,7 @@ function Shell({ email, role, children }: { email: string; role: StaffRole; chil
     ['customers', t('Customers'), 'customers'],
     ['subscriptions', t('Subscriptions'), 'subscriptions'],
     ['billing', t('Billing'), 'billing'],
+    ['pricing', t('Pricing'), 'pricing'],
     ['users', t('Users'), 'users'],
     ['tasks', t('Tasks'), 'tasks'],
     ['announcements', t('Announcements'), 'announcements'],

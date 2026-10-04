@@ -1,3 +1,4 @@
+import { toPlanCard, useCatalog } from '../lib/pricing'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, ErrorNote, Field, friendlyError, inputClass } from '../components/ui'
@@ -64,6 +65,8 @@ export function Account() {
 
   const verifySave = useSave()
   const edition = editionForPurpose(getPurpose())
+  const catalog = useCatalog()
+  const plans = edition ? (catalog[edition.id] ?? []).filter((p) => !p.hidden).map(toPlanCard) : []
   const plan = activePlan()
   const currency = useCurrency()
 
@@ -258,7 +261,7 @@ export function Account() {
                   : t('You are on Pro until {date}. Thank you.', { date: new Date(paidUntil()?.toMillis() ?? 0).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) ?? '' })}
           </p>
           <ul className="mt-4 divide-y divide-line rounded-lg border border-line text-sm">
-            {edition.plans.map((p) => (
+            {plans.map((p) => (
               <li key={p.name} className="flex items-center justify-between gap-3 px-3 py-2.5">
                 <span>
                   <span className="font-semibold">{t(p.name)}</span>

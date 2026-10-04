@@ -865,3 +865,40 @@ describe('a team member’s own account', () => {
     await assertFails(updateDoc(doc(as('lecA'), 'platformOwners/sup'), { name: 'Hacker' }))
   })
 })
+
+describe('prices and discounts', () => {
+  beforeEach(() =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore()
+      await setDoc(doc(db, 'platformOwners/boss'), { email: 'boss@attend.my' })
+      await setDoc(doc(db, 'platformOwners/fin'), { email: 'fin@attend.my', role: 'finance' })
+      await setDoc(doc(db, 'platformOwners/sup'), { email: 'sup@attend.my', role: 'support' })
+    }),
+  )
+  const staff = (uid: string) => env.authenticatedContext(uid, { email: `${uid}@attend.my` }).firestore()
+  const code = { code: 'RAYA20', kind: 'percent', value: 20, editions: [], duration: 'once', maxUses: 0, uses: 0, active: true }
+
+  it('shows the price list to everyone, and lets only owners and admins change it', async () => {
+    await assertSucceeds(setDoc(doc(staff('boss'), 'platformConfig/pricing'), { lecturers: [], trainers: [], workplace: [] }))
+    await assertSucceeds(getDoc(doc(anon(), 'platformConfig/pricing')))
+    await assertFails(setDoc(doc(staff('fin'), 'platformConfig/pricing'), { lecturers: [] }))
+    await assertFails(setDoc(doc(staff('boss'), 'platformConfig/pricing'), { lecturers: [], hacked: true }))
+  })
+
+  it('lets money roles make sensible discount codes, and keeps them private', async () => {
+    await assertSucceeds(setDoc(doc(staff('fin'), 'coupons/RAYA20'), code))
+    await assertFails(setDoc(doc(staff('fin'), 'coupons/BIG'), { ...code, code: 'BIG', value: 150 }))
+    await assertFails(setDoc(doc(staff('fin'), 'coupons/OTHER'), code))
+    await assertFails(setDoc(doc(staff('sup'), 'coupons/SUP10'), { ...code, code: 'SUP10' }))
+    await assertFails(getDocs(collection(as('adminA'), 'coupons')))
+    await assertFails(deleteDoc(doc(staff('fin'), 'coupons/RAYA20')))
+    await assertSucceeds(deleteDoc(doc(staff('boss'), 'coupons/RAYA20')))
+  })
+
+  it('lets money roles give a customer a discount, but not support', async () => {
+    await assertSucceeds(updateDoc(doc(staff('fin'), 'organisations/orgA'), { discount: { kind: 'percent', value: 15, label: '15% off: partner' } }))
+    await assertFails(updateDoc(doc(staff('sup'), 'organisations/orgA'), { discount: { kind: 'percent', value: 50, label: 'x' } }))
+    await assertFails(updateDoc(doc(staff('fin'), 'organisations/orgA'), { discount: { kind: 'percent', value: 120, label: 'x' } }))
+    await assertSucceeds(updateDoc(doc(staff('fin'), 'organisations/orgA'), { discount: null }))
+  })
+})

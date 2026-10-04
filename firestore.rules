@@ -59,8 +59,12 @@ service cloud.firestore {
       // Attend's team manages what a customer has. Money matters need finance; suspending needs an
       // admin; tags, account manager and trial days can be handled by support too.
       allow update: if staffCan(['owner', 'admin', 'finance', 'support'])
-        && onlyChanges(['plan', 'trialStarted', 'paidUntil', 'seats', 'price', 'suspended', 'ownerNote', 'tags', 'accountManager'])
-        && (!changes(['plan', 'paidUntil', 'seats', 'price']) || staffCan(['owner', 'admin', 'finance']))
+        && onlyChanges(['plan', 'trialStarted', 'paidUntil', 'seats', 'price', 'discount', 'suspended', 'ownerNote', 'tags', 'accountManager'])
+        && (!changes(['plan', 'paidUntil', 'seats', 'price', 'discount']) || staffCan(['owner', 'admin', 'finance']))
+        && (!('discount' in request.resource.data) || request.resource.data.discount == null || (
+             request.resource.data.discount.kind in ['percent', 'amount']
+             && request.resource.data.discount.value is number && request.resource.data.discount.value > 0
+             && (request.resource.data.discount.kind != 'percent' || request.resource.data.discount.value <= 100)))
         && (!changes(['suspended']) || staffCan(['owner', 'admin']))
         && request.resource.data.get('plan', 'early') in ['early', 'trial', 'free', 'pro']
         && request.resource.data.get('suspended', false) is bool
@@ -628,6 +632,30 @@ service cloud.firestore {
       allow read: if platformOwner();
       allow write: if staffCan(['owner', 'admin']);
     }
+    // The price list: everyone can read it (the website shows it); owners and admins change it.
+    match /platformConfig/pricing {
+      allow read: if true;
+      allow write: if staffCan(['owner', 'admin'])
+        && request.resource.data.keys().hasOnly(['lecturers', 'trainers', 'workplace', 'updatedBy', 'updatedAt'])
+        && request.resource.data.get('lecturers', []).size() <= 10
+        && request.resource.data.get('trainers', []).size() <= 10
+        && request.resource.data.get('workplace', []).size() <= 10;
+    }
+
+    // Discount codes. Money roles create and change them; using one counts it.
+    match /coupons/{code} {
+      allow read: if platformOwner();
+      allow create, update: if staffCan(['owner', 'admin', 'finance'])
+        && request.resource.data.code == code
+        && request.resource.data.kind in ['percent', 'amount']
+        && request.resource.data.value is number && request.resource.data.value > 0
+        && (request.resource.data.kind != 'percent' || request.resource.data.value <= 100)
+        && request.resource.data.duration in ['once', 'repeating', 'forever']
+        && request.resource.data.uses is int && request.resource.data.uses >= 0
+        && request.resource.data.active is bool;
+      allow delete: if staffCan(['owner', 'admin']);
+    }
+
     match /platformConfig/counters {
       allow read: if platformOwner();
       allow create: if staffCan(['owner', 'admin', 'finance']) && request.resource.data.invoice == 1;

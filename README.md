@@ -411,6 +411,17 @@ Subscriptions, Billing (numbered invoices with SST and a PDF, mark paid, void), 
 Tasks, Announcements (banners in customers' apps by edition and dates, closable), Team & roles, Audit
 log (append-only, exportable) and Settings (company on invoices, SST, numbering, how to pay). Each team member has My account
 (name, change password with the current one, reset email, sign-in method, sign out); the sign-in
-screen has Forgot password. A member may change only their own name on their team entry. The
+screen has Forgot password. A member may change only their own name on their team entry.
+
+**Prices and discounts.** The price list lives in `platformConfig/pricing` (readable by anyone, written
+by owners and admins from Back office → Pricing) and drives the website's pricing section and each
+customer's Account page through `usePlans` / `useCatalog` (`src/lib/pricing.ts`); until it is saved, the
+prices in `editions.ts` apply. Discount codes (`coupons/{CODE}`): percent or amount, editions, one
+invoice / several billing periods / forever, valid dates, max uses, on/off; created by money roles.
+A customer can have a standing discount (`organisation.discount`, from a code or by hand, until a
+date), which lowers their recurring revenue and is offered on their invoices. Invoices carry a
+discount line before SST; using a code (on an invoice or as a standing discount) counts it, in the same
+transaction, and a used-up or expired code is refused. Changing the price list does not change what
+existing customers pay: their own price is kept on their subscription. The
 rules enforce every role; invoices, payments, notes and the audit log cannot be edited or deleted.
 
