@@ -11,7 +11,7 @@ const Attend = lazy(() => import('./pages/Attend'))
 const DoorEntry = lazy(() => import('./pages/DoorEntry'))
 const Staff = lazy(() => import('./Staff'))
 // Attend's own back office: a separate bundle and a separate sign-in, never part of a customer's app.
-const Owner = lazy(() => import('./pages/Owner'))
+const Owner = lazy(() => import('./owner/OwnerApp'))
 
 function SetupNeeded() {
   return (

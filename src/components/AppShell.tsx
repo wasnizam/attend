@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { resendVerification } from '../data/account'
+import { AnnouncementBanner } from './AnnouncementBanner'
 import { useAuth, useProfile } from '../hooks/useAuth'
 import { t } from '../lib/i18n'
 import { has } from '../lib/purpose'
@@ -152,6 +153,7 @@ export function AppShell() {
       <VerifyBanner />
 
       <main className="mx-auto max-w-5xl px-4 pt-6 pb-28 md:px-8 md:pt-10 md:pb-16">
+        <div className="mb-5 empty:hidden"><AnnouncementBanner /></div>
         <Outlet />
       </main>
 

@@ -781,3 +781,72 @@ describe('the owner of Attend', () => {
     await assertFails(getDocs(collection(as('adminA'), 'billing')))
   })
 })
+
+describe("Attend's back-office team and roles", () => {
+  beforeEach(() =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore()
+      await setDoc(doc(db, 'platformOwners/boss'), { email: 'boss@attend.my' })
+      for (const role of ['admin', 'finance', 'support', 'viewer']) await setDoc(doc(db, `platformOwners/${role}1`), { email: `${role}@attend.my`, role })
+      await setDoc(doc(db, 'invoices/inv1'), { number: 'INV-1', organisationId: 'orgA', status: 'unpaid', total: 99, by: 'boss' })
+      await setDoc(doc(db, 'platformConfig/counters'), { invoice: 7 })
+    }),
+  )
+  const staff = (uid: string, verified = false) => env.authenticatedContext(uid, { email: `${uid}@attend.my`, email_verified: verified }).firestore()
+
+  it('lets finance handle money but not suspend; support handle trials and tags but not money; viewers only look', async () => {
+    await assertSucceeds(updateDoc(doc(staff('finance1'), 'organisations/orgA'), { plan: 'pro', paidUntil: future, price: { amount: 99, currency: 'MYR', cycle: 'month' } }))
+    await assertFails(updateDoc(doc(staff('finance1'), 'organisations/orgA'), { suspended: true }))
+    await assertSucceeds(updateDoc(doc(staff('support1'), 'organisations/orgA'), { trialStarted: Timestamp.now(), tags: ['school'], accountManager: 'support1' }))
+    await assertFails(updateDoc(doc(staff('support1'), 'organisations/orgA'), { plan: 'free' }))
+    await assertFails(updateDoc(doc(staff('support1'), 'organisations/orgA'), { price: { amount: 1, currency: 'MYR', cycle: 'month' } }))
+    await assertSucceeds(updateDoc(doc(staff('admin1'), 'organisations/orgA'), { suspended: true }))
+    await assertFails(updateDoc(doc(staff('viewer1'), 'organisations/orgA'), { tags: ['x'] }))
+    await assertSucceeds(getDocs(collection(staff('viewer1'), 'organisations')))
+    await assertFails(updateDoc(doc(staff('finance1'), 'organisations/orgA'), { price: { amount: 9, currency: 'EUR', cycle: 'month' } }))
+  })
+
+  it('numbers invoices in order, never deletes them, and only voids or pays an unpaid one', async () => {
+    await assertSucceeds(updateDoc(doc(staff('finance1'), 'platformConfig/counters'), { invoice: 8 }))
+    await assertFails(updateDoc(doc(staff('finance1'), 'platformConfig/counters'), { invoice: 20 }))
+    await assertSucceeds(setDoc(doc(staff('finance1'), 'invoices/inv2'), { number: 'INV-2', organisationId: 'orgA', status: 'unpaid', total: 50, by: 'finance1' }))
+    await assertFails(setDoc(doc(staff('support1'), 'invoices/inv3'), { number: 'INV-3', organisationId: 'orgA', status: 'unpaid', total: 50, by: 'support1' }))
+    await assertFails(updateDoc(doc(staff('finance1'), 'invoices/inv1'), { total: 1 }))
+    await assertSucceeds(updateDoc(doc(staff('finance1'), 'invoices/inv1'), { status: 'void', voidReason: 'Wrong amount' }))
+    await assertFails(updateDoc(doc(staff('finance1'), 'invoices/inv1'), { status: 'paid' }))
+    await assertFails(deleteDoc(doc(staff('boss'), 'invoices/inv1')))
+  })
+
+  it('keeps the audit log and customer notes as written', async () => {
+    await assertSucceeds(setDoc(doc(staff('support1'), 'platformAudit/a1'), { actor: 'support1', action: 'note', detail: 'x', at: serverTimestamp() }))
+    await assertFails(setDoc(doc(staff('support1'), 'platformAudit/a2'), { actor: 'boss', action: 'note', at: serverTimestamp() }))
+    await assertFails(updateDoc(doc(staff('boss'), 'platformAudit/a1'), { detail: 'changed' }))
+    await assertFails(getDocs(collection(staff('support1'), 'platformAudit')))
+    await assertSucceeds(getDocs(collection(staff('admin1'), 'platformAudit')))
+    await assertSucceeds(setDoc(doc(staff('support1'), 'customerNotes/n1'), { organisationId: 'orgA', text: 'Called the boss', by: 'support1', at: serverTimestamp() }))
+    await assertFails(deleteDoc(doc(staff('boss'), 'customerNotes/n1')))
+    await assertFails(setDoc(doc(staff('viewer1'), 'customerNotes/n2'), { organisationId: 'orgA', text: 'x', by: 'viewer1', at: serverTimestamp() }))
+  })
+
+  it('lets owners build the team, and an invited person join with a verified email', async () => {
+    await assertSucceeds(setDoc(doc(staff('boss'), 'platformInvites/newbie@attend.my'), { role: 'support', invitedBy: 'boss' }))
+    await assertFails(setDoc(doc(staff('admin1'), 'platformInvites/x@attend.my'), { role: 'owner' }))
+    await assertFails(setDoc(doc(staff('newbie'), 'platformOwners/newbie'), { email: 'newbie@attend.my', role: 'support' }))
+    await assertFails(setDoc(doc(staff('newbie', true), 'platformOwners/newbie'), { email: 'newbie@attend.my', role: 'owner' }))
+    await assertSucceeds(setDoc(doc(staff('newbie', true), 'platformOwners/newbie'), { email: 'newbie@attend.my', role: 'support' }))
+    await assertSucceeds(updateDoc(doc(staff('boss'), 'platformOwners/finance1'), { role: 'admin' }))
+    await assertFails(updateDoc(doc(staff('boss'), 'platformOwners/boss'), { role: 'viewer' }))
+    await assertFails(deleteDoc(doc(staff('boss'), 'platformOwners/boss')))
+    await assertFails(updateDoc(doc(staff('admin1'), 'platformOwners/viewer1'), { role: 'owner' }))
+  })
+
+  it('shows announcements to customers but lets only admins write them, and lets admins switch users off', async () => {
+    const a = { title: 'Maintenance', body: 'Sunday 2am', level: 'info', audience: 'all', active: true }
+    await assertSucceeds(setDoc(doc(staff('admin1'), 'announcements/a1'), a))
+    await assertFails(setDoc(doc(staff('support1'), 'announcements/a2'), a))
+    await assertSucceeds(getDoc(doc(as('lecA'), 'announcements/a1')))
+    await assertSucceeds(updateDoc(doc(staff('admin1'), 'users/lecA'), { status: 'disabled' }))
+    await assertFails(updateDoc(doc(staff('support1'), 'users/lecA'), { status: 'disabled' }))
+    await assertFails(updateDoc(doc(staff('admin1'), 'users/lecA'), { role: 'admin' }))
+  })
+})

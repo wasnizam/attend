@@ -36,20 +36,44 @@ service cloud.firestore {
       return signedIn() && exists(/databases/$(database)/documents/platformOwners/$(request.auth.uid));
     }
 
+    // The team member's role in Attend's back office. An entry without one (the first owner, made
+    // in the console) is an owner.
+    function staffRole() {
+      return get(/databases/$(database)/documents/platformOwners/$(request.auth.uid)).data.get('role', 'owner');
+    }
+
+    function staffCan(roles) {
+      return platformOwner() && staffRole() in roles;
+    }
+
+    function changes(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
     // ---------- organisations ----------
 
     match /organisations/{orgId} {
       allow get: if signedIn()
         && (resource.data.ownerId == request.auth.uid || memberOf(orgId) || platformOwner());
       allow list: if platformOwner();
-      // The owner of Attend manages what a customer has: plan, trial, paid period, seats, suspension.
-      allow update: if platformOwner()
-        && onlyChanges(['plan', 'trialStarted', 'paidUntil', 'seats', 'suspended', 'ownerNote'])
+      // Attend's team manages what a customer has. Money matters need finance; suspending needs an
+      // admin; tags, account manager and trial days can be handled by support too.
+      allow update: if staffCan(['owner', 'admin', 'finance', 'support'])
+        && onlyChanges(['plan', 'trialStarted', 'paidUntil', 'seats', 'price', 'suspended', 'ownerNote', 'tags', 'accountManager'])
+        && (!changes(['plan', 'paidUntil', 'seats', 'price']) || staffCan(['owner', 'admin', 'finance']))
+        && (!changes(['suspended']) || staffCan(['owner', 'admin']))
         && request.resource.data.get('plan', 'early') in ['early', 'trial', 'free', 'pro']
         && request.resource.data.get('suspended', false) is bool
         && (request.resource.data.get('seats', 0) is int && request.resource.data.get('seats', 0) >= 0)
         && request.resource.data.get('ownerNote', '') is string
-        && request.resource.data.get('ownerNote', '').size() <= 2000;
+        && request.resource.data.get('ownerNote', '').size() <= 2000
+        && request.resource.data.get('tags', []) is list
+        && request.resource.data.get('tags', []).size() <= 20
+        && request.resource.data.get('accountManager', '') is string
+        && (!('price' in request.resource.data) || (
+             request.resource.data.price.amount is number && request.resource.data.price.amount >= 0
+             && request.resource.data.price.currency in ['MYR', 'USD']
+             && request.resource.data.price.cycle in ['month', 'semester', 'year']));
       allow create: if signedIn()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.name is string
@@ -91,6 +115,10 @@ service cloud.firestore {
       allow get: if signedIn()
         && (request.auth.uid == userId || adminOf(resource.data.organisationId) || platformOwner());
       allow list: if adminOf(resource.data.organisationId) || platformOwner();
+      // Attend's admins can switch an account off or on (for example when it is misused).
+      allow update: if staffCan(['owner', 'admin'])
+        && onlyChanges(['status'])
+        && request.resource.data.status in ['active', 'disabled'];
 
       // A user creates their own profile exactly once, either as the admin of an
       // organisation they just created, or as a lecturer holding a valid invite code.
@@ -533,27 +561,124 @@ service cloud.firestore {
         && request.resource.data.get('halfDay', '') in ['', 'am', 'pm'];
     }
 
-    // ---------- the owner of Attend ----------
+    // ---------- Attend's own back office ----------
 
+    // The team. The first owner is added in the console; after that owners invite and manage the rest.
     match /platformOwners/{uid} {
-      // Each owner may check their own entry (to show the portal); entries are made in the console.
-      allow get: if signedIn() && request.auth.uid == uid;
-      allow write: if false;
+      allow get: if signedIn() && (request.auth.uid == uid || platformOwner());
+      allow list: if platformOwner();
+      // An owner adds or changes a team member (never their own entry, so the last owner stays).
+      allow create, update: if staffCan(['owner']) && request.auth.uid != uid
+        && request.resource.data.role in ['owner', 'admin', 'finance', 'support', 'viewer']
+        && request.resource.data.email is string;
+      allow delete: if staffCan(['owner']) && request.auth.uid != uid;
+      // Someone invited by email takes up the invitation themselves, with the role it gives.
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/platformInvites/$(request.auth.token.email))
+        && request.resource.data.role == get(/databases/$(database)/documents/platformInvites/$(request.auth.token.email)).data.role
+        && request.resource.data.email == request.auth.token.email;
     }
 
-    // Payments received and changes made by the owner: an append-only book.
+    match /platformInvites/{email} {
+      allow read: if platformOwner() || (signedIn() && request.auth.token.email == email);
+      allow create: if staffCan(['owner'])
+        && request.resource.data.role in ['owner', 'admin', 'finance', 'support', 'viewer'];
+      allow delete: if staffCan(['owner']) || (signedIn() && request.auth.token.email == email);
+    }
+
+    // Money received and refunded: an append-only book.
     match /billing/{entryId} {
       allow read: if platformOwner();
-      allow create: if platformOwner()
+      allow create: if staffCan(['owner', 'admin', 'finance'])
         && request.resource.data.by == request.auth.uid
         && request.resource.data.at == request.time
         && request.resource.data.organisationId is string
-        && request.resource.data.kind in ['payment', 'change']
+        && request.resource.data.kind in ['payment', 'refund', 'change']
         && request.resource.data.get('amount', 0) is number
         && request.resource.data.get('amount', 0) >= 0
         && request.resource.data.get('note', '') is string
         && request.resource.data.get('note', '').size() <= 500;
       allow update, delete: if false;
+    }
+
+    // Invoices are numbered in order and never deleted: a mistake is voided, not erased.
+    match /invoices/{invoiceId} {
+      allow read: if platformOwner();
+      allow create: if staffCan(['owner', 'admin', 'finance'])
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.number is string
+        && request.resource.data.organisationId is string
+        && request.resource.data.status == 'unpaid'
+        && request.resource.data.total is number && request.resource.data.total >= 0;
+      allow update: if staffCan(['owner', 'admin', 'finance'])
+        && onlyChanges(['status', 'paidAt', 'paymentId', 'voidReason'])
+        && resource.data.status == 'unpaid'
+        && request.resource.data.status in ['paid', 'void'];
+      allow delete: if false;
+    }
+
+    // Settings (the company on the invoices) and the invoice counter.
+    match /platformConfig/settings {
+      allow read: if platformOwner();
+      allow write: if staffCan(['owner', 'admin']);
+    }
+    match /platformConfig/counters {
+      allow read: if platformOwner();
+      allow create: if staffCan(['owner', 'admin', 'finance']) && request.resource.data.invoice == 1;
+      allow update: if staffCan(['owner', 'admin', 'finance'])
+        && onlyChanges(['invoice'])
+        && request.resource.data.invoice == resource.data.invoice + 1;
+    }
+
+    // Everything the team does, in order. Nobody can change or remove an entry.
+    match /platformAudit/{entryId} {
+      allow read: if staffCan(['owner', 'admin']);
+      allow create: if platformOwner()
+        && request.resource.data.actor == request.auth.uid
+        && request.resource.data.at == request.time
+        && request.resource.data.action is string
+        && request.resource.data.get('detail', '') is string
+        && request.resource.data.get('detail', '').size() <= 1000;
+      allow update, delete: if false;
+    }
+
+    // Notes about a customer: a timeline, kept as written.
+    match /customerNotes/{noteId} {
+      allow read: if platformOwner();
+      allow create: if staffCan(['owner', 'admin', 'finance', 'support'])
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.at == request.time
+        && request.resource.data.organisationId is string
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 4000;
+      allow update, delete: if false;
+    }
+
+    match /platformTasks/{taskId} {
+      allow read: if platformOwner();
+      allow create: if staffCan(['owner', 'admin', 'finance', 'support'])
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 300
+        && request.resource.data.done == false;
+      allow update: if staffCan(['owner', 'admin', 'finance', 'support'])
+        && onlyChanges(['done', 'doneAt', 'assignee', 'assigneeEmail', 'due']);
+      allow delete: if staffCan(['owner', 'admin']) || (platformOwner() && resource.data.by == request.auth.uid);
+    }
+
+    // Messages shown inside customers' apps.
+    match /announcements/{id} {
+      allow read: if signedIn();
+      allow create, update: if staffCan(['owner', 'admin'])
+        && request.resource.data.title is string && request.resource.data.title.size() <= 120
+        && request.resource.data.body is string && request.resource.data.body.size() <= 1000
+        && request.resource.data.level in ['info', 'warning']
+        && request.resource.data.audience in ['all', 'education', 'training', 'workplace']
+        && request.resource.data.active is bool;
+      allow delete: if staffCan(['owner', 'admin']);
     }
   }
 }

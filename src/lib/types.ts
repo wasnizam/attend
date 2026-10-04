@@ -86,6 +86,10 @@ export interface Organisation {
   suspended?: boolean
   /** The owner of Attend's private note about this customer. */
   ownerNote?: string
+  /** Back office: labels, the team member who looks after them, and what they pay. */
+  tags?: string[]
+  accountManager?: string
+  price?: { amount: number; currency: 'MYR' | 'USD'; cycle: 'month' | 'semester' | 'year' }
   createdAt?: Timestamp | null
   name: string
   ownerId: string

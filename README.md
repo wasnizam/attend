@@ -397,16 +397,18 @@ week of September) and Studio KL (flexible hours), and prints what the September
 (`fetchManyAttendance`, `fetchManyClockOuts`, `fetchManyLeaveTypes`, using `sessionId in [...]` with
 the organisation and, for a manager, their own records), instead of three queries per day.
 
-**Owner portal (`/owner`).** For the people who run Attend, not for customers. It is a separate app
-(own bundle, own sign-in screen, own dark frame), outside the customers' app and menu; an owner
-needs no customer account. An account is an
-owner when a document `platformOwners/{uid}` exists; it is created by hand in the Firebase console
-(the rules refuse it from the app). Owners can list every organisation, user, class and session (not
-attendance records), and change only `plan`, `trialStarted`, `paidUntil`, `seats`, `suspended` and
-`ownerNote` on an organisation. Tabs: Overview (customers, new and active in 30 days, paying, on trial,
-received this month, trials and paid periods ending, sign-ups per week, editions), Customers (search,
-filters, Excel export) with a page per customer (contact and usage, plan, trial +7/+14 days, record a
-payment that can extend Pro, private note, suspend / restore, history), and Payments by month. Every
-change and payment goes into `billing`, which is append-only. A suspended organisation sees "This
-account is paused" (owners are never locked out).
+**Back office (`/owner`).** Attend's own admin console, separate from the customers' app (own bundle,
+sign-in and dark sidebar; `src/owner/`). The team lives in `platformOwners/{uid}` with a role: Owner
+(everything, including the team), Admin (all but the team), Finance (plans, prices, invoices, payments,
+refunds), Support (notes, tasks, tags, trial days, password resets), Viewer (read-only). The first
+owner is added in the Firebase console; after that owners invite by email (`platformInvites`) and the
+invitee joins on first sign-in with a verified email. Pages: Dashboard (MRR, run rate, received this
+month, customers, churn, trial conversion, 12-month revenue, plan mix, renewals, at-risk customers,
+my tasks, recent activity), Customers (health score, tags, account manager, filters, export) with a
+page per customer (Overview, Subscription with price and billing cycle, Billing with invoices /
+payments / refunds, Users with password reset and disable, Activity, Notes & tasks, Audit),
+Subscriptions, Billing (numbered invoices with SST and a PDF, mark paid, void), Users (all customers),
+Tasks, Announcements (banners in customers' apps by edition and dates, closable), Team & roles, Audit
+log (append-only, exportable) and Settings (company on invoices, SST, numbering, how to pay). The
+rules enforce every role; invoices, payments, notes and the audit log cannot be edited or deleted.
 
