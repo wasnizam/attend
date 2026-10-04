@@ -90,7 +90,14 @@ const COLUMNS: Column[] = [
   },
   {
     id: 'hours', label: 'Hours', csvHead: ['Hours'], csv: (r) => [hours(r.minutes)],
-    text: (r) => `${formatDuration(r.minutes)}${r.noClockOut ? `\n${t('{n} without clock-out', { n: r.noClockOut })}` : ''}`, cell: (r) => <>{formatDuration(r.minutes)}{r.noClockOut > 0 && sub(t('{n} without clock-out', { n: r.noClockOut }), true)}</>,
+    text: (r) => [formatDuration(r.minutes), r.noClockOut ? t('{n} without clock-out', { n: r.noClockOut }) : '', r.openDays ? t('{n} still at work', { n: r.openDays }) : ''].filter(Boolean).join('\n'),
+    cell: (r) => (
+      <>
+        {formatDuration(r.minutes)}
+        {r.noClockOut > 0 && sub(t('{n} without clock-out', { n: r.noClockOut }), true)}
+        {r.openDays > 0 && sub(t('{n} still at work', { n: r.openDays }))}
+      </>
+    ),
     total: (l) => formatDuration(total(l, (r) => r.minutes)),
   },
   {
@@ -102,7 +109,10 @@ const COLUMNS: Column[] = [
         {r.holidayMinutes >= 1 && sub(t('public holiday {h}', { h: formatDuration(r.holidayMinutes) }))}
       </>
     ),
-    total: (l) => formatDuration(total(l, (r) => r.overtime + r.restMinutes + r.holidayMinutes)),
+    total: (l) => {
+      const m = total(l, (r) => r.overtime + r.restMinutes + r.holidayMinutes)
+      return m >= 1 ? formatDuration(m) : '-'
+    },
   },
   {
     id: 'late', label: 'Late', csvHead: ['Late', 'Late minutes'], csv: (r) => [r.late, Math.round(r.lateMinutes)],
@@ -287,17 +297,22 @@ export function Payroll() {
     : period === 'year' ? year
     : period === 'custom' ? `${formatDate(from)} – ${formatDate(to)}`
     : parseDate(from).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+  // A period that is not over yet says so, and up to which day.
+  const toDate_ = to > today && from <= today ? t('to date, {from} – {to}', { from: formatDate(from), to: formatDate(today) }) : ''
+  const periodFull = toDate_ ? `${periodName} (${toDate_})` : periodName
   const title = t(period === 'week' ? 'Weekly attendance report' : period === 'year' ? 'Yearly attendance report' : period === 'month' ? 'Monthly report' : 'Attendance report')
   const selected = shown.find((r) => r.key === person) ?? (rows ?? []).find((r) => r.key === person)
   // The grid shows every day of the period up to today; a year is too wide for it.
   const dates: string[] = []
   for (let d = from; d <= to && d <= today && dates.length < 62; d = addDays(d, 1)) dates.push(d)
   const gridFits = (parseDate(to).getTime() - parseDate(from).getTime()) / 86_400_000 < 62
+  // "No department" only where that office has departments; an office without any is just its name.
+  const officesWithDepartments = new Set(shown.filter((r) => r.department).map((r) => r.office))
   const label = (r: PayrollRow) =>
     setup.groupBy === 'none' ? ''
     : setup.groupBy === 'office' ? r.office
     : setup.groupBy === 'department' ? r.department
-    : [offices.length > 1 ? r.office : '', r.department].filter(Boolean).join(' · ')
+    : [offices.length > 1 ? r.office : '', r.department || (officesWithDepartments.has(r.office) ? t('No department') : '')].filter(Boolean).join(' · ')
   const groups = [...new Set(shown.map(label))].map((name) => ({ name, list: shown.filter((r) => label(r) === name) }))
   const fileName = `attendance-${period === 'month' ? month : period === 'year' ? year : `${from}-to-${to}`}${department ? `-${department.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : ''}`
 
@@ -320,6 +335,8 @@ export function Payroll() {
     const late = total(shown, (r) => r.late)
     const off = total(shown, (r) => r.leave + r.mc)
     const noOut = total(shown, (r) => r.noClockOut)
+    const open = total(shown, (r) => r.openDays)
+    const timed = total(shown, (r) => r.timedDays)
     const overtime = total(shown, (r) => r.overtime)
     const rest = total(shown, (r) => r.restMinutes)
     const holiday = total(shown, (r) => r.holidayMinutes)
@@ -333,7 +350,9 @@ export function Payroll() {
       byGroup.length > 1 ? t('Lowest attendance: {group} at {rate}%.', { group: byGroup[0].label, rate: byGroup[0].value }) : '',
       off ? t(off === 1 ? '1 day of leave or MC.' : '{n} days of leave or MC.', { n: off }) : '',
       overtime + rest + holiday >= 1 ? t('Overtime {h}; rest days {r}; public holidays {p}.', { h: formatDuration(overtime), r: formatDuration(rest), p: formatDuration(holiday) }) : '',
-      noOut ? t('{n} days without a clock-out need fixing before payroll.', { n: noOut }) : '',
+      timed < days
+        ? t('Hours cover {a} of {b} days worked: {c} without a clock-out (fix before payroll), {d} still at work.', { a: timed, b: days, c: noOut, d: open })
+        : noOut ? t('{n} days without a clock-out need fixing before payroll.', { n: noOut }) : '',
       flagged.length ? t('{n} people need attention (listed below).', { n: flagged.length }) : '',
     ].filter(Boolean)
     const sections: PdfReport['sections'] = []
@@ -363,7 +382,7 @@ export function Payroll() {
     return {
       fileName,
       title,
-      period: periodName,
+      period: periodFull,
       organisation: company,
       meta: [
         [t('Covers'), [office || t('All offices'), department || t('All departments')].join(', ')],
@@ -373,10 +392,10 @@ export function Payroll() {
       kpis: [
         { label: t('People'), value: String(shown.length), note: t('{n} days worked', { n: days }) },
         { label: t('Attendance'), value: rate === null ? '-' : `${rate}%`, note: t('of {n} days due', { n: due }), warn: rate !== null && rate < 90 },
-        { label: t('Hours worked'), value: formatDuration(total(shown, (r) => r.minutes)), note: t('after unpaid breaks') },
+        { label: t('Hours worked'), value: formatDuration(total(shown, (r) => r.minutes)), note: timed < days ? t('from {a} of {b} days worked', { a: timed, b: days }) : t('after unpaid breaks'), warn: timed < days },
         { label: t('Overtime'), value: formatDuration(overtime + rest + holiday), note: rest + holiday >= 1 ? t('incl. rest days and holidays') : t('after the end time') },
         { label: t('Late arrivals'), value: String(late), note: t('{n} minutes in all', { n: Math.round(total(shown, (r) => r.lateMinutes)) }), warn: late > 0 },
-        { label: t('Absent'), value: String(absent), note: t('{n} leave or MC', { n: off }), warn: absent > 0 },
+        { label: t('Absent'), value: String(absent), note: t('+{n} on leave or MC', { n: off }), warn: absent > 0 },
       ],
       findings: has('charts') || findings.length ? { heading: t('Key findings'), items: findings } : undefined,
       trend: has('charts')
@@ -394,6 +413,7 @@ export function Payroll() {
         items: [
           t('Hours are from clock-in to clock-out, less the unpaid break on a day of more than five hours. Overtime is the time worked after the shift’s end time. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.'),
           t('Attendance is the days worked out of the days each person was due; MC and leave are left out. Work on a rest day or a public holiday is shown apart. Under the Employment Act 1955 overtime is paid at least 1.5 times the hourly rate on a normal day, 2 times on a rest day and 3 times on a public holiday. Click a name for that person’s timesheet.').replace(/ Click a name.*$/, '').replace(/ Klik nama.*$/, ''),
+          ...(toDate_ ? [t('Figures are as at {time}. A day still in progress counts nobody as absent yet, and hours for people still at work are added when they clock out.', { time: `${formatDate(today)}, ${formatClock(new Date())}` })] : []),
         ],
       },
       footer: [company, t('Confidential'), t('Made with Attend')].filter(Boolean).join('  |  '),
@@ -416,7 +436,7 @@ export function Payroll() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
           <p className="text-sm text-muted">
-            <span className="hidden print:inline">{[periodName, office, department].filter(Boolean).join(' · ')} · </span>
+            <span className="hidden print:inline">{[periodFull, office, department].filter(Boolean).join(' · ')} · </span>
             {t('Days, hours, overtime and lateness for each person. Ready for payroll.')}
           </p>
         </div>
@@ -550,7 +570,11 @@ export function Payroll() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             <Stat label={t('People')} value={shown.length} />
             <Stat label={t('Attendance')} value={rate === null ? '—' : `${rate}%`} />
-            <Stat label={t('Hours')} value={formatDuration(total(shown, (r) => r.minutes))} />
+            <Stat
+              label={t('Hours')}
+              value={formatDuration(total(shown, (r) => r.minutes))}
+              note={total(shown, (r) => r.timedDays) < days ? t('from {a} of {b} days worked', { a: total(shown, (r) => r.timedDays), b: days }) : undefined}
+            />
             <Stat label={t('Overtime')} value={formatDuration(total(shown, (r) => r.overtime + r.restMinutes + r.holidayMinutes))} />
             <Stat label={t('Late')} value={total(shown, (r) => r.late)} />
           </div>
@@ -716,6 +740,7 @@ function Timesheet({ row, period, company, preparedBy, onBack }: { row: PayrollR
     }
     if (e.early >= 1) bits.push(e.earlyOk ? t('left early, allowed') : t('left early {n} min', { n: Math.round(e.early) }))
     if (e.noClockOut) bits.push(t('no clock-out'))
+    if (e.open) bits.push(t('still at work'))
     if (e.dayType === 'rest') bits.push(t('rest day'))
     if (e.dayType === 'holiday') bits.push(t('public holiday'))
     return bits.join(' · ')

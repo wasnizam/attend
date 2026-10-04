@@ -27,6 +27,10 @@ export interface PayrollRow {
   absent: number
   /** Days with a clock-in and no clock-out: hours for those days are not counted. */
   noClockOut: number
+  /** Days clocked in today (or any day not over yet) and not clocked out: still at work, hours to come. */
+  openDays: number
+  /** Days whose hours are counted (clocked in and out). */
+  timedDays: number
   /** Days they clocked in to a shift other than the one planned for them. */
   wrongShift: number
   /** Days they clocked out before the end, and by how many minutes in all. */
@@ -63,6 +67,8 @@ export interface DayEntry {
   leaveType?: LeaveKind
   dayType: DayType
   noClockOut: boolean
+  /** Clocked in on a day not over yet, not out: still at work. */
+  open?: boolean
 }
 
 /** Normal working day, the person's rest day, or a public holiday (a day off for everyone). */
@@ -92,7 +98,7 @@ export function buildPayroll(
   const people = new Map<string, PayrollRow>()
   const person = (key: string, staffId: string, name: string) => {
     if (!people.has(key)) {
-      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, wrongShift: 0, early: 0, earlyMinutes: 0, earlyApproved: 0, halfDays: 0, leaveBy: { annual: 0, emergency: 0, unpaid: 0, other: 0 }, restMinutes: 0, holidayMinutes: 0, rate: null, entries: [] })
+      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, openDays: 0, timedDays: 0, wrongShift: 0, early: 0, earlyMinutes: 0, earlyApproved: 0, halfDays: 0, leaveBy: { annual: 0, emergency: 0, unpaid: 0, other: 0 }, restMinutes: 0, holidayMinutes: 0, rate: null, entries: [] })
     }
     return people.get(key)!
   }
@@ -150,11 +156,13 @@ export function buildPayroll(
           }
           counted = countedMinutes(from, to, session)
           row.minutes += counted
+          row.timedDays += 1
           if (dayType === 'rest') row.restMinutes += counted
           else if (dayType === 'holiday') row.holidayMinutes += counted
           // Overtime on a normal day; on a rest day or holiday every hour is already counted apart.
           else row.overtime += Math.max(0, to - Math.max(end, from)) / 60_000
         } else if (over) row.noClockOut += 1
+        else row.openDays += 1
         entry(r, {
           mark: r.halfDay ? 'half' : late || (status === 'late' && r.halfDay !== 'am') ? 'late' : 'present',
           clockIn: r.timestamp?.toMillis(),
@@ -165,6 +173,7 @@ export function buildPayroll(
           earlyOk: r.earlyOk,
           halfDay: r.halfDay,
           noClockOut: !out && over,
+          open: !out && !over,
         })
       }
     }

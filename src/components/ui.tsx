@@ -122,11 +122,12 @@ export function StatusBadge({ status }: { status: SessionStatus }) {
   )
 }
 
-export function Stat({ label, value }: { label: string; value: ReactNode }) {
+export function Stat({ label, value, note }: { label: string; value: ReactNode; note?: string }) {
   return (
     <div className="rounded-lg bg-white px-4 py-3 shadow-card">
       <p className="text-xs font-medium text-muted">{label}</p>
       <p className="tabular mt-1 text-2xl font-semibold tracking-tight">{value}</p>
+      {note && <p className="mt-0.5 text-xs text-muted">{note}</p>}
     </div>
   )
 }

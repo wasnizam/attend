@@ -327,7 +327,7 @@ function findingsBox(doc: JsPDF, f: NonNullable<PdfReport['findings']>, x: numbe
     if (ty + (lines.length - 1) * 3.8 > y + h - 4) break
     doc.setFillColor(...ACCENT).circle(x + 6.3, ty - 1.1, 0.8, 'F')
     doc.setTextColor(...BODY).text(lines, x + 9.5, ty)
-    ty += lines.length * 3.8 + 2.8
+    ty += lines.length * 3.8 + 2.2
   }
 }
 

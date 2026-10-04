@@ -1122,4 +1122,11 @@ export const ms: Record<string, string> = {
   "Made with Attend": "Dibuat dengan Attend",
   "Staff ID": "ID Kakitangan",
   "1 day of leave or MC.": "1 hari cuti atau MC.",
+  "{n} still at work": "{n} masih bekerja",
+  "still at work": "masih bekerja",
+  "to date, {from} – {to}": "setakat ini, {from} – {to}",
+  "Hours cover {a} of {b} days worked: {c} without a clock-out (fix before payroll), {d} still at work.": "Jam meliputi {a} daripada {b} hari bekerja: {c} tanpa rekod keluar (betulkan sebelum gaji), {d} masih bekerja.",
+  "from {a} of {b} days worked": "daripada {a} / {b} hari bekerja",
+  "Figures are as at {time}. A day still in progress counts nobody as absent yet, and hours for people still at work are added when they clock out.": "Angka setakat {time}. Hari yang masih berjalan belum mengira sesiapa tidak hadir, dan jam bagi yang masih bekerja ditambah selepas mereka rekod keluar.",
+  "+{n} on leave or MC": "+{n} cuti atau MC",
 }

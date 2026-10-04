@@ -201,3 +201,25 @@ describe('what HR needs on top of the totals', () => {
     expect(by.E1.entries[1]).toMatchObject({ dayType: 'holiday', minutes: 240 })
   })
 })
+
+describe('hours that are not in yet', () => {
+  it('tells days still at work apart from days with no clock-out', () => {
+    const now = new Date('2026-10-02T12:00:00').getTime()
+    const rows = build(
+      [session('old', '2026-10-01'), session('today', '2026-10-02')],
+      new Map([
+        ['old', [rec('E1', '2026-10-01', '09:00'), rec('E2', '2026-10-01', '09:00')]],
+        ['today', [rec('E1', '2026-10-02', '09:00')]],
+      ]) as never,
+      new Map([['old', new Map([['E1', at('2026-10-01', '17:00')]])]]) as never,
+      roster as never,
+      [],
+      new Map(),
+      now,
+    )
+    const by = Object.fromEntries(rows.map((r) => [r.key, r]))
+    expect(by.E1).toMatchObject({ days: 2, timedDays: 1, openDays: 1, noClockOut: 0 })
+    expect(by.E2).toMatchObject({ days: 1, timedDays: 0, openDays: 0, noClockOut: 1 })
+    expect(by.E1.entries[1].open).toBe(true)
+  })
+})
