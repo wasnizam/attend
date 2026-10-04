@@ -1249,4 +1249,9 @@ export const ms: Record<string, string> = {
   "For the people who run Attend. Customers sign in at the usual page.": "Untuk pengendali Attend. Pelanggan log masuk di halaman biasa.",
   "Wrong email or password.": "E-mel atau kata laluan salah.",
   "Google sign-in did not finish.": "Log masuk Google tidak selesai.",
+  "Opens soon": "Dibuka tidak lama lagi",
+  "Paid plans open soon; the prices above are what they will cost. Until then you start free: {limit}. You will be told before anything changes.": "Pelan berbayar akan dibuka tidak lama lagi; harga di atas ialah harganya nanti. Sehingga itu anda bermula percuma: {limit}. Anda akan dimaklumkan sebelum apa-apa berubah.",
+  "You are on the free plan: {limit}. Paid plans open soon; the prices below are what they will cost. You will be told before anything changes.": "Anda dalam pelan percuma: {limit}. Pelan berbayar akan dibuka tidak lama lagi; harga di bawah ialah harganya nanti. Anda akan dimaklumkan sebelum apa-apa berubah.",
+  "Paid plans open soon. Need more now? Contact Attend and we will set it up for you.": "Pelan berbayar akan dibuka tidak lama lagi. Perlu lebih sekarang? Hubungi Attend dan kami akan aturkan untuk anda.",
+  "The free plan includes up to {n} staff. Paid plans open soon; contact Attend if you need more now.": "Pelan percuma termasuk sehingga {n} kakitangan. Pelan berbayar akan dibuka tidak lama lagi; hubungi Attend jika anda perlukan lebih sekarang.",
 }

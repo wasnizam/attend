@@ -422,6 +422,13 @@ A customer can have a standing discount (`organisation.discount`, from a code or
 date), which lowers their recurring revenue and is offered on their invoices. Invoices carry a
 discount line before SST; using a code (on an invoice or as a standing discount) counts it, in the same
 transaction, and a used-up or expired code is refused. Changing the price list does not change what
-existing customers pay: their own price is kept on their subscription. The
+existing customers pay: their own price is kept on their subscription.
+
+**Before payment opens** (`PAYMENTS_OPEN = false`): the price list is shown on the website with an
+"Opens soon" tag on paid plans and a note that you start free. What a new account starts on is set per
+edition in Back office → Pricing (`platformConfig/pricing.launch`): the free plan (a workplace gets up to
+5 staff, enforced when staff are added) or early access (no limits). Defaults: workplace free,
+lecturers and trainers early access. Sign-up reads it, and the rules (`startPlan`) refuse any other
+starting plan. Existing customers keep their plan; the team can upgrade one by hand. The
 rules enforce every role; invoices, payments, notes and the audit log cannot be edited or deleted.
 

@@ -28,6 +28,15 @@ export interface CatalogPlan {
 
 export type Catalog = Record<EditionId, CatalogPlan[]>
 
+/**
+ * What a new account starts on while payment is not open, per edition: the free plan (with its
+ * limits, e.g. 5 staff for a workplace) or early access (no limits). Saved with the price list.
+ */
+export type StartPlan = 'free' | 'early'
+export type Launch = Record<EditionId, StartPlan>
+export const DEFAULT_LAUNCH: Launch = { lecturers: 'early', trainers: 'early', workplace: 'free' }
+export const editionKey = (purpose: string | undefined): EditionId => (purpose === 'workplace' ? 'workplace' : purpose === 'training' ? 'trainers' : 'lecturers')
+
 export const CYCLE_LABEL: Record<Cycle, string> = { free: 'Free forever', month: 'a month', semester: 'per semester', year: 'a year' }
 
 const number = (s: string) => Number(s.replace(/[^0-9.]/g, '')) || 0
@@ -67,21 +76,23 @@ export const toPlanCard = (p: CatalogPlan): PlanCard => ({
 })
 
 let cache: Catalog | null = null
+let launchCache: Launch = DEFAULT_LAUNCH
 const listeners = new Set<(c: Catalog) => void>()
+const launchOf = (data: { launch?: Partial<Launch> } | undefined): Launch => ({ ...DEFAULT_LAUNCH, ...(data?.launch ?? {}) })
 let started = false
 
 function start() {
   if (started) return
   started = true
   // Read once quickly, then keep in step, so a price change shows without a reload.
+  const take = (data: object | undefined) => {
+    launchCache = launchOf(data as { launch?: Partial<Launch> })
+    publish(data ? merge(data as Partial<Catalog>) : defaultCatalog())
+  }
   getDoc(doc(db, 'platformConfig', 'pricing'))
-    .then((snap) => publish(snap.exists() ? merge(snap.data() as Partial<Catalog>) : defaultCatalog()))
+    .then((snap) => take(snap.exists() ? snap.data() : undefined))
     .catch(() => publish(defaultCatalog()))
-  onSnapshot(
-    doc(db, 'platformConfig', 'pricing'),
-    (snap) => publish(snap.exists() ? merge(snap.data() as Partial<Catalog>) : defaultCatalog()),
-    () => {},
-  )
+  onSnapshot(doc(db, 'platformConfig', 'pricing'), (snap) => take(snap.exists() ? snap.data() : undefined), () => {})
 }
 const merge = (saved: Partial<Catalog>): Catalog => ({ ...defaultCatalog(), ...Object.fromEntries(Object.entries(saved).filter(([k, v]) => Array.isArray(v) && EDITIONS.some((e) => e.id === k))) }) as Catalog
 function publish(c: Catalog) {
@@ -101,6 +112,22 @@ export function useCatalog(): Catalog {
     }
   }, [])
   return c
+}
+
+/** What new accounts start on, per edition (live). */
+export function useLaunch(): Launch {
+  useCatalog()
+  return launchCache
+}
+
+/** Read once, for sign-up: the plan a new organisation of this purpose starts on. */
+export async function startPlanFor(purpose: string | undefined): Promise<StartPlan> {
+  try {
+    const snap = await getDoc(doc(db, 'platformConfig', 'pricing'))
+    return launchOf(snap.exists() ? (snap.data() as { launch?: Partial<Launch> }) : undefined)[editionKey(purpose)]
+  } catch {
+    return DEFAULT_LAUNCH[editionKey(purpose)]
+  }
 }
 
 /** The plans to show for one edition (hidden ones left out), as website cards. */

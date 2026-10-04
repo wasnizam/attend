@@ -508,7 +508,10 @@ describe('purpose and plan are fixed at sign-up', () => {
 
   it('a new organisation picks its purpose but cannot start on a paid plan', async () => {
     const db = as('newbie')
-    await assertSucceeds(setDoc(doc(db, 'organisations/orgD'), { name: 'D', ownerId: 'newbie', inviteCode: 'X', purpose: 'workplace', plan: 'early' }))
+    // Before payment opens, a workplace starts on the free plan (5 staff); teaching editions on early access.
+    await assertSucceeds(setDoc(doc(db, 'organisations/orgD'), { name: 'D', ownerId: 'newbie', inviteCode: 'X', purpose: 'workplace', plan: 'free' }))
+    await assertFails(setDoc(doc(db, 'organisations/orgD2'), { name: 'D', ownerId: 'newbie', inviteCode: 'X', purpose: 'workplace', plan: 'early' }))
+    await assertSucceeds(setDoc(doc(db, 'organisations/orgD3'), { name: 'D', ownerId: 'newbie', inviteCode: 'X', purpose: 'education', plan: 'early' }))
     await assertSucceeds(setDoc(doc(db, 'organisations/orgG'), { name: 'G', ownerId: 'newbie', inviteCode: 'X', plan: 'trial', trialStarted: serverTimestamp() }))
     await assertFails(setDoc(doc(db, 'organisations/orgH'), { name: 'H', ownerId: 'newbie', inviteCode: 'X', plan: 'trial', trialStarted: Timestamp.fromMillis(Date.now() + 86_400_000 * 365) }))
     await assertFails(setDoc(doc(db, 'organisations/orgI'), { name: 'I', ownerId: 'newbie', inviteCode: 'X', plan: 'early', seats: 100 }))
@@ -902,3 +905,14 @@ describe('prices and discounts', () => {
     await assertSucceeds(updateDoc(doc(staff('fin'), 'organisations/orgA'), { discount: null }))
   })
 })
+
+describe('what new accounts start on', () => {
+  it('follows the back office setting for each edition', async () => {
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'platformConfig/pricing'), { launch: { workplace: 'early', lecturers: 'free', trainers: 'early' } }))
+    const db = as('newbie')
+    await assertSucceeds(setDoc(doc(db, 'organisations/w1'), { name: 'W', ownerId: 'newbie', inviteCode: 'X', purpose: 'workplace', plan: 'early' }))
+    await assertSucceeds(setDoc(doc(db, 'organisations/l1'), { name: 'L', ownerId: 'newbie', inviteCode: 'X', purpose: 'education', plan: 'free' }))
+    await assertFails(setDoc(doc(db, 'organisations/l2'), { name: 'L', ownerId: 'newbie', inviteCode: 'X', purpose: 'education', plan: 'early' }))
+  })
+})
+

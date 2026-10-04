@@ -26,6 +26,7 @@ import { auth } from '../lib/auth'
 import { db } from '../lib/firebase'
 import { randomToken } from '../lib/format'
 import { PAYMENTS_OPEN } from '../lib/plan'
+import { startPlanFor } from '../lib/pricing'
 import type { Purpose } from '../lib/purpose'
 import type { Organisation, Role, UserProfile, UserStatus } from '../lib/types'
 
@@ -99,8 +100,9 @@ export async function createOrganisationProfile(name: string, organisationName: 
     name: organisationName.trim(),
     ownerId: user.uid,
     purpose,
-    // Before payment opens everyone is on early access; afterwards a new organisation starts a trial.
-    ...(PAYMENTS_OPEN ? { plan: 'trial', trialStarted: serverTimestamp() } : { plan: 'early' }),
+    // Before payment opens a new organisation starts on what the back office sets for its edition
+    // (the free plan, or early access); afterwards it starts a trial.
+    ...(PAYMENTS_OPEN ? { plan: 'trial', trialStarted: serverTimestamp() } : { plan: await startPlanFor(purpose) }),
     inviteCode,
     createdAt: serverTimestamp(),
   })

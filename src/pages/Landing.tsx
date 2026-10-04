@@ -1,4 +1,4 @@
-import { usePlans } from '../lib/pricing'
+import { useLaunch, usePlans } from '../lib/pricing'
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
@@ -73,6 +73,9 @@ export function Landing({ show }: { show?: EditionId }) {
   const edition = editionById(show) ?? EDITIONS[0]
   // Prices come from the back office's price list (the code's prices until one is saved).
   const plans = usePlans(edition)
+  // Before payment opens: what a new account of this edition gets now (free plan, or early access).
+  const startsOn = useLaunch()[edition.id]
+  const freeLimit = plans.find((p) => /^(RM|\$)0$/.test(p.price.myr))?.items[0] ?? edition.plans[0]?.items[0] ?? ''
   const signup = `/signup?for=${edition.id}`
   const currency = useCurrency()
   // The page is written in each group's own words already; no vocabulary swaps on top.
@@ -226,6 +229,9 @@ export function Landing({ show }: { show?: EditionId }) {
                   <span className="tabular text-4xl font-semibold tracking-tight">{plan.price[currency]}</span>
                   <span className="text-sm text-muted">{t(plan.per)}</span>
                 </p>
+                {!PAYMENTS_OPEN && !/^(RM|\$)0$/.test(plan.price[currency]) && (
+                  <span className="mt-2 inline-flex w-fit rounded-full bg-[#fff4d6] px-2.5 py-0.5 text-xs font-semibold text-[#8a5a00]">{t('Opens soon')}</span>
+                )}
                 <p className="mt-1.5 min-h-5 text-sm text-muted">{plan.alt ? t(typeof plan.alt === 'string' ? plan.alt : plan.alt[currency]) : ''}</p>
                 <ul className="mt-5 flex-1 space-y-2.5 border-t border-line pt-5 text-sm text-slate-700">
                   {plan.items.map((item) => (
@@ -244,7 +250,9 @@ export function Landing({ show }: { show?: EditionId }) {
           <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-balance text-muted">
             {PAYMENTS_OPEN
               ? t('Every new account gets Pro free for 14 days. No card needed. Stop paying and your records stay, ready to view and export.')
-              : t('Payment is not open yet, so everything is free for now. When it opens, every account gets Pro free for 14 days first.')}
+              : startsOn === 'free'
+                ? t('Paid plans open soon; the prices above are what they will cost. Until then you start free: {limit}. You will be told before anything changes.', { limit: t(freeLimit).toLowerCase() })
+                : t('Payment is not open yet, so everything is free for now. When it opens, every account gets Pro free for 14 days first.')}
           </p>
         </div>
       </section>

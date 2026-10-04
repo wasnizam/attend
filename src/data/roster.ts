@@ -1,5 +1,5 @@
 import { t } from '../lib/i18n'
-import { limitFor, overLimit } from '../lib/plan'
+import { PAYMENTS_OPEN, limitFor, overLimit } from '../lib/plan'
 import { collection, doc, getDoc, getDocs, increment, onSnapshot, query, where, writeBatch } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { studentKey } from '../lib/format'
@@ -61,7 +61,12 @@ export async function addToRoster(cls: WeeklyClass, entries: RosterEntry[], exis
     // The plan counts people across all of this manager's lists, each person once.
     const everyone = await staffElsewhere(cls)
     for (const e of [...existing, ...entries]) everyone.add(e.studentKey)
-    if (overLimit('staff', everyone.size)) throw new Error(t('Your plan includes up to {n} staff. Upgrade to add more.', { n: limitFor('staff') ?? 0 }))
+    if (overLimit('staff', everyone.size))
+      throw new Error(
+        PAYMENTS_OPEN
+          ? t('Your plan includes up to {n} staff. Upgrade to add more.', { n: limitFor('staff') ?? 0 })
+          : t('The free plan includes up to {n} staff. Paid plans open soon; contact Attend if you need more now.', { n: limitFor('staff') ?? 0 }),
+      )
   }
   for (let i = 0; i < entries.length; i += BATCH) {
     const batch = writeBatch(db)

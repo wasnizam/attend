@@ -257,7 +257,9 @@ export function Account() {
               : plan === 'trial'
                 ? t('You have Pro free for {n} more days. After that you move to the free plan; nothing is deleted.', { n: trialDaysLeft() ?? 0 })
                 : plan === 'free'
-                  ? t('You are on the free plan. Your older records stay, ready to view and export.')
+                  ? PAYMENTS_OPEN
+                    ? t('You are on the free plan. Your older records stay, ready to view and export.')
+                    : t('You are on the free plan: {limit}. Paid plans open soon; the prices below are what they will cost. You will be told before anything changes.', { limit: t(plans.find((p) => /^(RM|\$)0$/.test(p.price.myr))?.items[0] ?? edition.plans[0]?.items[0] ?? '').toLowerCase() })
                   : t('You are on Pro until {date}. Thank you.', { date: new Date(paidUntil()?.toMillis() ?? 0).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) ?? '' })}
           </p>
           <ul className="mt-4 divide-y divide-line rounded-lg border border-line text-sm">
@@ -276,7 +278,7 @@ export function Account() {
           {profile.role === 'admin' && plan !== 'pro' && (
             <div className="mt-4">
               <Button disabled={!PAYMENTS_OPEN}>{t('Upgrade to Pro')}</Button>
-              {!PAYMENTS_OPEN && <p className="mt-2 text-xs text-muted">{t('Payment is not open yet. You do not need to do anything.')}</p>}
+              {!PAYMENTS_OPEN && <p className="mt-2 text-xs text-muted">{plan === 'free' ? t('Paid plans open soon. Need more now? Contact Attend and we will set it up for you.') : t('Payment is not open yet. You do not need to do anything.')}</p>}
             </div>
           )}
         </Card>

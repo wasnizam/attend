@@ -4,7 +4,8 @@ import { type Coupon, can, couponLabel, couponUsable, deleteCoupon, saveCoupon, 
 import { type EditionId, EDITIONS as EDITION_LIST } from '../lib/editions'
 import { addDays, formatDate, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
-import { type Catalog, type CatalogPlan, CYCLE_LABEL, type Cycle, defaultCatalog, toPlanCard, useCatalog } from '../lib/pricing'
+import { type Catalog, type CatalogPlan, CYCLE_LABEL, type Cycle, type Launch, type StartPlan, defaultCatalog, toPlanCard, useCatalog, useLaunch } from '../lib/pricing'
+import { PAYMENTS_OPEN } from '../lib/plan'
 import { useLive } from '../hooks/useLive'
 import { useOwner } from './context'
 import { PageHead, Section, Tabs, td, th, useAction } from './ui'
@@ -30,10 +31,15 @@ function Plans() {
   const { busy, run, messages, setError } = useAction()
   const [edition, setEdition] = useState<EditionId>('lecturers')
   const [draft, setDraft] = useState<Catalog>(live)
+  const liveLaunch = useLaunch()
+  const [launch, setLaunch] = useState<Launch>(liveLaunch)
   const [dirty, setDirty] = useState(false)
   useEffect(() => {
-    if (!dirty) setDraft(live)
-  }, [live, dirty])
+    if (!dirty) {
+      setDraft(live)
+      setLaunch(liveLaunch)
+    }
+  }, [live, liveLaunch, dirty])
   const edit = can(me.role, 'settings')
   const plans = draft[edition] ?? []
   const set = (next: CatalogPlan[]) => {
@@ -50,7 +56,7 @@ function Plans() {
   const save = () => {
     for (const list of Object.values(draft)) if (list.some((p) => !p.name.trim())) return setError(t('Every plan needs a name.'))
     run('save', async () => {
-      await savePricing(draft, me, `Price list saved (${EDITION_LIST.map((e) => `${e.label}: ${draft[e.id].filter((p) => !p.hidden).map((p) => `${p.name} RM${p.priceMyr}`).join(', ')}`).join(' · ')})`)
+      await savePricing(draft, me, `Price list saved (${EDITION_LIST.map((e) => `${e.label}: ${draft[e.id].filter((p) => !p.hidden).map((p) => `${p.name} RM${p.priceMyr}`).join(', ')}; new accounts start ${launch[e.id] === 'free' ? 'free' : 'on early access'}`).join(' · ')})`, launch)
       setDirty(false)
     }, t('Prices saved. The website shows them now.'))
   }
@@ -69,6 +75,29 @@ function Plans() {
         )}
       </div>
       {!edit && <p className="text-sm text-muted">{t('Your role can see the prices but not change them.')}</p>}
+      <Section
+        title={t('While payment is not connected')}
+        sub={PAYMENTS_OPEN ? t('Online payment is open: new accounts start a 14-day Pro trial.') : t('Customers cannot pay in the app yet. The website shows these prices as “opens soon”. Record bank transfers under Billing, and upgrade a customer by hand.')}
+      >
+        <p className="text-xs font-medium text-muted">{t('When a new account signs up, it starts on')}</p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-3">
+          {EDITION_LIST.map((e) => (
+            <label key={e.id} className="block text-sm">
+              <span className="font-medium">{e.label}</span>
+              <select
+                disabled={!edit || PAYMENTS_OPEN}
+                value={launch[e.id]}
+                onChange={(x) => { setLaunch({ ...launch, [e.id]: x.target.value as StartPlan }); setDirty(true) }}
+                className={`${inputClass} mt-1`}
+              >
+                <option value="free">{t('Free plan')} · {draft[e.id]?.find((p) => p.cycle === 'free')?.items[0] ?? ''}</option>
+                <option value="early">{t('Early access (no limits)')}</option>
+              </select>
+            </label>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted">{t('Only affects accounts created from now on. Existing customers keep their plan; change one by hand on the customer’s page.')}</p>
+      </Section>
       <div className="grid gap-4 xl:grid-cols-2">
         {plans.map((p, i) => (
           <Card key={p.id} className={`p-5 ${p.hidden ? 'opacity-60' : ''}`}>
