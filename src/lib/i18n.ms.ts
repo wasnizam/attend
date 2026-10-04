@@ -945,4 +945,12 @@ export const ms: Record<string, string> = {
   "It is {name}’s phone now": "Kini telefon {name}",
   "Reset phone": "Set semula telefon",
   "Forget {name}’s phone? Their next clock-in registers the phone they use then.": "Lupakan telefon {name}? Rekod masuk seterusnya akan mendaftarkan telefon yang digunakan ketika itu.",
+  "Phones": "Telefon",
+  "To check": "Perlu disemak",
+  "Nothing to check": "Tiada yang perlu disemak",
+  "Every clock-in in these dates came from the person’s own phone.": "Setiap rekod masuk pada tarikh ini datang dari telefon orang itu sendiri.",
+  "When": "Bila",
+  "Why": "Sebab",
+  "Registered phones": "Telefon berdaftar",
+  "Phones are registered by each person’s first clock-in.": "Telefon didaftarkan melalui rekod masuk pertama setiap orang.",
 }

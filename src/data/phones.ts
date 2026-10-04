@@ -1,6 +1,6 @@
 import { collection, doc, onSnapshot, query, serverTimestamp, where, writeBatch } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import type { UserProfile } from '../lib/types'
+import type { AttendanceRecord, UserProfile } from '../lib/types'
 
 /**
  * Each person's registered phone (phones/{org}_{staffKey}) and, the other way round, whose
@@ -70,10 +70,37 @@ export type PhoneNote = { kind: 'ok' } | { kind: 'unknown'; registered: string }
 
 /** How a check-in's phone compares with what is registered. */
 export function phoneNote(staffKey: string, device: string | undefined, phones: Phones): PhoneNote {
-  if (!device) return { kind: 'none' }
+  // No label: a check-in from before phones were registered (or a browser that keeps nothing).
+  // Flagging every old record would bury the real ones; "Refuse" mode turns these away anyway.
+  if (!device) return { kind: 'ok' }
   const owner = phones.byDevice.get(device)
   if (owner && owner !== staffKey) return { kind: 'other', owner }
   const registered = phones.byStaff.get(staffKey)
   if (registered && registered !== device) return { kind: 'unknown', registered }
   return { kind: 'ok' }
+}
+
+/** A phone flag on one check-in, worked out the same way everywhere a manager looks. */
+export type PhoneFlag =
+  | { kind: 'other'; owner: string }
+  | { kind: 'unknown'; registered: string }
+  | { kind: 'none' }
+  | { kind: 'shared'; with: string[] }
+
+/** Flags for a set of check-ins. Records a manager already cleared, and hand-added ones, are left out. */
+export function phoneFlags(records: AttendanceRecord[], phones: Phones): Map<string, PhoneFlag> {
+  const flags = new Map<string, PhoneFlag>()
+  for (const r of records) {
+    if (r.method === 'manual' || r.phoneChecked) continue
+    const p = phoneNote(r.studentKey, r.device, phones)
+    if (p.kind !== 'ok') flags.set(r.id, p)
+  }
+  // One unregistered phone used by several people on the same day.
+  const groups = new Map<string, AttendanceRecord[]>()
+  for (const r of records) if (r.device && !phones.byDevice.has(r.device)) groups.set(`${r.sessionId}|${r.device}`, [...(groups.get(`${r.sessionId}|${r.device}`) ?? []), r])
+  for (const group of groups.values()) {
+    if (group.length < 2) continue
+    for (const r of group) if (!r.phoneChecked && !flags.has(r.id)) flags.set(r.id, { kind: 'shared', with: group.filter((x) => x.id !== r.id).map((x) => x.studentName) })
+  }
+  return flags
 }

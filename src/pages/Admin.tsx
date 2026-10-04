@@ -8,13 +8,15 @@ import { subscribeOrgSessions } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
 import { useLive } from '../hooks/useLive'
 import { useNow } from '../hooks/useSessions'
+import { PhoneReview } from '../components/PhoneReview'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import { addDays, countPresent, isAway, effectiveStatus, formatClock24, formatDate, formatPercent, formatRange, isoDate, percent } from '../lib/format'
 import type { AttendanceRecord, Organisation, Session, UserProfile } from '../lib/types'
 
-const TABS = ['overview', 'sessions', 'records', 'users'] as const
+const TABS = ['overview', 'sessions', 'records', 'phones', 'users'] as const
 type Tab = (typeof TABS)[number]
-const TAB_LABEL: Record<Tab, string> = { overview: 'Overview', sessions: 'Sessions', records: 'Records', users: 'Users' }
+const TAB_LABEL: Record<Tab, string> = { overview: 'Overview', sessions: 'Sessions', records: 'Records', phones: 'Phones', users: 'Users' }
 
 const selectClass = `${inputClass} appearance-none pr-8`
 
@@ -117,7 +119,7 @@ export default function Admin() {
       </div>
 
       <div className="flex gap-1 overflow-x-auto rounded-md bg-white p-1 shadow-card sm:w-fit">
-        {TABS.map((tb) => (
+        {TABS.filter((tb) => tb !== 'phones' || has('clock')).map((tb) => (
           <button
             key={tb}
             onClick={() => {
@@ -294,6 +296,8 @@ export default function Admin() {
           )}
         </div>
       )}
+
+      {tab === 'phones' && has('clock') && validRange && !failed && !loading && <PhoneReview records={attendance.data ?? []} rangeLabel={rangeLabel} />}
 
       {tab === 'users' && <Users users={users} organisation={organisation} me={profile.id} />}
     </div>
