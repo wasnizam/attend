@@ -1,7 +1,8 @@
+import { type User, onAuthStateChanged } from 'firebase/auth'
 import { Timestamp } from 'firebase/firestore'
-import { useEffect, useMemo, useState } from 'react'
-import { Navigate } from 'react-router-dom'
-import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, inputClass } from '../components/ui'
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
+import { Button, Card, EmptyState, ErrorNote, Field, Logo, PageLoader, Stat, inputClass } from '../components/ui'
+import { signIn, signInWithGoogle, signOut } from '../data/account'
 import {
   type BillingEntry,
   fetchAllClasses,
@@ -14,14 +15,18 @@ import {
   subscribeBilling,
   updateCustomer,
 } from '../data/platform'
-import { useProfile } from '../hooks/useAuth'
 import { useLive } from '../hooks/useLive'
 import { downloadCsv } from '../lib/csv'
 import { editionForPurpose } from '../lib/editions'
 import { addDays, formatDate, isoDate } from '../lib/format'
+import { auth } from '../lib/auth'
 import { t } from '../lib/i18n'
+import { setPurpose } from '../lib/purpose'
 import { PLAN_LABEL, TRIAL_DAYS, planOf } from '../lib/plan'
 import type { Organisation, UserProfile } from '../lib/types'
+
+/** The signed-in owner: just who they are, no customer account needed. */
+type Me = { id: string; email: string }
 
 const DAY = 86_400_000
 const dateOf = (ms: number | null | undefined) => (ms ? formatDate(isoDate(new Date(ms))) : '—')
@@ -42,19 +47,102 @@ interface Customer {
   joined: number | null
 }
 
-/** Attend's own back office: every customer, their plan, and the money received. Owner only. */
-export function Owner() {
-  const profile = useProfile()
+/**
+ * Attend's own back office, separate from the customers' app: its own address (/owner), its own
+ * sign-in and its own layout. Only accounts listed in platformOwners get in; they do not need to
+ * belong to any customer.
+ */
+export default function OwnerApp() {
+  const [user, setUser] = useState<User | null | undefined>(undefined)
   const [allowed, setAllowed] = useState<boolean | null>(null)
   useEffect(() => {
-    isPlatformOwner(profile.id).then(setAllowed)
-  }, [profile.id])
-  if (allowed === null) return <PageLoader />
-  if (!allowed) return <Navigate to="/app" replace />
-  return <Portal me={profile} />
+    // Plain words: none of a customer edition's word swaps apply here.
+    setPurpose(undefined)
+    return onAuthStateChanged(auth, (u) => {
+      setUser(u)
+      setAllowed(null)
+      if (u) isPlatformOwner(u.uid).then(setAllowed)
+    })
+  }, [])
+  if (user === undefined || (user && allowed === null)) return <PageLoader />
+  if (!user) return <OwnerLogin />
+  if (!allowed)
+    return (
+      <OwnerFrame>
+        <div className="mx-auto max-w-sm py-20 text-center">
+          <h1 className="text-xl font-semibold">{t('Not an owner account')}</h1>
+          <p className="mt-2 text-muted">{t('{email} is not allowed into the Attend owner portal.', { email: user.email ?? '' })}</p>
+          <Button className="mt-6" variant="secondary" onClick={() => signOut()}>{t('Log out')}</Button>
+        </div>
+      </OwnerFrame>
+    )
+  return (
+    <OwnerFrame email={user.email ?? ''}>
+      <Portal me={{ id: user.uid, email: user.email ?? '' }} />
+    </OwnerFrame>
+  )
 }
 
-function Portal({ me }: { me: UserProfile }) {
+/** The portal's own frame: a dark bar, so it never looks like a customer's screen. */
+function OwnerFrame({ email, children }: { email?: string; children: ReactNode }) {
+  return (
+    <div className="min-h-dvh bg-canvas">
+      <header className="bg-ink text-white">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+          <span className="flex items-center gap-3">
+            <Logo className="text-white" />
+            <span className="rounded bg-white/10 px-2 py-0.5 text-xs font-semibold tracking-wide uppercase">{t('Owner')}</span>
+          </span>
+          {email && (
+            <span className="flex items-center gap-3 text-sm">
+              <span className="hidden text-white/70 sm:inline">{email}</span>
+              <button type="button" onClick={() => signOut()} className="rounded-md px-2.5 py-1 font-medium text-white/90 hover:bg-white/10">{t('Log out')}</button>
+            </span>
+          )}
+        </div>
+      </header>
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
+    </div>
+  )
+}
+
+function OwnerLogin() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setError('')
+    try {
+      await signIn(email, password)
+    } catch {
+      setError(t('Wrong email or password.'))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <OwnerFrame>
+      <div className="mx-auto max-w-sm py-12">
+        <Card className="p-6">
+          <h1 className="text-xl font-semibold">{t('Owner sign-in')}</h1>
+          <p className="mt-1 text-sm text-muted">{t('For the people who run Attend. Customers sign in at the usual page.')}</p>
+          <form onSubmit={submit} className="mt-5 space-y-4">
+            <Field label={t('Email')} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Field label={t('Password')} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            <ErrorNote>{error}</ErrorNote>
+            <Button type="submit" block busy={busy}>{t('Log in')}</Button>
+          </form>
+          <Button className="mt-3" variant="secondary" block onClick={() => signInWithGoogle().catch(() => setError(t('Google sign-in did not finish.')))}>{t('Continue with Google')}</Button>
+        </Card>
+      </div>
+    </OwnerFrame>
+  )
+}
+
+function Portal({ me }: { me: Me }) {
   const orgs = useLive<Organisation[]>((d, e) => subscribeAllOrganisations(d, e), [])
   const billing = useLive<BillingEntry[]>((d, e) => subscribeBilling(d, e), [])
   const [extra, setExtra] = useState<{ users: UserProfile[]; sessions: { organisationId: string; date: string; status: string }[]; classes: { organisationId: string; rosterCount?: number; rosterFrom?: string | null }[] } | null>(null)
@@ -286,7 +374,7 @@ function Customers({ customers, onOpen }: { customers: Customer[]; onOpen: (id: 
   )
 }
 
-function CustomerPage({ c, me, billing, onBack }: { c: Customer; me: UserProfile; billing: BillingEntry[]; onBack: () => void }) {
+function CustomerPage({ c, me, billing, onBack }: { c: Customer; me: Me; billing: BillingEntry[]; onBack: () => void }) {
   const org = c.org
   const workplace = org.purpose === 'workplace'
   const [lastSeen, setLastSeen] = useState<string | null | undefined>(c.lastSeen ?? undefined)

@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { resendVerification } from '../data/account'
-import { isPlatformOwner } from '../data/platform'
 import { useAuth, useProfile } from '../hooks/useAuth'
 import { t } from '../lib/i18n'
 import { has } from '../lib/purpose'
@@ -71,12 +70,6 @@ export function AppShell() {
   const history = item('/app/history', t('History'), icons.history)
   const calendar = item('/app/calendar', t('Calendar'), icons.calendar)
   const adminItem = profile.role === 'admin' ? [item('/admin', t('Admin'), icons.admin)] : []
-  // Only the people who run Attend itself see their back office.
-  const [owner, setOwner] = useState(false)
-  useEffect(() => {
-    isPlatformOwner(profile.id).then(setOwner)
-  }, [profile.id])
-  const ownerItem = owner ? [item('/owner', t('Owner portal'), icons.reports)] : []
   // Timetable and class reports only exist for organisations that run repeating classes.
   const recurring = has('recurring')
     ? { timetable: [item('/app/timetable', t('Timetable'), icons.timetable)], reports: [item('/app/reports', t('Reports'), icons.reports)] }
@@ -89,7 +82,7 @@ export function AppShell() {
   const door = has('clock')
     ? [...(has('shifts') ? [item('/app/plan', t('Shift plan'), icons.calendar)] : [])]
     : []
-  const sidebar = [today, ...door, calendar, ...recurring.timetable, students, ...recurring.reports, history, ...adminItem, ...ownerItem]
+  const sidebar = [today, ...door, calendar, ...recurring.timetable, students, ...recurring.reports, history, ...adminItem]
 
   return (
     <div className="min-h-dvh md:pl-60 print:!pl-0">

@@ -397,7 +397,9 @@ week of September) and Studio KL (flexible hours), and prints what the September
 (`fetchManyAttendance`, `fetchManyClockOuts`, `fetchManyLeaveTypes`, using `sessionId in [...]` with
 the organisation and, for a manager, their own records), instead of three queries per day.
 
-**Owner portal (`/owner`).** For the people who run Attend, not for customers. An account is an
+**Owner portal (`/owner`).** For the people who run Attend, not for customers. It is a separate app
+(own bundle, own sign-in screen, own dark frame), outside the customers' app and menu; an owner
+needs no customer account. An account is an
 owner when a document `platformOwners/{uid}` exists; it is created by hand in the Firebase console
 (the rules refuse it from the app). Owners can list every organisation, user, class and session (not
 attendance records), and change only `plan`, `trialStarted`, `paidUntil`, `seats`, `suspended` and

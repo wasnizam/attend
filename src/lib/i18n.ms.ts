@@ -1242,4 +1242,11 @@ export const ms: Record<string, string> = {
   "Your organisation’s Attend account has been paused. All your records are kept safe. Please contact Attend to restore it.": "Akaun Attend organisasi anda telah dihentikan sementara. Semua rekod anda selamat. Sila hubungi Attend untuk memulihkannya.",
   "This ends their paid period earlier, on {date} instead of {old}. Continue?": "Ini menamatkan tempoh berbayar lebih awal, pada {date} dan bukan {old}. Teruskan?",
   "Now paid until {date}.": "Kini dibayar hingga {date}.",
+  "Not an owner account": "Bukan akaun pemilik",
+  "{email} is not allowed into the Attend owner portal.": "{email} tidak dibenarkan masuk ke portal pemilik Attend.",
+  "Owner": "Pemilik",
+  "Owner sign-in": "Log masuk pemilik",
+  "For the people who run Attend. Customers sign in at the usual page.": "Untuk pengendali Attend. Pelanggan log masuk di halaman biasa.",
+  "Wrong email or password.": "E-mel atau kata laluan salah.",
+  "Google sign-in did not finish.": "Log masuk Google tidak selesai.",
 }

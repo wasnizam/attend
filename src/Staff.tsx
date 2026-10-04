@@ -17,7 +17,6 @@ import { History } from './pages/History'
 import { Login } from './pages/Login'
 import { NewSession } from './pages/NewSession'
 import { Kiosk } from './pages/Kiosk'
-import { Owner } from './pages/Owner'
 import { Payroll } from './pages/Payroll'
 import { Schedule } from './pages/Schedule'
 import { Setup } from './pages/Setup'
@@ -125,11 +124,6 @@ export default function Staff() {
         <Route element={<RequireAuth admin />}>
           <Route element={<AppShell />}>
             <Route path="/admin" element={<Admin />} />
-          </Route>
-        </Route>
-        <Route element={<RequireAuth />}>
-          <Route element={<AppShell />}>
-            <Route path="/owner" element={<Owner />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -10,6 +10,8 @@ import { Landing } from './pages/Landing'
 const Attend = lazy(() => import('./pages/Attend'))
 const DoorEntry = lazy(() => import('./pages/DoorEntry'))
 const Staff = lazy(() => import('./Staff'))
+// Attend's own back office: a separate bundle and a separate sign-in, never part of a customer's app.
+const Owner = lazy(() => import('./pages/Owner'))
 
 function SetupNeeded() {
   return (
@@ -41,6 +43,7 @@ export function App() {
         <Route element={<NeedsFirebase />}>
           <Route path="/session/:token" element={<Attend />} />
           <Route path="/door" element={<DoorEntry />} />
+          <Route path="/owner/*" element={<Owner />} />
           <Route path="/*" element={<Staff />} />
         </Route>
       </Routes>
