@@ -639,3 +639,52 @@ describe('workplace gaps', () => {
     await assertFails(updateDoc(doc(anon(), 'sessionLinks/ABC234'), { rosterId: 'other' }))
   })
 })
+
+describe('registered phones', () => {
+  const reg = (db: ReturnType<typeof anon>, sessionId: string, key: string, device: string, extra = {}) => {
+    const batch = writeBatch(db)
+    batch.set(doc(db, `attendance/${sessionId}_${key}`), record(sessionId, key, { device, ...extra }))
+    const body = { organisationId: 'orgA', staffKey: key, device, sessionId, by: 'self', at: serverTimestamp() }
+    batch.set(doc(db, `phones/orgA_${key}`), body)
+    batch.set(doc(db, `devices/orgA_${device}`), body)
+    return batch.commit()
+  }
+  beforeEach(() =>
+    env.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'sessions/liveB'), session('lecA', 'orgA', { status: 'active', token: 'ABC234', expiresAt: future, phoneCheck: 'block' })),
+    ),
+  )
+
+  it('a first clock-in registers the phone; the same phone cannot be registered to someone else', async () => {
+    await assertSucceeds(reg(anon(), 'live', 'ST010', 'PHONEAAAAAAAAAAA'))
+    await assertFails(reg(anon(), 'live', 'ST011', 'PHONEAAAAAAAAAAA'))
+    // In "flag" mode the check-in itself still goes through without registering.
+    await assertSucceeds(setDoc(doc(anon(), 'attendance/live_ST011'), record('live', 'ST011', { device: 'PHONEAAAAAAAAAAA' })))
+  })
+
+  it('a phone cannot be registered without a check-in from it', async () => {
+    const body = { organisationId: 'orgA', staffKey: 'ST020', device: 'PHONEBBBBBBBBBBB', sessionId: 'live', by: 'self', at: serverTimestamp() }
+    await assertFails(setDoc(doc(anon(), 'phones/orgA_ST020'), body))
+  })
+
+  it('where other phones are refused: own phone yes, another phone no, someone else’s phone no', async () => {
+    await assertSucceeds(reg(anon(), 'liveB', 'ST030', 'PHONECCCCCCCCCCC'))
+    await env.withSecurityRulesDisabled((ctx) => deleteDoc(doc(ctx.firestore(), 'attendance/liveB_ST030')))
+    await assertSucceeds(setDoc(doc(anon(), 'attendance/liveB_ST030'), record('liveB', 'ST030', { device: 'PHONECCCCCCCCCCC' })))
+    await env.withSecurityRulesDisabled((ctx) => deleteDoc(doc(ctx.firestore(), 'attendance/liveB_ST030')))
+    await assertFails(setDoc(doc(anon(), 'attendance/liveB_ST030'), record('liveB', 'ST030', { device: 'PRIVATEWINDOW123' })))
+    await assertFails(setDoc(doc(anon(), 'attendance/liveB_ST030'), record('liveB', 'ST030')))
+    await assertFails(reg(anon(), 'liveB', 'ST031', 'PHONECCCCCCCCCCC'))
+  })
+
+  it('a manager approves a new phone; only members can see or change phones', async () => {
+    await assertSucceeds(reg(anon(), 'live', 'ST040', 'PHONEDDDDDDDDDDD'))
+    const body = { organisationId: 'orgA', staffKey: 'ST040', device: 'PHONEEEEEEEEEEEE', sessionId: '', by: 'lecA', at: serverTimestamp() }
+    await assertSucceeds(setDoc(doc(as('lecA'), 'phones/orgA_ST040'), body))
+    await assertFails(setDoc(doc(as('lecB'), 'phones/orgA_ST040'), { ...body, by: 'lecB' }))
+    await assertFails(setDoc(doc(anon(), 'phones/orgA_ST040'), { ...body, by: 'self' }))
+    await assertSucceeds(getDoc(doc(as('lecA'), 'phones/orgA_ST040')))
+    await assertFails(getDoc(doc(anon(), 'phones/orgA_ST040')))
+    await assertFails(getDoc(doc(as('adminB'), 'phones/orgA_ST040')))
+  })
+})

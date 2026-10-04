@@ -327,6 +327,10 @@ export default function Attend() {
       const code = scannedCode ?? (asksCode ? typedCode.trim().toUpperCase() : undefined)
       setUsedCode(code)
       const outcome = await submitAttendance(link, studentId, listedName, code, position)
+      if (outcome.kind === 'stale' && link.phoneCheck === 'block' && !asksCode) {
+        setError(t('This phone is not registered to you. Clock in with your own phone, or ask your manager to approve this one.'))
+        return
+      }
       if (outcome.kind === 'stale' && link.geo === 'block') {
         // Refused while the session is open: too far away, or an old code.
         setTypedCode('')

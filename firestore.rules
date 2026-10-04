@@ -47,8 +47,9 @@ service cloud.firestore {
         && !('paidUntil' in request.resource.data) && !('seats' in request.resource.data);
       // The purpose and the plan are what the customer pays for: not theirs to change.
       allow update: if adminOf(orgId)
-        && onlyChanges(['name', 'shifts'])
+        && onlyChanges(['name', 'shifts', 'phoneCheck'])
         && request.resource.data.get('shifts', false) is bool
+        && request.resource.data.get('phoneCheck', 'flag') in ['flag', 'block']
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 100;
@@ -268,7 +269,17 @@ service cloud.firestore {
         // If the session uses a class list, the ID must be on it, under its listed name.
         && (s.get('rosterId', null) == null
             || get(/databases/$(database)/documents/rosters/$(s.rosterId)/students/$(d.studentKey))
-                 .data.studentName == d.studentName);
+                 .data.studentName == d.studentName)
+        && phoneOk(d, s);
+    }
+
+    // Where the organisation refuses other people's phones: the phone must be this person's
+    // (registered before, or being registered in this same write), and not anyone else's.
+    function phoneOk(d, s) {
+      return s.get('phoneCheck', null) != 'block'
+        || (d.get('device', '') != ''
+            && getAfter(/databases/$(database)/documents/phones/$(s.organisationId + '_' + d.studentKey)).data.device == d.device
+            && getAfter(/databases/$(database)/documents/devices/$(s.organisationId + '_' + d.device)).data.staffKey == d.studentKey);
     }
 
     // Distance worked out here in metres rather than with latlng.distance(), whose unit
@@ -320,6 +331,44 @@ service cloud.firestore {
         && request.resource.data.get('mcNumber', '').size() <= 40
         && request.resource.data.get('clinic', '').size() <= 100
         && (request.resource.data.get('dataUrl', null) == null || request.resource.data.dataUrl.size() <= 990000);
+    }
+
+    // ---------- registered phones (workplace) ----------
+
+    // A person's first clock-in registers their phone, in the same write as the check-in.
+    function selfRegistration(d) {
+      let att = getAfter(/databases/$(database)/documents/attendance/$(d.sessionId + '_' + d.staffKey)).data;
+      return d.by == 'self'
+        && att.device == d.device
+        && att.organisationId == d.organisationId;
+    }
+    // A manager approves a phone for someone.
+    function managerApproval(d) {
+      return memberOf(d.organisationId) && d.by == request.auth.uid;
+    }
+    function validPhone(d) {
+      return d.keys().hasOnly(['organisationId', 'staffKey', 'device', 'sessionId', 'by', 'at'])
+        && d.at == request.time
+        && d.device is string && d.device.matches('^[A-Z0-9]{8,40}$')
+        && d.staffKey is string && d.staffKey.matches('^[A-Z0-9._-]{1,40}$')
+        && d.sessionId is string
+        && (selfRegistration(d) || managerApproval(d));
+    }
+    match /phones/{phoneId} {
+      allow create: if validPhone(request.resource.data)
+        && phoneId == request.resource.data.organisationId + '_' + request.resource.data.staffKey;
+      allow update: if memberOf(resource.data.organisationId)
+        && validPhone(request.resource.data) && managerApproval(request.resource.data)
+        && phoneId == request.resource.data.organisationId + '_' + request.resource.data.staffKey;
+      allow read, delete: if memberOf(resource.data.organisationId);
+    }
+    match /devices/{deviceId} {
+      allow create: if validPhone(request.resource.data)
+        && deviceId == request.resource.data.organisationId + '_' + request.resource.data.device;
+      allow update: if memberOf(resource.data.organisationId)
+        && validPhone(request.resource.data) && managerApproval(request.resource.data)
+        && deviceId == request.resource.data.organisationId + '_' + request.resource.data.device;
+      allow read, delete: if memberOf(resource.data.organisationId);
     }
 
     // ---------- shift plans (workplace) ----------

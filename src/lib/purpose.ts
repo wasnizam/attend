@@ -49,6 +49,13 @@ export const setShiftMode = (on: boolean | undefined | null) => {
   shiftMode = Boolean(on)
 }
 
+// What happens to a clock-in from a phone that is not the person's own (the organisation's setting).
+let phoneCheck: 'flag' | 'block' = 'flag'
+export const setPhoneCheck = (value: string | undefined | null) => {
+  phoneCheck = value === 'block' ? 'block' : 'flag'
+}
+export const getPhoneCheck = () => phoneCheck
+
 export const has = (feature: Feature) =>
   feature === 'shifts' ? purpose === 'workplace' && shiftMode : FEATURES[purpose].includes(feature)
 

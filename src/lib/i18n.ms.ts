@@ -932,4 +932,13 @@ export const ms: Record<string, string> = {
   "Left off, hours begin at the start time even if someone clocks in earlier.": "Jika tidak ditanda, jam bermula pada waktu mula walaupun seseorang merekod masuk lebih awal.",
   "{n} people clocked in from the same phone.": "{n} orang merekod masuk dari telefon yang sama.",
   "See who": "Lihat siapa",
+  "This phone is not registered to you. Clock in with your own phone, or ask your manager to approve this one.": "Telefon ini tidak didaftarkan kepada anda. Rekod masuk dengan telefon anda sendiri, atau minta pengurus meluluskan telefon ini.",
+  "Phone belongs to {name}": "Telefon milik {name}",
+  "Phone not recognised": "Telefon tidak dikenali",
+  "Not their usual phone": "Bukan telefon biasanya",
+  "This is their new phone": "Ini telefon baharunya",
+  "A clock-in from a phone that is not their own": "Rekod masuk dari telefon yang bukan milik sendiri",
+  "Allow it, and flag it for me": "Benarkan, dan tandakan untuk saya",
+  "Refuse it until I approve the phone": "Tolak sehingga saya luluskan telefon itu",
+  "Each person’s first clock-in registers their phone. A new phone can be approved in one tap on the day’s list. Applies to days opened from now on.": "Rekod masuk pertama setiap orang mendaftarkan telefonnya. Telefon baharu boleh diluluskan dengan satu ketikan pada senarai hari itu. Berkuat kuasa untuk hari yang dibuka mulai sekarang.",
 }

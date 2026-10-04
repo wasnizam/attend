@@ -92,22 +92,38 @@ export async function submitAttendance(
       ...(code ? { code } : {}),
       ...(deviceLabel() ? { device: deviceLabel() } : {}),
     }
-    if (position) {
-      // One atomic write: the rules read the location while deciding on the record.
+    const device = record.device
+    const write = async (register: boolean) => {
+      // One atomic write: the rules read the location, and the phone registration, while
+      // deciding on the record.
       const batch = writeBatch(db)
-      batch.set(doc(db, 'locations', ref.id), {
-        sessionId: link.sessionId,
-        organisationId: link.organisationId,
-        ownerId: link.ownerId,
-        studentKey: key,
-        point: new GeoPoint(position.lat, position.lng),
-        accuracy: position.accuracy,
-        timestamp: serverTimestamp(),
-      })
+      if (position) {
+        batch.set(doc(db, 'locations', ref.id), {
+          sessionId: link.sessionId,
+          organisationId: link.organisationId,
+          ownerId: link.ownerId,
+          studentKey: key,
+          point: new GeoPoint(position.lat, position.lng),
+          accuracy: position.accuracy,
+          timestamp: serverTimestamp(),
+        })
+      }
       batch.set(ref, record)
+      if (register && device) {
+        // A person's first clock-in makes this phone theirs.
+        const body = { organisationId: link.organisationId, staffKey: key, device, sessionId: link.sessionId, by: 'self', at: serverTimestamp() }
+        batch.set(doc(db, 'phones', `${link.organisationId}_${key}`), body)
+        batch.set(doc(db, 'devices', `${link.organisationId}_${device}`), body)
+      }
       await batch.commit()
-    } else {
-      await setDoc(ref, record)
+    }
+    const register = link.purpose === 'workplace' && Boolean(device)
+    try {
+      await write(register)
+    } catch (e) {
+      // Already registered (to this phone or another): clock in without registering.
+      if (!register || (e as { code?: string }).code !== 'permission-denied') throw e
+      await write(false)
     }
     return { kind: 'recorded', studentName: rawName.trim(), time: new Date() }
   } catch (e) {

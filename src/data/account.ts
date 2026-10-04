@@ -76,6 +76,9 @@ export function subscribeOrganisation(id: string, onData: (org: Organisation | n
 }
 
 /** Workplace: turn the advanced shift features on or off for everyone in the organisation. */
+/** Workplace: flag, or refuse, a clock-in from a phone that is not the person's own. */
+export const setPhoneCheckFor = (id: string, value: 'flag' | 'block') => updateDoc(doc(db, 'organisations', id), { phoneCheck: value })
+
 export const setShifts = (id: string, on: boolean) => updateDoc(doc(db, 'organisations', id), { shifts: on })
 
 export async function renameOrganisation(org: Organisation, name: string) {

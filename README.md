@@ -196,6 +196,14 @@ time unless `countEarly` is set; an unpaid `breakMin` comes off days over five h
 added while a day is already open is attached to that day. Leave is recorded with a kind (annual,
 emergency, unpaid, other), kept with the private evidence, and split in the monthly report.
 
+**Registered phones.** A person's first clock-in registers their phone, written in the same batch
+as the check-in: `phones/{org}_{staffKey}` (their phone) and `devices/{org}_{label}` (whose phone
+it is). Later clock-ins are compared: "Phone belongs to …" or "Not their usual phone" (a cleared
+or private browser looks like a new phone). A manager approves a new phone from the day's list.
+The organisation's `phoneCheck` setting (Account) is copied onto each day: `flag` allows and marks
+it; `block` makes the rules refuse any clock-in that is not from the person's own registered
+phone (`phoneOk`). Phones are readable only by members of the organisation.
+
 **Office first, shifts as an extra.** A workplace starts as a plain office: the menu reads
 "Working hours", the form opens on Monday to Friday, nine to five, and nothing mentions shifts.
 An admin ticks "We work in shifts" on the Account page (`organisations.shifts`, `has('shifts')`)

@@ -76,6 +76,8 @@ export interface Organisation {
   seats?: number
   /** Workplace: shifts are switched on (several shifts, rotation, the shift plan). */
   shifts?: boolean
+  /** Workplace: a clock-in from a phone that is not the person's own is flagged, or refused. */
+  phoneCheck?: 'flag' | 'block'
   name: string
   ownerId: string
   inviteCode: string
@@ -90,6 +92,7 @@ export interface Session extends CourseDetails, Geofence {
   minStaff?: number | null
   breakMin?: number | null
   countEarly?: boolean
+  phoneCheck?: 'flag' | 'block' | null
   id: string
   organisationId: string
   ownerId: string
@@ -160,6 +163,8 @@ export interface SessionLink {
   /** The organisation's purpose, so the check-in page uses the right words. */
   purpose?: Purpose
   rosterId?: string | null
+  /** Workplace: "block" means only a person's own phone can clock them in. */
+  phoneCheck?: 'flag' | 'block' | null
 }
 
 export interface AttendanceRecord {

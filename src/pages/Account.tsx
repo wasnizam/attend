@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, ErrorNote, Field, friendlyError, inputClass } from '../components/ui'
-import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, setShifts, signOut } from '../data/account'
+import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, setPhoneCheckFor, setShifts, signOut } from '../data/account'
 import { useCurrency } from '../lib/currency'
 import { editionForPurpose } from '../lib/editions'
 import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, paidUntil, trialDaysLeft } from '../lib/plan'
@@ -167,6 +167,26 @@ export function Account() {
               <span className="block text-sm font-medium">{t('We work in shifts', undefined, true)}</span>
               <span className="block text-xs text-muted">{t('Adds several shifts, people who rotate between them, and a weekly shift plan. Leave it off for ordinary office hours.', undefined, true)}</span>
             </span>
+          </label>
+        )}
+        {profile.role === 'admin' && org && getPurpose() === 'workplace' && (
+          <label className="mt-5 block border-t border-line pt-4">
+            <span className="mb-1.5 block text-sm font-medium">{t('A clock-in from a phone that is not their own')}</span>
+            <select
+              value={org.phoneCheck ?? 'flag'}
+              onChange={(e) => {
+                const value = e.target.value as 'flag' | 'block'
+                orgSave.run(async () => {
+                  await setPhoneCheckFor(org.id, value)
+                  setOrg({ ...org, phoneCheck: value })
+                }, '')
+              }}
+              className={inputClass}
+            >
+              <option value="flag">{t('Allow it, and flag it for me')}</option>
+              <option value="block">{t('Refuse it until I approve the phone')}</option>
+            </select>
+            <span className="mt-1.5 block text-xs text-muted">{t('Each person’s first clock-in registers their phone. A new phone can be approved in one tap on the day’s list. Applies to days opened from now on.')}</span>
           </label>
         )}
         <p className="mt-3 text-sm text-muted">

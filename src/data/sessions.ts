@@ -17,7 +17,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import { getPurpose, has } from '../lib/purpose'
+import { getPhoneCheck, getPurpose, has } from '../lib/purpose'
 import { isAway, parseDate, randomToken } from '../lib/format'
 import type { ClassKind, Delivery, GeoMode, Geofence, Session, SessionLink, UserProfile } from '../lib/types'
 
@@ -74,6 +74,7 @@ export function newSessionData(profile: UserProfile, input: NewSession, classId:
     ...(input.work?.minStaff ? { minStaff: input.work.minStaff } : {}),
     ...(input.work?.breakMin ? { breakMin: input.work.breakMin } : {}),
     ...(input.work?.countEarly ? { countEarly: true } : {}),
+    ...(has('clock') ? { phoneCheck: getPhoneCheck() } : {}),
     mode: 'qr',
     classId,
     rosterId: input.rosterId ?? null,
@@ -194,6 +195,7 @@ export async function startSession(session: Session, rotatingPref = false): Prom
       checkpoint: null,
       purpose: getPurpose(),
       geo: session.geoPoint ? (session.geoMode ?? null) : null,
+      phoneCheck: session.phoneCheck ?? null,
     })
     batch.update(doc(db, 'sessions', session.id), {
       status: 'active',

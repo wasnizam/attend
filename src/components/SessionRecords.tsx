@@ -7,6 +7,7 @@ import { useLive } from '../hooks/useLive'
 import { useAbsentees } from '../hooks/useRoster'
 import { useNow } from '../hooks/useSessions'
 import { openEvidence } from '../lib/evidenceFile'
+import { type Phones, approvePhone, phoneNote, subscribePhones } from '../data/phones'
 import { isAway, minutesEarly, minutesLate, studentKey as studentKeyOf } from '../lib/format'
 import { has } from '../lib/purpose'
 import { type Position, distanceMetres, formatDistance } from '../lib/geo'
@@ -59,11 +60,33 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
       if (early) note(r.id, t('Left {n} min early', { n: early }))
     }
   }
+  // Each person's own phone: a clock-in from another phone is worth a look.
+  const phones = useLive<Phones>(clocking ? (onData, onError) => subscribePhones(session.organisationId, onData, onError) : null, [session.organisationId, clocking])
+  const nameOf = (key: string) => records.find((x) => x.studentKey === key)?.studentName ?? key
+  const phoneActions = new Map<string, React.ReactNode>()
+  if (phones.data) {
+    for (const r of records) {
+      if (r.method === 'manual') continue
+      const p = phoneNote(r.studentKey, r.device, phones.data)
+      if (p.kind === 'other') note(r.id, t('Phone belongs to {name}', { name: nameOf(p.owner) }))
+      if (p.kind === 'none') note(r.id, t('Phone not recognised'))
+      if (p.kind === 'unknown') {
+        note(r.id, t('Not their usual phone'))
+        phoneActions.set(
+          r.id,
+          <button type="button" className="mt-0.5 block text-xs font-medium text-accent hover:underline" onClick={() => run(() => approvePhone(session.organisationId, r.studentKey, r.device!, viewer, phones.data?.byDevice.get(p.registered) === r.studentKey ? p.registered : undefined))}>
+            {t('This is their new phone')}
+          </button>,
+        )
+      }
+    }
+  }
   // One phone used for more than one person: worth a look (clocking in for a friend).
-  const phones = new Map<string, AttendanceRecord[]>()
-  for (const r of records) if (r.device) phones.set(r.device, [...(phones.get(r.device) ?? []), r])
-  for (const group of phones.values()) {
-    if (group.length < 2) continue
+  const shared = new Map<string, AttendanceRecord[]>()
+  for (const r of records) if (r.device) shared.set(r.device, [...(shared.get(r.device) ?? []), r])
+  for (const [device, group] of shared) {
+    // When the phone is registered, "Phone belongs to …" already says it, and its owner is fine.
+    if (group.length < 2 || phones.data?.byDevice.has(device)) continue
     for (const r of group) note(r.id, t('Same phone as {name}', { name: group.filter((x) => x.id !== r.id).map((x) => x.studentName).join(', ') }))
   }
   if (fence && locations.data) {
@@ -153,7 +176,7 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
           live={live}
           missed={missed}
           notes={notes}
-          details={details}
+          details={new Map([...records.map((r) => [r.id, details.get(r.id) || phoneActions.get(r.id) ? <>{details.get(r.id)}{phoneActions.get(r.id)}</> : null] as const)].filter(([, v]) => v))}
           clock={
             clocking && outs.data
               ? {
