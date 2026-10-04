@@ -3,6 +3,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { Button, PageLoader } from './components/ui'
 import { signOut, subscribeOrganisation } from './data/account'
+import { isPlatformOwner } from './data/platform'
 import { setPlan } from './lib/plan'
 import { setPhoneCheck, setPurpose, setShiftMode } from './lib/purpose'
 import { AuthProvider, useAuth } from './hooks/useAuth'
@@ -16,6 +17,7 @@ import { History } from './pages/History'
 import { Login } from './pages/Login'
 import { NewSession } from './pages/NewSession'
 import { Kiosk } from './pages/Kiosk'
+import { Owner } from './pages/Owner'
 import { Payroll } from './pages/Payroll'
 import { Schedule } from './pages/Schedule'
 import { Setup } from './pages/Setup'
@@ -32,20 +34,35 @@ import { Timetable } from './pages/Timetable'
  * Finds out what the organisation uses Attend for before any screen is drawn, and
  * redraws everything if an admin changes it. The purpose picks the words and features.
  */
-function PurposeGate({ organisationId, children }: { organisationId: string; children: ReactNode }) {
+function PurposeGate({ organisationId, uid, children }: { organisationId: string; uid?: string; children: ReactNode }) {
   const [purpose, setLoaded] = useState<string | null>(null)
+  const [suspended, setSuspended] = useState(false)
   useEffect(
     () =>
       subscribeOrganisation(organisationId, (org) => {
+        setSuspended(Boolean(org?.suspended))
+        if (org?.suspended && uid) isPlatformOwner(uid).then((owner) => owner && setSuspended(false))
         setPurpose(org?.purpose)
         setPlan(org)
         setShiftMode(org?.shifts)
         setPhoneCheck(org?.phoneCheck)
         setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}:${org?.seats ?? ''}:${org?.shifts ? 's' : ''}:${org?.phoneCheck ?? ''}`)
       }),
-    [organisationId],
+    [organisationId, uid],
   )
   if (!purpose) return <PageLoader />
+  // Paused by the owner of Attend (unpaid, or on request): nothing is deleted, nothing can be used.
+  if (suspended) {
+    return (
+      <div className="mx-auto max-w-md px-6 py-24 text-center">
+        <h1 className="text-xl font-semibold">{t('This account is paused')}</h1>
+        <p className="mt-2 text-muted">{t('Your organisation’s Attend account has been paused. All your records are kept safe. Please contact Attend to restore it.')}</p>
+        <Button className="mt-6" variant="secondary" onClick={() => signOut()}>
+          {t('Log out')}
+        </Button>
+      </div>
+    )
+  }
   return <div key={purpose}>{children}</div>
 }
 
@@ -68,7 +85,7 @@ function RequireAuth({ admin = false }: { admin?: boolean }) {
   }
   if (admin && profile.role !== 'admin') return <Navigate to="/app" replace />
   return (
-    <PurposeGate organisationId={profile.organisationId}>
+    <PurposeGate organisationId={profile.organisationId} uid={profile.id}>
       <MySessionsProvider>
         <Outlet />
       </MySessionsProvider>
@@ -108,6 +125,11 @@ export default function Staff() {
         <Route element={<RequireAuth admin />}>
           <Route element={<AppShell />}>
             <Route path="/admin" element={<Admin />} />
+          </Route>
+        </Route>
+        <Route element={<RequireAuth />}>
+          <Route element={<AppShell />}>
+            <Route path="/owner" element={<Owner />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -82,6 +82,11 @@ export interface Organisation {
   timezone?: string
   /** Workplace: a clock-in from a phone that is not the person's own is flagged, or refused. */
   phoneCheck?: 'flag' | 'block'
+  /** Set by the owner of Attend: nobody in the organisation can use the app until restored. */
+  suspended?: boolean
+  /** The owner of Attend's private note about this customer. */
+  ownerNote?: string
+  createdAt?: Timestamp | null
   name: string
   ownerId: string
   inviteCode: string

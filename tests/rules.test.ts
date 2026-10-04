@@ -737,3 +737,47 @@ describe('early leave and half days', () => {
     await assertFails(updateDoc(doc(as('lecA2'), 'attendance/live_ST001'), { halfDay: 'am' }))
   })
 })
+
+describe('the owner of Attend', () => {
+  beforeEach(() =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'platformOwners/boss'), { name: 'Owner' })
+      await setDoc(doc(ctx.firestore(), 'users/boss'), user('admin', 'orgZ'))
+    }),
+  )
+
+  it('sees every customer, their people and their activity, but not attendance', async () => {
+    await assertSucceeds(getDocs(collection(as('boss'), 'organisations')))
+    await assertSucceeds(getDocs(collection(as('boss'), 'users')))
+    await assertSucceeds(getDocs(collection(as('boss'), 'sessions')))
+    await assertSucceeds(getDocs(collection(as('boss'), 'classes')))
+    await assertFails(getDocs(query(collection(as('boss'), 'attendance'), where('organisationId', '==', 'orgA'))))
+  })
+
+  it('changes a plan, trial, seats and suspension, and nothing else', async () => {
+    await assertSucceeds(updateDoc(doc(as('boss'), 'organisations/orgA'), { plan: 'pro', paidUntil: future, seats: 50, suspended: false, ownerNote: 'Paid by transfer' }))
+    await assertSucceeds(updateDoc(doc(as('boss'), 'organisations/orgA'), { plan: 'trial', trialStarted: Timestamp.now() }))
+    await assertFails(updateDoc(doc(as('boss'), 'organisations/orgA'), { name: 'Hijacked' }))
+    await assertFails(updateDoc(doc(as('boss'), 'organisations/orgA'), { plan: 'gold' }))
+    await assertFails(updateDoc(doc(as('boss'), 'organisations/orgA'), { seats: -1 }))
+  })
+
+  it('is the only one who can, and nobody can make themselves an owner', async () => {
+    await assertFails(getDocs(collection(as('adminA'), 'organisations')))
+    await assertFails(updateDoc(doc(as('adminA'), 'organisations/orgA'), { plan: 'pro', paidUntil: future }))
+    await assertFails(updateDoc(doc(as('adminA'), 'organisations/orgA'), { suspended: false }))
+    await assertFails(setDoc(doc(as('adminA'), 'platformOwners/adminA'), { name: 'Me' }))
+    await assertSucceeds(getDoc(doc(as('boss'), 'platformOwners/boss')))
+    await assertFails(getDoc(doc(as('adminA'), 'platformOwners/boss')))
+  })
+
+  it('keeps an append-only book of payments and changes', async () => {
+    const entry = { organisationId: 'orgA', kind: 'payment', amount: 99, note: 'DuitNow ref 123', by: 'boss', at: serverTimestamp() }
+    await assertSucceeds(setDoc(doc(as('boss'), 'billing/e1'), entry))
+    await assertFails(setDoc(doc(as('boss'), 'billing/e2'), { ...entry, by: 'someoneElse' }))
+    await assertFails(setDoc(doc(as('adminA'), 'billing/e3'), { ...entry, by: 'adminA' }))
+    await assertFails(updateDoc(doc(as('boss'), 'billing/e1'), { amount: 9 }))
+    await assertFails(deleteDoc(doc(as('boss'), 'billing/e1')))
+    await assertFails(getDocs(collection(as('adminA'), 'billing')))
+  })
+})

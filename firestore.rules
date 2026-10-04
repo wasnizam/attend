@@ -30,11 +30,26 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
     }
 
+    // The people who run Attend itself. Listed by hand in the Firebase console; nobody can add
+    // themselves from the app.
+    function platformOwner() {
+      return signedIn() && exists(/databases/$(database)/documents/platformOwners/$(request.auth.uid));
+    }
+
     // ---------- organisations ----------
 
     match /organisations/{orgId} {
       allow get: if signedIn()
-        && (resource.data.ownerId == request.auth.uid || memberOf(orgId));
+        && (resource.data.ownerId == request.auth.uid || memberOf(orgId) || platformOwner());
+      allow list: if platformOwner();
+      // The owner of Attend manages what a customer has: plan, trial, paid period, seats, suspension.
+      allow update: if platformOwner()
+        && onlyChanges(['plan', 'trialStarted', 'paidUntil', 'seats', 'suspended', 'ownerNote'])
+        && request.resource.data.get('plan', 'early') in ['early', 'trial', 'free', 'pro']
+        && request.resource.data.get('suspended', false) is bool
+        && (request.resource.data.get('seats', 0) is int && request.resource.data.get('seats', 0) >= 0)
+        && request.resource.data.get('ownerNote', '') is string
+        && request.resource.data.get('ownerNote', '').size() <= 2000;
       allow create: if signedIn()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.name is string
@@ -74,8 +89,8 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if signedIn()
-        && (request.auth.uid == userId || adminOf(resource.data.organisationId));
-      allow list: if adminOf(resource.data.organisationId);
+        && (request.auth.uid == userId || adminOf(resource.data.organisationId) || platformOwner());
+      allow list: if adminOf(resource.data.organisationId) || platformOwner();
 
       // A user creates their own profile exactly once, either as the admin of an
       // organisation they just created, or as a lecturer holding a valid invite code.
@@ -117,8 +132,9 @@ service cloud.firestore {
     // ---------- sessions ----------
 
     match /sessions/{sessionId} {
-      allow read: if memberOf(resource.data.organisationId)
-        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+      allow read: if (memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin'))
+        || platformOwner();
 
       allow create: if memberOf(request.resource.data.organisationId)
         && request.resource.data.ownerId == request.auth.uid
@@ -155,8 +171,9 @@ service cloud.firestore {
     // ---------- weekly timetable ----------
 
     match /classes/{classId} {
-      allow read: if memberOf(resource.data.organisationId)
-        && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
+      allow read: if (memberOf(resource.data.organisationId)
+        && (resource.data.ownerId == request.auth.uid || me().role == 'admin'))
+        || platformOwner();
 
       allow create: if memberOf(request.resource.data.organisationId)
         && request.resource.data.ownerId == request.auth.uid
@@ -514,6 +531,29 @@ service cloud.firestore {
         && request.resource.data.get('phoneChecked', false) is bool
         && request.resource.data.get('earlyOk', '') in ['', 'clinic', 'personal', 'work', 'other']
         && request.resource.data.get('halfDay', '') in ['', 'am', 'pm'];
+    }
+
+    // ---------- the owner of Attend ----------
+
+    match /platformOwners/{uid} {
+      // Each owner may check their own entry (to show the portal); entries are made in the console.
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Payments received and changes made by the owner: an append-only book.
+    match /billing/{entryId} {
+      allow read: if platformOwner();
+      allow create: if platformOwner()
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.at == request.time
+        && request.resource.data.organisationId is string
+        && request.resource.data.kind in ['payment', 'change']
+        && request.resource.data.get('amount', 0) is number
+        && request.resource.data.get('amount', 0) >= 0
+        && request.resource.data.get('note', '') is string
+        && request.resource.data.get('note', '').size() <= 500;
+      allow update, delete: if false;
     }
   }
 }

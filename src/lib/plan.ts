@@ -47,11 +47,21 @@ export const setPlan = (org: PlanFields | null | undefined) => {
 }
 
 export function activePlan(now = Date.now()): ActivePlan {
-  const { plan, trialStarted, paidUntil } = fields
-  if (plan === 'pro') return paidUntil && paidUntil.toMillis() > now ? 'pro' : 'free'
-  if (plan === 'trial') return trialStarted && trialStarted.toMillis() + TRIAL_DAYS * DAY > now ? 'trial' : 'free'
-  if (plan === 'free') return 'free'
-  return 'early'
+  return planOf(fields, now).active
+}
+
+/** Any organisation's plan right now, and when it ends (trial end or paid-until). */
+export function planOf(org: PlanFields, now = Date.now()): { active: ActivePlan; until: number | null; lapsed: boolean } {
+  const { plan, trialStarted, paidUntil } = org
+  if (plan === 'pro') {
+    const until = paidUntil?.toMillis() ?? null
+    return until && until > now ? { active: 'pro', until, lapsed: false } : { active: 'free', until, lapsed: true }
+  }
+  if (plan === 'trial') {
+    const until = trialStarted ? trialStarted.toMillis() + TRIAL_DAYS * DAY : null
+    return until && until > now ? { active: 'trial', until, lapsed: false } : { active: 'free', until, lapsed: true }
+  }
+  return { active: plan === 'free' ? 'free' : 'early', until: null, lapsed: false }
 }
 
 /** Whole days left of the Pro trial, or null when not on one. */

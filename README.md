@@ -397,3 +397,14 @@ week of September) and Studio KL (flexible hours), and prints what the September
 (`fetchManyAttendance`, `fetchManyClockOuts`, `fetchManyLeaveTypes`, using `sessionId in [...]` with
 the organisation and, for a manager, their own records), instead of three queries per day.
 
+**Owner portal (`/owner`).** For the people who run Attend, not for customers. An account is an
+owner when a document `platformOwners/{uid}` exists; it is created by hand in the Firebase console
+(the rules refuse it from the app). Owners can list every organisation, user, class and session (not
+attendance records), and change only `plan`, `trialStarted`, `paidUntil`, `seats`, `suspended` and
+`ownerNote` on an organisation. Tabs: Overview (customers, new and active in 30 days, paying, on trial,
+received this month, trials and paid periods ending, sign-ups per week, editions), Customers (search,
+filters, Excel export) with a page per customer (contact and usage, plan, trial +7/+14 days, record a
+payment that can extend Pro, private note, suspend / restore, history), and Payments by month. Every
+change and payment goes into `billing`, which is append-only. A suspended organisation sees "This
+account is paused" (owners are never locked out).
+
