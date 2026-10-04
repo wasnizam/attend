@@ -1084,4 +1084,9 @@ export const ms: Record<string, string> = {
   "The day-by-day grid shows up to two months. Pick a shorter period to see it.": "Grid hari demi hari menunjukkan sehingga dua bulan. Pilih tempoh lebih pendek untuk melihatnya.",
   "Printed {date}": "Dicetak {date}",
   "No office": "Tiada pejabat",
+  "all clocked out": "semua sudah keluar",
+  "{a} in now · {b} left": "{a} masih di sini · {b} sudah keluar",
+  "of the {n} who came": "daripada {n} yang hadir",
+  "left {time}": "keluar {time}",
+  "in now": "masih di sini",
 }

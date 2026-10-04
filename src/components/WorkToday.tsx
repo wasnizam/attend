@@ -126,22 +126,40 @@ function Day({ item, session, now }: { item: AgendaItem; session: Session; now: 
   const phones = new Map<string, number>()
   for (const r of came) if (r.device && !r.phoneChecked) phones.set(r.device, (phones.get(r.device) ?? 0) + 1)
   const shared = [...phones.values()].filter((n) => n > 1).reduce((a, n) => a + n, 0)
-  const figures: [string, number, string][] = [
-    [closed ? t('Did not clock out') : t('In now'), inNow.length, closed && inNow.length ? 'text-[#b25e00]' : 'text-ink'],
-    [t('Late'), late.length, late.length ? 'text-[#b25e00]' : 'text-ink'],
-    [t('Left'), left.length, 'text-ink'],
-    [closed ? t('Absent') : t('Not in yet'), missing.length, missing.length ? 'text-bad' : 'text-ink'],
-    [t('On leave or MC'), away.length, 'text-ink'],
+  const lateBy = new Map(late.map(({ r, by }) => [r.id, by]))
+  // Came + not in yet + on leave adds up to the whole list. Late, in now and left are parts of "came".
+  const figures: [string, number, string, string][] = [
+    [
+      t('Came'),
+      came.length,
+      'text-ink',
+      came.length === 0 ? '' : closed ? (inNow.length ? t('{n} did not clock out', { n: inNow.length }) : t('all clocked out')) : t('{a} in now · {b} left', { a: inNow.length, b: left.length }),
+    ],
+    [t('Late'), late.length, late.length ? 'text-[#b25e00]' : 'text-ink', came.length ? t('of the {n} who came', { n: came.length }) : ''],
+    [closed ? t('Absent') : t('Not in yet'), missing.length, missing.length ? 'text-bad' : 'text-ink', ''],
+    [t('On leave or MC'), away.length, 'text-ink', ''],
   ]
+  // What to say beside each person who came, so nobody's status is a guess.
+  const noteFor = (r: (typeof came)[number]) => {
+    const out = outs.data!.get(r.studentKey)
+    const bits: string[] = []
+    const by = lateBy.get(r.id)
+    if (by) bits.push(t('Late by {n} min', { n: by }))
+    else if (by === 0) bits.push(t('Late'))
+    if (r.halfDay) bits.push(t(r.halfDay === 'am' ? 'Half day (morning off)' : 'Half day (afternoon off)'))
+    bits.push(out ? t('left {time}', { time: formatClock(new Date(out.toMillis())) }) : closed ? t('no clock-out') : t('in now'))
+    return bits.join(' · ')
+  }
 
   return (
     <Card className="p-5">
       <Head item={item} chip={closed ? t('Closed') : t('Open')} tone={closed ? 'muted' : 'good'} />
-      <dl className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
-        {figures.map(([label, value, tone]) => (
+      <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {figures.map(([label, value, tone, note]) => (
           <div key={label} className="rounded-lg bg-canvas px-3 py-2.5">
             <dt className="text-xs text-muted">{label}</dt>
             <dd className={`tabular text-2xl font-semibold tracking-tight ${tone}`}>{value}</dd>
+            {note && <dd className="text-xs text-muted">{note}</dd>}
           </div>
         ))}
       </dl>
@@ -171,8 +189,11 @@ function Day({ item, session, now }: { item: AgendaItem; session: Session; now: 
             {came.map((r) => {
               const out = outs.data!.get(r.studentKey)
               return (
-                <li key={r.id} className="flex items-center justify-between gap-3 py-2">
-                  <span className="min-w-0 truncate">{r.studentName}</span>
+                <li key={r.id} className="flex items-start justify-between gap-3 py-2">
+                  <span className="min-w-0">
+                    <span className="block truncate">{r.studentName}</span>
+                    <span className={`block text-xs ${lateBy.has(r.id) ? 'text-[#b25e00]' : 'text-muted'}`}>{noteFor(r)}</span>
+                  </span>
                   <span className="tabular shrink-0 text-muted">
                     {formatClock(r.timestamp)}
                     {out ? ` – ${formatClock(new Date(out.toMillis()))} · ${formatDuration(countedMinutes(r.timestamp?.toMillis() ?? out.toMillis(), out.toMillis(), session))}` : ''}
