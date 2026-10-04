@@ -46,9 +46,17 @@ export function subscribePhones(organisationId: string, onData: (phones: Phones)
 }
 
 /** A manager confirms that this phone now belongs to this person (a new phone, or a shared one fixed). */
-export async function approvePhone(organisationId: string, staffKey: string, device: string, viewer: UserProfile, previous?: string) {
+export async function approvePhone(
+  organisationId: string,
+  staffKey: string,
+  device: string,
+  viewer: UserProfile,
+  previous?: string,
+  /** The staff list the person is on: its manager may look after the phone from then on. */
+  listId = '',
+) {
   const batch = writeBatch(db)
-  const body = { organisationId, staffKey, device, sessionId: '', by: viewer.id, at: serverTimestamp() }
+  const body = { organisationId, staffKey, device, sessionId: '', listId, by: viewer.id, at: serverTimestamp() }
   batch.set(doc(db, 'phones', `${organisationId}_${staffKey}`), body)
   batch.set(doc(db, 'devices', `${organisationId}_${device}`), body)
   // Their old phone is no longer theirs (only passed when that record exists: deleting a missing

@@ -5,7 +5,7 @@ import { Button, Card, EmptyState, ErrorNote, Field, PageLoader, friendlyError }
 import { type Phones, resetPhone, subscribePhones } from '../data/phones'
 import { addToRoster, removeFromRoster } from '../data/roster'
 import { useLive } from '../hooks/useLive'
-import { useMyClasses } from '../hooks/useClasses'
+import { useEditableClasses } from '../hooks/useClasses'
 import { useRoster } from '../hooks/useRoster'
 import { downloadCsv, rosterCsv, slug } from '../lib/csv'
 import { studentKey } from '../lib/format'
@@ -15,7 +15,7 @@ import type { WeeklyClass } from '../lib/types'
 
 export function Roster() {
   const { classId } = useParams()
-  const classes = useMyClasses()
+  const classes = useEditableClasses()
   if (classes.loading) return <PageLoader />
   const cls = classes.data?.find((c) => c.id === classId)
   if (!cls) {

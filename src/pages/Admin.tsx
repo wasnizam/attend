@@ -8,7 +8,7 @@ import { subscribeOrgSessions } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
 import { useLive } from '../hooks/useLive'
 import { useNow } from '../hooks/useSessions'
-import { subscribeOrgClasses } from '../data/classes'
+import { handOver, subscribeOrgClasses } from '../data/classes'
 import { PhoneReview } from '../components/PhoneReview'
 import { t } from '../lib/i18n'
 import { has } from '../lib/purpose'
@@ -305,7 +305,7 @@ export default function Admin() {
         </div>
       )}
 
-      {tab === 'phones' && has('clock') && validRange && !failed && !loading && <PhoneReview records={attendance.data ?? []} rangeLabel={rangeLabel} />}
+      {tab === 'phones' && has('clock') && validRange && !failed && !loading && <PhoneReview records={attendance.data ?? []} rangeLabel={rangeLabel} listOf={new Map(allSessions.map((x) => [x.id, x.rosterId ?? '']))} />}
 
       {tab === 'users' && <Users users={users} organisation={organisation} me={profile.id} />}
     </div>
@@ -470,7 +470,7 @@ function Offices() {
     <Card className="overflow-hidden">
       <div className="px-5 pt-5">
         <h2 className="font-semibold">{t('Offices and who runs them')}</h2>
-        <p className="mt-1 text-sm text-muted">{t('To give an office to a manager, open its working hours and use “Who manages this office”. It must be yours to hand over.')}</p>
+        <p className="mt-1 text-sm text-muted">{t('To give an office to a manager, open it with Edit and use “Who manages this office”.')}</p>
       </div>
       {list.length === 0 ? (
         <p className="px-5 py-4 text-sm text-muted">{t('No offices yet.')}</p>
@@ -487,6 +487,20 @@ function Offices() {
               <span className="shrink-0 text-right">
                 <span className="block text-xs text-muted">{t('Run by')}</span>
                 <span className="font-medium">{c.ownerId === profile.id ? t('You') : c.ownerName}</span>
+                <span className="mt-1 flex justify-end gap-3 text-xs font-semibold">
+                  <Link to={`/app/timetable/${c.id}`} className="text-accent hover:underline">{t('Edit')}</Link>
+                  <Link to={`/app/timetable/${c.id}/students`} className="text-accent hover:underline">{t('Staff list')}</Link>
+                  {c.ownerId !== profile.id && (
+                    <button
+                      className="text-accent hover:underline"
+                      onClick={() => {
+                        if (window.confirm(t('Take “{name}” back from {person}? From its next day, you run it.', { name: c.venue || c.name, person: c.ownerName }))) handOver(c, profile).catch(() => {})
+                      }}
+                    >
+                      {t('Take back')}
+                    </button>
+                  )}
+                </span>
               </span>
             </li>
           ))}

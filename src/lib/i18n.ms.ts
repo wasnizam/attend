@@ -971,4 +971,9 @@ export const ms: Record<string, string> = {
   "Run by": "Diuruskan oleh",
   "{n} staff": "{n} kakitangan",
   "It opens by itself on the door screen, 30 minutes before the start. 1 person is expected.": "Ia dibuka sendiri di skrin pintu, 30 minit sebelum waktu mula. 1 orang dijangka hadir.",
+  "{name} (now)": "{name} (sekarang)",
+  "Edit": "Sunting",
+  "Take back": "Ambil balik",
+  "Take “{name}” back from {person}? From its next day, you run it.": "Ambil balik “{name}” daripada {person}? Mulai hari seterusnya, anda yang menguruskannya.",
+  "To give an office to a manager, open it with Edit and use “Who manages this office”.": "Untuk menyerahkan pejabat kepada pengurus, bukanya dengan Sunting dan guna “Siapa menguruskan pejabat ini”.",
 }

@@ -159,8 +159,9 @@ service cloud.firestore {
         && request.resource.data.ownerId == request.auth.uid
         && validClass();
 
+      // Its manager edits it; so can an admin, who owns the company (and can take an office back).
       allow update: if memberOf(resource.data.organisationId)
-        && resource.data.ownerId == request.auth.uid
+        && (resource.data.ownerId == request.auth.uid || adminOf(resource.data.organisationId))
         && validClass()
         && (
           unchanged(['ownerId', 'organisationId', 'createdAt'])
@@ -184,8 +185,8 @@ service cloud.firestore {
         && (get(/databases/$(database)/documents/classes/$(rosterId)).data.ownerId == request.auth.uid || me().role == 'admin');
 
       allow create, update: if memberOf(request.resource.data.organisationId)
-        && request.resource.data.ownerId == request.auth.uid
-        && get(/databases/$(database)/documents/classes/$(rosterId)).data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == get(/databases/$(database)/documents/classes/$(rosterId)).data.ownerId
+        && (request.resource.data.ownerId == request.auth.uid || adminOf(request.resource.data.organisationId))
         && request.resource.data.keys().hasOnly(['studentKey', 'studentId', 'studentName', 'department', 'organisationId', 'ownerId'])
         && request.resource.data.get('department', '') is string
         && request.resource.data.get('department', '').size() <= 60
@@ -338,16 +339,26 @@ service cloud.firestore {
     // A person's first clock-in registers their phone, in the same write as the check-in.
     function selfRegistration(d) {
       let att = getAfter(/databases/$(database)/documents/attendance/$(d.sessionId + '_' + d.staffKey)).data;
+      let s = get(/databases/$(database)/documents/sessions/$(d.sessionId)).data;
       return d.by == 'self'
         && att.device == d.device
-        && att.organisationId == d.organisationId;
+        && att.organisationId == d.organisationId
+        // Which staff list the person was on, so that list's manager can look after the phone.
+        && ((d.listId == '' && s.get('rosterId', null) == null) || d.listId == s.get('rosterId', null));
     }
-    // A manager approves a phone for someone.
+    // An admin, or the manager whose staff list the person is on.
+    function canManagePhone(org, listId, staffKey) {
+      return adminOf(org)
+        || (memberOf(org) && listId is string && listId != ''
+            && get(/databases/$(database)/documents/classes/$(listId)).data.ownerId == request.auth.uid
+            && exists(/databases/$(database)/documents/rosters/$(listId)/students/$(staffKey)));
+    }
     function managerApproval(d) {
-      return memberOf(d.organisationId) && d.by == request.auth.uid;
+      return d.by == request.auth.uid && canManagePhone(d.organisationId, d.listId, d.staffKey);
     }
     function validPhone(d) {
-      return d.keys().hasOnly(['organisationId', 'staffKey', 'device', 'sessionId', 'by', 'at'])
+      return d.keys().hasOnly(['organisationId', 'staffKey', 'device', 'sessionId', 'listId', 'by', 'at'])
+        && d.listId is string
         && d.at == request.time
         && d.device is string && d.device.matches('^[A-Z0-9]{8,40}$')
         && d.staffKey is string && d.staffKey.matches('^[A-Z0-9._-]{1,40}$')
@@ -360,7 +371,8 @@ service cloud.firestore {
       allow update: if memberOf(resource.data.organisationId)
         && validPhone(request.resource.data) && managerApproval(request.resource.data)
         && phoneId == request.resource.data.organisationId + '_' + request.resource.data.staffKey;
-      allow read, delete: if memberOf(resource.data.organisationId);
+      allow read: if memberOf(resource.data.organisationId);
+      allow delete: if canManagePhone(resource.data.organisationId, resource.data.get('listId', ''), resource.data.staffKey);
     }
     match /devices/{deviceId} {
       allow create: if validPhone(request.resource.data)
@@ -368,7 +380,8 @@ service cloud.firestore {
       allow update: if memberOf(resource.data.organisationId)
         && validPhone(request.resource.data) && managerApproval(request.resource.data)
         && deviceId == request.resource.data.organisationId + '_' + request.resource.data.device;
-      allow read, delete: if memberOf(resource.data.organisationId);
+      allow read: if memberOf(resource.data.organisationId);
+      allow delete: if canManagePhone(resource.data.organisationId, resource.data.get('listId', ''), resource.data.staffKey);
     }
 
     // ---------- shift plans (workplace) ----------
@@ -378,12 +391,12 @@ service cloud.firestore {
       allow read, delete: if memberOf(resource.data.organisationId)
         && (get(/databases/$(database)/documents/classes/$(resource.data.rosterId)).data.ownerId == request.auth.uid || me().role == 'admin');
       allow create, update: if memberOf(request.resource.data.organisationId)
-        && request.resource.data.ownerId == request.auth.uid
+        && (request.resource.data.ownerId == request.auth.uid || adminOf(request.resource.data.organisationId))
         && request.resource.data.keys().hasOnly(['organisationId', 'ownerId', 'rosterId', 'week', 'cells', 'updatedAt'])
         && planId == request.resource.data.rosterId + '_' + request.resource.data.week
         && request.resource.data.week.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
         && request.resource.data.cells is map
-        && get(/databases/$(database)/documents/classes/$(request.resource.data.rosterId)).data.ownerId == request.auth.uid;
+        && get(/databases/$(database)/documents/classes/$(request.resource.data.rosterId)).data.ownerId == request.resource.data.ownerId;
     }
 
     // ---------- clock-out (workplace) ----------

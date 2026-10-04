@@ -8,7 +8,7 @@ import { useLive } from '../hooks/useLive'
 import type { UserProfile } from '../lib/types'
 import { createSession } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
-import { useMyClasses } from '../hooks/useClasses'
+import { useEditableClasses, useMyClasses } from '../hooks/useClasses'
 import { KINDS, KIND_LABEL, WEEK, addDays, classSlots, dayName, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import { overLimit } from '../lib/plan'
@@ -26,7 +26,8 @@ function defaultTimes() {
 /** Route wrapper: a blank form, or the form pre-filled with a timetable class to edit. */
 export function NewSession() {
   const { classId } = useParams()
-  const classes = useMyClasses()
+  // An admin can open any office's working hours; anyone else, their own.
+  const classes = useEditableClasses()
   if (!classId) return <SessionForm />
   if (classes.loading) return <PageLoader />
   const editing = classes.data?.find((c) => c.id === classId)
@@ -543,9 +544,9 @@ function HandOver({ cls, onDone }: { cls: WeeklyClass; onDone: () => void }) {
       <p className="mt-1 text-xs text-muted">{t('A branch manager sees only the office handed to them. Invite them from the Admin page first.')}</p>
       <div className="mt-3 flex gap-2">
         <select value={to} onChange={(e) => setTo(e.target.value)} className={inputClass}>
-          <option value="">{t('Me ({name})', { name: cls.ownerName })}</option>
+          <option value="">{cls.ownerId === profile.id ? t('Me ({name})', { name: cls.ownerName }) : t('{name} (now)', { name: cls.ownerName })}</option>
           {others.map((u) => (
-            <option key={u.id} value={u.id}>{u.name}</option>
+            <option key={u.id} value={u.id}>{u.id === profile.id ? t('Me ({name})', { name: u.name }) : u.name}</option>
           ))}
         </select>
         <Button type="button" variant="secondary" busy={busy} disabled={!to} onClick={give}>{t('Hand over')}</Button>

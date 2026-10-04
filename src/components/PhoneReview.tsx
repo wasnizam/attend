@@ -13,7 +13,7 @@ import { Card, EmptyState, ErrorNote, PageLoader, friendlyError } from './ui'
  * that is not the person's own, with the same buttons as on the day's list, and each person's
  * registered phone with a way to forget it.
  */
-export function PhoneReview({ records, rangeLabel }: { records: AttendanceRecord[]; rangeLabel: string }) {
+export function PhoneReview({ records, rangeLabel, listOf }: { records: AttendanceRecord[]; rangeLabel: string; /** Session ID -> its staff list. */ listOf: Map<string, string> }) {
   const profile = useProfile()
   const org = profile.organisationId
   const phones = useLive<Phones>((onData, onError) => subscribePhones(org, onData, onError), [org])
@@ -80,12 +80,12 @@ export function PhoneReview({ records, rangeLabel }: { records: AttendanceRecord
                       <td className="py-2.5 pr-5 pl-2">
                         <div className="flex flex-col items-start gap-1">
                           {f.kind === 'unknown' && (
-                            <button disabled={busy} className={button} onClick={() => run(() => approvePhone(org, r.studentKey, r.device!, profile, data.byDevice.get(f.registered) === r.studentKey ? f.registered : undefined))}>
+                            <button disabled={busy} className={button} onClick={() => run(() => approvePhone(org, r.studentKey, r.device!, profile, data.byDevice.get(f.registered) === r.studentKey ? f.registered : undefined, listOf.get(r.sessionId) ?? ''))}>
                               {t('This is their new phone')}
                             </button>
                           )}
                           {f.kind === 'other' && (
-                            <button disabled={busy} className={button} onClick={() => run(() => approvePhone(org, r.studentKey, r.device!, profile, data.byStaff.get(r.studentKey)))}>
+                            <button disabled={busy} className={button} onClick={() => run(() => approvePhone(org, r.studentKey, r.device!, profile, data.byStaff.get(r.studentKey), listOf.get(r.sessionId) ?? ''))}>
                               {t('It is {name}’s phone now', { name: r.studentName })}
                             </button>
                           )}

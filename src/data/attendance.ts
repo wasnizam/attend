@@ -111,7 +111,7 @@ export async function submitAttendance(
       batch.set(ref, record)
       if (register && device) {
         // A person's first clock-in makes this phone theirs.
-        const body = { organisationId: link.organisationId, staffKey: key, device, sessionId: link.sessionId, by: 'self', at: serverTimestamp() }
+        const body = { organisationId: link.organisationId, staffKey: key, device, sessionId: link.sessionId, listId: link.rosterId ?? '', by: 'self', at: serverTimestamp() }
         batch.set(doc(db, 'phones', `${link.organisationId}_${key}`), body)
         batch.set(doc(db, 'devices', `${link.organisationId}_${device}`), body)
       }

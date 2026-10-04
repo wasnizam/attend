@@ -209,6 +209,11 @@ absent), the monthly report covers every office for an admin (`subscribeOrgSessi
 Users tab lists the offices with who runs each. A manager who joins through an invite lands on
 Today ("no office is yours yet"), not on company setup, which is for admins only.
 
+An admin can open, edit and take back any office (the rules accept the admin as well as the
+office's manager on classes, staff lists and shift plans). Phone approvals and resets are
+limited to an admin, or the manager whose staff list the person is on (`canManagePhone`; each
+phone record keeps that list as `listId`).
+
 **Office first, shifts as an extra.** A workplace starts as a plain office: the menu reads
 "Working hours", the form opens on Monday to Friday, nine to five, and nothing mentions shifts.
 An admin ticks "We work in shifts" on the Account page (`organisations.shifts`, `has('shifts')`)

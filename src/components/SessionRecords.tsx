@@ -82,12 +82,12 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
         r.id,
         <span className="block">
           {p.kind === 'unknown' && (
-            <button type="button" className={button} onClick={() => run(() => approvePhone(session.organisationId, r.studentKey, r.device!, viewer, phones.data?.byDevice.get(p.registered) === r.studentKey ? p.registered : undefined))}>
+            <button type="button" className={button} onClick={() => run(() => approvePhone(session.organisationId, r.studentKey, r.device!, viewer, phones.data?.byDevice.get(p.registered) === r.studentKey ? p.registered : undefined, session.rosterId ?? ''))}>
               {t('This is their new phone')}
             </button>
           )}
           {p.kind === 'other' && (
-            <button type="button" className={button} onClick={() => run(() => approvePhone(session.organisationId, r.studentKey, r.device!, viewer, phones.data?.byStaff.get(r.studentKey)))}>
+            <button type="button" className={button} onClick={() => run(() => approvePhone(session.organisationId, r.studentKey, r.device!, viewer, phones.data?.byStaff.get(r.studentKey), session.rosterId ?? ''))}>
               {t('It is {name}’s phone now', { name: r.studentName })}
             </button>
           )}

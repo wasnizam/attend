@@ -644,7 +644,7 @@ describe('registered phones', () => {
   const reg = (db: ReturnType<typeof anon>, sessionId: string, key: string, device: string, extra = {}) => {
     const batch = writeBatch(db)
     batch.set(doc(db, `attendance/${sessionId}_${key}`), record(sessionId, key, { device, ...extra }))
-    const body = { organisationId: 'orgA', staffKey: key, device, sessionId, by: 'self', at: serverTimestamp() }
+    const body = { organisationId: 'orgA', staffKey: key, device, sessionId, listId: '', by: 'self', at: serverTimestamp() }
     batch.set(doc(db, `phones/orgA_${key}`), body)
     batch.set(doc(db, `devices/orgA_${device}`), body)
     return batch.commit()
@@ -663,7 +663,7 @@ describe('registered phones', () => {
   })
 
   it('a phone cannot be registered without a check-in from it', async () => {
-    const body = { organisationId: 'orgA', staffKey: 'ST020', device: 'PHONEBBBBBBBBBBB', sessionId: 'live', by: 'self', at: serverTimestamp() }
+    const body = { organisationId: 'orgA', staffKey: 'ST020', device: 'PHONEBBBBBBBBBBB', sessionId: 'live', listId: '', by: 'self', at: serverTimestamp() }
     await assertFails(setDoc(doc(anon(), 'phones/orgA_ST020'), body))
   })
 
@@ -677,15 +677,39 @@ describe('registered phones', () => {
     await assertFails(reg(anon(), 'liveB', 'ST031', 'PHONECCCCCCCCCCC'))
   })
 
-  it('a manager approves a new phone; only members can see or change phones', async () => {
+  it('an admin, or the manager of the person’s own list, approves or resets a phone; nobody else', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'classes/shift'), { organisationId: 'orgA', ownerId: 'lecA', name: 'Shift' })
+      await setDoc(doc(ctx.firestore(), 'rosters/shift/students/ST040'), { studentKey: 'ST040', studentId: 'ST040', studentName: 'A', organisationId: 'orgA', ownerId: 'lecA' })
+    })
     await assertSucceeds(reg(anon(), 'live', 'ST040', 'PHONEDDDDDDDDDDD'))
-    const body = { organisationId: 'orgA', staffKey: 'ST040', device: 'PHONEEEEEEEEEEEE', sessionId: '', by: 'lecA', at: serverTimestamp() }
-    await assertSucceeds(setDoc(doc(as('lecA'), 'phones/orgA_ST040'), body))
-    await assertFails(setDoc(doc(as('lecB'), 'phones/orgA_ST040'), { ...body, by: 'lecB' }))
-    await assertFails(setDoc(doc(anon(), 'phones/orgA_ST040'), { ...body, by: 'self' }))
+    const body = (by: string, listId: string) => ({ organisationId: 'orgA', staffKey: 'ST040', device: 'PHONEEEEEEEEEEEE', sessionId: '', listId, by, at: serverTimestamp() })
+    // Another manager in the company, whose list the person is not on: refused.
+    await assertFails(setDoc(doc(as('lecA2'), 'phones/orgA_ST040'), body('lecA2', 'shift')))
+    await assertFails(setDoc(doc(as('lecA2'), 'phones/orgA_ST040'), body('lecA2', '')))
+    await assertFails(setDoc(doc(as('lecB'), 'phones/orgA_ST040'), body('lecB', 'shift')))
+    await assertFails(setDoc(doc(anon(), 'phones/orgA_ST040'), body('self', 'shift')))
+    // The person's own manager, and the admin: allowed.
+    await assertSucceeds(setDoc(doc(as('lecA'), 'phones/orgA_ST040'), body('lecA', 'shift')))
+    await assertSucceeds(setDoc(doc(as('adminA'), 'phones/orgA_ST040'), body('adminA', '')))
     await assertSucceeds(getDoc(doc(as('lecA'), 'phones/orgA_ST040')))
     await assertFails(getDoc(doc(anon(), 'phones/orgA_ST040')))
     await assertFails(getDoc(doc(as('adminB'), 'phones/orgA_ST040')))
+    // Reset: only the admin now, because the admin's approval left no list on it.
+    await assertFails(deleteDoc(doc(as('lecA2'), 'phones/orgA_ST040')))
+    await assertSucceeds(deleteDoc(doc(as('adminA'), 'phones/orgA_ST040')))
+  })
+
+  it('an admin can edit any office and its staff list, and take an office back', async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'classes/branch'), { organisationId: 'orgA', ownerId: 'lecA', ownerName: 'A', name: 'Branch', slots: [{ day: 1, startTime: '09:00', endTime: '17:00' }], days: [1] }),
+    )
+    await assertSucceeds(updateDoc(doc(as('adminA'), 'classes/branch'), { name: 'Branch office' }))
+    await assertFails(updateDoc(doc(as('lecA2'), 'classes/branch'), { name: 'Mine' }))
+    await assertSucceeds(setDoc(doc(as('adminA'), 'rosters/branch/students/E9'), { studentKey: 'E9', studentId: 'E9', studentName: 'B', organisationId: 'orgA', ownerId: 'lecA' }))
+    await assertFails(setDoc(doc(as('adminA'), 'rosters/branch/students/E8'), { studentKey: 'E8', studentId: 'E8', studentName: 'C', organisationId: 'orgA', ownerId: 'adminA' }))
+    await assertSucceeds(updateDoc(doc(as('adminA'), 'classes/branch'), { ownerId: 'adminA', ownerName: 'Admin' }))
+    await assertFails(updateDoc(doc(as('adminB'), 'classes/branch'), { ownerId: 'adminB', ownerName: 'B' }))
   })
 })
 
