@@ -135,3 +135,23 @@ describe('early arrival, early leaving and kinds of leave', () => {
     expect(e1.leaveBy).toEqual({ annual: 0, emergency: 0, unpaid: 1, other: 1 })
   })
 })
+
+describe('allowed early leave and half days', () => {
+  it('keeps an allowed early leave apart, and a half day is neither late nor early', () => {
+    const rows = buildPayroll(
+      [session('d1', '2026-10-01'), session('d2', '2026-10-02')],
+      new Map([
+        ['d1', [rec('E1', '2026-10-01', '09:00', { earlyOk: 'clinic' }), rec('E2', '2026-10-01', '13:00', { halfDay: 'am' })]],
+        ['d2', [rec('E1', '2026-10-02', '09:00', { halfDay: 'pm' })]],
+      ]),
+      new Map([
+        ['d1', new Map([['E1', at('2026-10-01', '15:00')], ['E2', at('2026-10-01', '18:00')]])],
+        ['d2', new Map([['E1', at('2026-10-02', '13:00')]])],
+      ]),
+      roster,
+    )
+    const by = Object.fromEntries(rows.map((r) => [r.key, r]))
+    expect([by.E1.early, by.E1.earlyApproved, by.E1.halfDays]).toEqual([0, 1, 1])
+    expect([by.E2.late, by.E2.halfDays]).toEqual([0, 1])
+  })
+})

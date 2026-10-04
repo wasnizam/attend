@@ -502,12 +502,15 @@ service cloud.firestore {
       allow delete: if memberOf(resource.data.organisationId)
         && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
 
-      // Only the lecturer or manager changes a record: its status, or that its phone was checked.
+      // Only the lecturer or manager changes a record: its status, that its phone was checked,
+      // an early leave they allowed, or half a day off.
       allow update: if memberOf(resource.data.organisationId)
         && (resource.data.ownerId == request.auth.uid || me().role == 'admin')
-        && onlyChanges(['status', 'phoneChecked'])
+        && onlyChanges(['status', 'phoneChecked', 'earlyOk', 'halfDay'])
         && request.resource.data.status in ['present', 'late', 'excused', 'mc']
-        && request.resource.data.get('phoneChecked', false) is bool;
+        && request.resource.data.get('phoneChecked', false) is bool
+        && request.resource.data.get('earlyOk', '') in ['', 'clinic', 'personal', 'work', 'other']
+        && request.resource.data.get('halfDay', '') in ['', 'am', 'pm'];
     }
   }
 }

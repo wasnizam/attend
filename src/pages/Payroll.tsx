@@ -93,8 +93,8 @@ export function Payroll() {
     downloadCsv(
       `payroll-${month}${department ? `-${department.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : ''}-excel.csv`,
       [
-        ['Office', 'Department', 'Student ID', 'Student Name', 'Days worked', 'Hours', 'Overtime hours', 'Late', 'Late minutes', 'Left early', 'Early minutes', 'MC', 'Excused', ...LEAVE_KINDS.map((k) => LEAVE_LABEL[k]), 'Absent', 'No clock-out', 'Wrong shift'].map((h) => t(h)),
-        ...shown.map((r) => [r.office, r.department, r.staffId, r.name, r.days, hours(r.minutes), hours(r.overtime), r.late, Math.round(r.lateMinutes), r.early, Math.round(r.earlyMinutes), r.mc, r.leave, ...LEAVE_KINDS.map((k) => r.leaveBy[k]), r.absent, r.noClockOut, r.wrongShift]),
+        ['Office', 'Department', 'Student ID', 'Student Name', 'Days worked', 'Hours', 'Overtime hours', 'Late', 'Late minutes', 'Left early', 'Early minutes', 'Allowed to leave early', 'Half days', 'MC', 'Excused', ...LEAVE_KINDS.map((k) => LEAVE_LABEL[k]), 'Absent', 'No clock-out', 'Wrong shift'].map((h) => t(h)),
+        ...shown.map((r) => [r.office, r.department, r.staffId, r.name, r.days, hours(r.minutes), hours(r.overtime), r.late, Math.round(r.lateMinutes), r.early, Math.round(r.earlyMinutes), r.earlyApproved, r.halfDays, r.mc, r.leave, ...LEAVE_KINDS.map((k) => r.leaveBy[k]), r.absent, r.noClockOut, r.wrongShift]),
       ]
         .map((line) => line.map(csvCell).join(','))
         .join('\r\n') + '\r\n',
@@ -201,10 +201,12 @@ export function Payroll() {
                         <td className="px-2 py-2.5 text-right whitespace-nowrap">
                           {r.early}
                           {r.earlyMinutes >= 1 && <span className="text-xs text-muted"> · {Math.round(r.earlyMinutes)} min</span>}
+                          {r.earlyApproved > 0 && <span className="block text-xs text-muted">{t('+{n} allowed', { n: r.earlyApproved })}</span>}
                         </td>
                         <td className="px-2 py-2.5 text-right">{r.mc}</td>
                         <td className="px-2 py-2.5 text-right">
                           {r.leave}
+                          {r.halfDays > 0 && <span className="block text-xs text-muted">{t(r.halfDays === 1 ? '+1 half day' : '+{n} half days', { n: r.halfDays })}</span>}
                           {r.leave > 0 && (
                             <span className="block text-xs text-muted">
                               {LEAVE_KINDS.filter((k) => r.leaveBy[k] > 0 && (k !== 'other' || r.leaveBy.other !== r.leave)).map((k) => `${r.leaveBy[k]} ${t(SHORT_LEAVE[k])}`).join(', ')}

@@ -1,4 +1,4 @@
-import { addDays, countedMinutes, endOf, minutesEarly, minutesLate, parseDate } from './format'
+import { addDays, countedMinutes, earlyFor, endOf, lateFor, parseDate } from './format'
 
 /** The Monday that starts the week a date falls in. */
 const mondayOf = (date: string) => addDays(date, -((parseDate(date).getDay() + 6) % 7))
@@ -32,6 +32,10 @@ export interface PayrollRow {
   /** Days they clocked out before the end, and by how many minutes in all. */
   early: number
   earlyMinutes: number
+  /** Days they left early with the manager's leave, kept apart from `early`. */
+  earlyApproved: number
+  /** Half days off (morning or afternoon); each is also a day worked. */
+  halfDays: number
   /** `leave`, split by kind. Leave recorded without a kind is under `other`. */
   leaveBy: Record<LeaveKind, number>
 }
@@ -58,7 +62,7 @@ export function buildPayroll(
   const people = new Map<string, PayrollRow>()
   const person = (key: string, staffId: string, name: string) => {
     if (!people.has(key)) {
-      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, wrongShift: 0, early: 0, earlyMinutes: 0, leaveBy: { annual: 0, emergency: 0, unpaid: 0, other: 0 } })
+      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, wrongShift: 0, early: 0, earlyMinutes: 0, earlyApproved: 0, halfDays: 0, leaveBy: { annual: 0, emergency: 0, unpaid: 0, other: 0 } })
     }
     return people.get(key)!
   }
@@ -87,8 +91,9 @@ export function buildPayroll(
       }
       else {
         row.days += 1
-        const late = r.method === 'manual' ? 0 : minutesLate(r.timestamp, session)
-        if (late || status === 'late') {
+        if (r.halfDay) row.halfDays += 1
+        const late = lateFor(r, session)
+        if (late || (status === 'late' && r.halfDay !== 'am')) {
           row.late += 1
           row.lateMinutes += late
         }
@@ -96,8 +101,9 @@ export function buildPayroll(
         if (out && r.timestamp) {
           const from = r.timestamp.toMillis()
           const to = Math.max(from, out.toMillis())
-          const gone = minutesEarly(out, session)
-          if (gone) {
+          const gone = earlyFor(r, out, session)
+          if (gone && r.earlyOk) row.earlyApproved += 1
+          else if (gone) {
             row.early += 1
             row.earlyMinutes += gone
           }

@@ -1,7 +1,7 @@
 import { has } from './purpose'
 import type { Timestamp } from 'firebase/firestore'
 import { locale, t } from './i18n'
-import type { CourseDetails, Session, SessionStatus, Slot, WeeklyClass } from './types'
+import type { CourseDetails, Session, SessionStatus, Slot, WeeklyClass, AttendanceRecord } from './types'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -200,6 +200,17 @@ export function countedMinutes(
   const worked = Math.max(0, clockOut - from) / 60_000
   return worked > BREAK_AFTER_MIN ? Math.max(0, worked - (session.breakMin ?? 0)) : worked
 }
+
+/** Late for this record: none if added by hand or on a morning off. */
+export const lateFor = (r: Pick<AttendanceRecord, 'method' | 'halfDay' | 'timestamp'>, s: Pick<Session, 'date' | 'startTime' | 'graceMin' | 'flexible'>) =>
+  r.method === 'manual' || r.halfDay === 'am' ? 0 : minutesLate(r.timestamp, s)
+
+/** Early leaving for this record: none on an afternoon off. (Allowed early leave is still counted, as allowed.) */
+export const earlyFor = (
+  r: Pick<AttendanceRecord, 'halfDay'>,
+  out: { toMillis(): number } | null | undefined,
+  s: Pick<Session, 'date' | 'startTime' | 'endTime' | 'graceMin' | 'flexible'>,
+) => (r.halfDay === 'pm' ? 0 : minutesEarly(out, s))
 
 /** When something ends. An end time at or before the start means it runs past midnight (a night shift). */
 export function endOf(item: { date: string; startTime: string; endTime: string }): Date {

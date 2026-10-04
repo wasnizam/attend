@@ -214,6 +214,12 @@ office's manager on classes, staff lists and shift plans). Phone approvals and r
 limited to an admin, or the manager whose staff list the person is on (`canManagePhone`; each
 phone record keeps that list as `listId`).
 
+**Early leave with permission, and half days.** On the day's list a manager can allow an early
+leave with a reason (`earlyOk`: clinic, personal, work outside, other) and mark a morning or an
+afternoon off (`halfDay`). A morning off is never late and an afternoon off never early
+(`lateFor`, `earlyFor`); the monthly report keeps allowed early leave and half days apart from
+plain early leaving.
+
 **The same numbers on every page.** Hours shown anywhere to a manager come from one function,
 `countedMinutes` (start-time rule, unpaid break); the staff member's own phone shows plain time
 at work. A staff list change updates the open day's list and expected number. Class reports

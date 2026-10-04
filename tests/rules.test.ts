@@ -722,3 +722,14 @@ describe('clearing a phone flag', () => {
     await assertFails(updateDoc(doc(as('lecA'), 'attendance/live_ST001'), { phoneChecked: true, studentName: 'Other' }))
   })
 })
+
+describe('early leave and half days', () => {
+  it('the manager may allow an early leave or set a half day, with known values only', async () => {
+    await assertSucceeds(updateDoc(doc(as('lecA'), 'attendance/live_ST001'), { earlyOk: 'clinic' }))
+    await assertSucceeds(updateDoc(doc(as('lecA'), 'attendance/live_ST001'), { halfDay: 'pm' }))
+    await assertFails(updateDoc(doc(as('lecA'), 'attendance/live_ST001'), { earlyOk: 'holiday' }))
+    await assertFails(updateDoc(doc(as('lecA'), 'attendance/live_ST001'), { halfDay: 'noon' }))
+    await assertFails(updateDoc(doc(anon(), 'attendance/live_ST001'), { earlyOk: 'clinic' }))
+    await assertFails(updateDoc(doc(as('lecA2'), 'attendance/live_ST001'), { halfDay: 'am' }))
+  })
+})

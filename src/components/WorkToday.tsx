@@ -8,7 +8,7 @@ import { useLive } from '../hooks/useLive'
 import { useAbsentees } from '../hooks/useRoster'
 import { useSessionAttendance } from '../hooks/useSessions'
 import type { AgendaItem } from '../lib/agenda'
-import { countedMinutes, endOf, formatClock, formatDuration, formatRange, isAway, minutesLate } from '../lib/format'
+import { countedMinutes, endOf, formatClock, formatDuration, formatRange, isAway, lateFor } from '../lib/format'
 import { t } from '../lib/i18n'
 import type { Session } from '../lib/types'
 import { Button, Card, ErrorNote, Spinner, friendlyError } from './ui'
@@ -121,7 +121,7 @@ function Day({ item, session, now }: { item: AgendaItem; session: Session; now: 
   const away = records.data.filter((r) => isAway(r.status))
   const left = came.filter((r) => outs.data!.has(r.studentKey))
   const inNow = came.filter((r) => !outs.data!.has(r.studentKey))
-  const late = came.map((r) => ({ r, by: r.method === 'manual' ? 0 : minutesLate(r.timestamp, session) })).filter((x) => x.by > 0 || x.r.status === 'late')
+  const late = came.map((r) => ({ r, by: lateFor(r, session) })).filter((x) => x.by > 0 || (x.r.status === 'late' && x.r.halfDay !== 'am'))
   // The same phone label on more than one person today.
   const phones = new Map<string, number>()
   for (const r of came) if (r.device && !r.phoneChecked) phones.set(r.device, (phones.get(r.device) ?? 0) + 1)

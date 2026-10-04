@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react'
-import { type ClockOuts, clockOutFor, markPhoneChecked, markManually, removeAttendance, setAttendanceStatus, subscribeClockOuts, subscribeLocations, undoClockOut } from '../data/attendance'
+import { type ClockOuts, clockOutFor, markPhoneChecked, setEarlyOk, setHalfDay, markManually, removeAttendance, setAttendanceStatus, subscribeClockOuts, subscribeLocations, undoClockOut } from '../data/attendance'
 import { type Evidence, saveEvidence, subscribeEvidence } from '../data/evidence'
 import { useProfile } from '../hooks/useAuth'
 import { missedChecks, useCheckins } from '../hooks/useCheckins'
@@ -8,15 +8,17 @@ import { useAbsentees } from '../hooks/useRoster'
 import { useNow } from '../hooks/useSessions'
 import { openEvidence } from '../lib/evidenceFile'
 import { type Phones, approvePhone, phoneNote, subscribePhones } from '../data/phones'
-import { countedMinutes, isAway, minutesEarly, minutesLate, studentKey as studentKeyOf } from '../lib/format'
+import { countedMinutes, earlyFor, isAway, lateFor, studentKey as studentKeyOf } from '../lib/format'
 import { has } from '../lib/purpose'
 import { type Position, distanceMetres, formatDistance } from '../lib/geo'
 import { t } from '../lib/i18n'
-import type { AttendanceRecord, AttendanceStatus, Session } from '../lib/types'
+import type { AttendanceRecord, AttendanceStatus, Session, EarlyReason } from '../lib/types'
 import { AbsentList } from './AbsentList'
 import { AttendanceList } from './AttendanceList'
 import { EvidenceDialog } from './EvidenceDialog'
 import { Button, EmptyState, ErrorNote, friendlyError, inputClass } from './ui'
+
+const EARLY_LABEL: Record<EarlyReason, string> = { clinic: 'Clinic or hospital', personal: 'Personal matter', work: 'Work outside', other: 'Other reason' }
 
 interface Props {
   session: Session
@@ -50,14 +52,40 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
     [session.id, session.organisationId, viewer.id, viewer.role, clocking],
   )
   const notes = new Map<string, string>()
+  const dayControls = new Map<string, React.ReactNode>()
   const note = (id: string, text: string) => notes.set(id, [notes.get(id), text].filter(Boolean).join(' · '))
   if (clocking) {
     for (const r of records) {
       if (isAway(r.status)) continue
-      const late = r.method === 'manual' ? 0 : minutesLate(r.timestamp, session)
+      const late = lateFor(r, session)
       if (late) note(r.id, t('Late by {n} min', { n: late }))
-      const early = minutesEarly(outs.data?.get(r.studentKey), session)
-      if (early) note(r.id, t('Left {n} min early', { n: early }))
+      const early = earlyFor(r, outs.data?.get(r.studentKey), session)
+      if (early) note(r.id, r.earlyOk ? t('Left {n} min early, allowed: {why}', { n: early, why: t(EARLY_LABEL[r.earlyOk]) }) : t('Left {n} min early', { n: early }))
+      if (r.halfDay) note(r.id, r.halfDay === 'am' ? t('Morning off') : t('Afternoon off'))
+      // The manager's controls for the day: allow an early leave, or record half a day off.
+      dayControls.set(
+        r.id,
+        <span className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+          {early > 0 && !r.earlyOk && (
+            <select aria-label={t('Allow leaving early')} value="" onChange={(e) => e.target.value && run(() => setEarlyOk(r.id, e.target.value as EarlyReason))} className="h-7 rounded border border-line bg-white px-1 text-xs">
+              <option value="">{t('Allow leaving early…')}</option>
+              {(Object.keys(EARLY_LABEL) as EarlyReason[]).map((k) => (
+                <option key={k} value={k}>{t(EARLY_LABEL[k])}</option>
+              ))}
+            </select>
+          )}
+          {r.earlyOk && (
+            <button type="button" className="text-xs font-medium text-accent hover:underline" onClick={() => run(() => setEarlyOk(r.id, null))}>
+              {t('Not allowed after all')}
+            </button>
+          )}
+          <select aria-label={t('Half day off')} value={r.halfDay ?? ''} onChange={(e) => run(() => setHalfDay(r.id, (e.target.value || null) as 'am' | 'pm' | null))} className="h-7 rounded border border-line bg-white px-1 text-xs">
+            <option value="">{t('Full day')}</option>
+            <option value="am">{t('Morning off')}</option>
+            <option value="pm">{t('Afternoon off')}</option>
+          </select>
+        </span>,
+      )
     }
   }
   // Each person's own phone: a clock-in from another phone is worth a look.
@@ -195,7 +223,7 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
           live={live}
           missed={missed}
           notes={notes}
-          details={new Map([...records.map((r) => [r.id, details.get(r.id) || phoneActions.get(r.id) ? <>{details.get(r.id)}{phoneActions.get(r.id)}</> : null] as const)].filter(([, v]) => v))}
+          details={new Map([...records.map((r) => [r.id, details.get(r.id) || phoneActions.get(r.id) || dayControls.get(r.id) ? <>{details.get(r.id)}{phoneActions.get(r.id)}{dayControls.get(r.id)}</> : null] as const)].filter(([, v]) => v))}
           clock={
             clocking && outs.data
               ? {

@@ -16,11 +16,12 @@ import {
   setDoc,
   where,
   Timestamp,
+  deleteField,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { studentKey, randomToken } from '../lib/format'
 import type { Position } from '../lib/geo'
-import type { AttendanceRecord, AttendanceStatus, Session, SessionLink, UserProfile } from '../lib/types'
+import type { AttendanceRecord, AttendanceStatus, Session, SessionLink, UserProfile, EarlyReason } from '../lib/types'
 
 const attendance = collection(db, 'attendance')
 const toRecord = (id: string, data: object) => ({ id, ...data }) as AttendanceRecord
@@ -189,6 +190,12 @@ export const setAttendanceStatus = (id: string, status: AttendanceStatus) =>
 
 /** A manager clears a phone flag on one record: they looked, and it is fine. */
 export const markPhoneChecked = (id: string) => updateDoc(doc(attendance, id), { phoneChecked: true })
+
+/** The manager allows (or stops allowing) someone to leave early that day. */
+export const setEarlyOk = (id: string, reason: EarlyReason | null) => updateDoc(doc(attendance, id), { earlyOk: reason ?? deleteField() })
+
+/** Half a day off for this person that day, or none. */
+export const setHalfDay = (id: string, half: 'am' | 'pm' | null) => updateDoc(doc(attendance, id), { halfDay: half ?? deleteField() })
 
 /** Live list of who has checked in to a session, earliest first. */
 export function subscribeSessionAttendance(

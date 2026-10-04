@@ -12,7 +12,7 @@ import { handOver, subscribeOrgClasses } from '../data/classes'
 import { PhoneReview } from '../components/PhoneReview'
 import { t } from '../lib/i18n'
 import { has } from '../lib/purpose'
-import { addDays, classSlots, countPresent, endOf, formatDays, isAway, effectiveStatus, formatClock24, formatDate, formatPercent, formatRange, isoDate, minutesLate, percent, headcount } from '../lib/format'
+import { addDays, classSlots, countPresent, endOf, formatDays, isAway, effectiveStatus, formatClock24, formatDate, formatPercent, formatRange, isoDate, lateFor, percent, headcount } from '../lib/format'
 import type { AttendanceRecord, Organisation, Session, UserProfile, WeeklyClass } from '../lib/types'
 
 const TABS = ['overview', 'sessions', 'records', 'phones', 'users'] as const
@@ -412,7 +412,7 @@ function CompanyDay({ sessions, records, rangeLabel }: { sessions: Session[]; re
     row.days += 1
     row.expected += s.expected ?? came.length
     row.came += came.length
-    row.late += came.filter((r) => r.status === 'late' || (r.method !== 'manual' && minutesLate(r.timestamp, s) > 0)).length
+    row.late += came.filter((r) => r.halfDay !== 'am' && (r.status === 'late' || lateFor(r, s) > 0)).length
     row.away += list.length - came.length
     // Absence is only judged once the day is over.
     if (endOf(s).getTime() <= Date.now() && s.expected) row.absent += Math.max(0, s.expected - list.length)

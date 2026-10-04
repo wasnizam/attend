@@ -184,7 +184,13 @@ export interface AttendanceRecord {
   device?: string
   /** A manager looked at a phone flag on this record and cleared it. */
   phoneChecked?: boolean
+  /** Workplace: the manager allowed this person to leave early, and why. */
+  earlyOk?: EarlyReason
+  /** Workplace: half a day off, in the morning or the afternoon. */
+  halfDay?: 'am' | 'pm'
 }
+
+export type EarlyReason = 'clinic' | 'personal' | 'work' | 'other'
 
 /** A class that repeats every week of a semester. It becomes a real session the day it is started. */
 export interface WeeklyClass extends CourseDetails, Geofence {

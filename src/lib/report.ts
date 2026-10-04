@@ -1,4 +1,4 @@
-import { addDays, classSlots, countPresent, isoDate, minutesLate, parseDate, percent } from './format'
+import { addDays, classSlots, countPresent, isoDate, lateFor, parseDate, percent } from './format'
 import type { RosterEntry } from './rosterImport'
 import type { AttendanceRecord, AttendanceStatus, Session, WeeklyClass } from './types'
 
@@ -107,7 +107,7 @@ export function buildReport(
       const row = person(r.studentKey, r.studentId, r.studentName)
       let status = r.status ?? 'present'
       if (outsBySession) {
-        if (status === 'present' && r.method !== 'manual' && minutesLate(r.timestamp, session)) status = 'late'
+        if (status === 'present' && lateFor(r, session)) status = 'late'
         const out = outsBySession.get(session.id)?.get(r.studentKey)
         if (out && r.timestamp) row.minutes += Math.max(0, (out.toMillis() - r.timestamp.toMillis()) / 60_000)
       }
