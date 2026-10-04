@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode, useEffect, useMemo, useState } from 'react'
+import { ReportCharts } from '../components/ReportCharts'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, inputClass } from '../components/ui'
 import { fetchClockOuts, fetchSessionAttendance } from '../data/attendance'
 import { LEAVE_LABEL, fetchLeaveTypes } from '../data/evidence'
@@ -50,25 +51,161 @@ const csvCell = (v: string | number) => {
   return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
 }
 
-/** A month of clocking for everyone, by department: the sheet that goes to payroll. */
+type Period = 'week' | 'month' | 'year' | 'custom'
+type GroupBy = 'both' | 'department' | 'office' | 'none'
+type Section = 'charts' | 'attention' | 'table' | 'grid'
+
+/** A column of the people table, and what it puts in the Excel file. */
+interface Column {
+  id: string
+  label: string
+  csvHead: string[]
+  csv: (r: PayrollRow) => (string | number)[]
+  cell: (r: PayrollRow) => ReactNode
+  total?: (list: PayrollRow[]) => ReactNode
+}
+
+const total = (list: PayrollRow[], f: (r: PayrollRow) => number) => list.reduce((a, r) => a + f(r), 0)
+const groupRate = (list: PayrollRow[]) => {
+  const days = total(list, (r) => r.days)
+  const due = days + total(list, (r) => r.absent)
+  return due ? `${Math.round((days / due) * 1000) / 10}%` : '—'
+}
+const sub = (text: string, warn = false) => <span className={`block text-xs ${warn ? 'text-[#b25e00]' : 'text-muted'}`}>{text}</span>
+
+const COLUMNS: Column[] = [
+  {
+    id: 'days', label: 'Days worked', csvHead: ['Days worked'], csv: (r) => [r.days],
+    cell: (r) => <>{r.days}{r.wrongShift > 0 && sub(t('{n} on another shift', { n: r.wrongShift }), true)}</>,
+    total: (l) => total(l, (r) => r.days),
+  },
+  {
+    id: 'rate', label: 'Attendance', csvHead: ['Attendance %'], csv: (r) => [r.rate ?? ''],
+    cell: (r) => <span className={r.rate !== null && r.rate < 90 ? 'font-semibold text-[#b25e00]' : ''}>{r.rate === null ? '—' : `${r.rate}%`}</span>,
+    total: groupRate,
+  },
+  {
+    id: 'hours', label: 'Hours', csvHead: ['Hours'], csv: (r) => [hours(r.minutes)],
+    cell: (r) => <>{formatDuration(r.minutes)}{r.noClockOut > 0 && sub(t('{n} without clock-out', { n: r.noClockOut }), true)}</>,
+    total: (l) => formatDuration(total(l, (r) => r.minutes)),
+  },
+  {
+    id: 'overtime', label: 'Overtime', csvHead: ['Overtime hours', 'Rest day hours', 'Public holiday hours'], csv: (r) => [hours(r.overtime), hours(r.restMinutes), hours(r.holidayMinutes)],
+    cell: (r) => (
+      <>
+        {r.overtime >= 1 ? formatDuration(r.overtime) : '—'}
+        {r.restMinutes >= 1 && sub(t('rest day {h}', { h: formatDuration(r.restMinutes) }))}
+        {r.holidayMinutes >= 1 && sub(t('public holiday {h}', { h: formatDuration(r.holidayMinutes) }))}
+      </>
+    ),
+    total: (l) => formatDuration(total(l, (r) => r.overtime + r.restMinutes + r.holidayMinutes)),
+  },
+  {
+    id: 'late', label: 'Late', csvHead: ['Late', 'Late minutes'], csv: (r) => [r.late, Math.round(r.lateMinutes)],
+    cell: (r) => <>{r.late}{r.lateMinutes >= 1 && <span className="text-xs text-muted"> · {Math.round(r.lateMinutes)} min</span>}</>,
+    total: (l) => total(l, (r) => r.late),
+  },
+  {
+    id: 'early', label: 'Left early', csvHead: ['Left early', 'Early minutes', 'Allowed to leave early'], csv: (r) => [r.early, Math.round(r.earlyMinutes), r.earlyApproved],
+    cell: (r) => (
+      <>
+        {r.early}
+        {r.earlyMinutes >= 1 && <span className="text-xs text-muted"> · {Math.round(r.earlyMinutes)} min</span>}
+        {r.earlyApproved > 0 && sub(t('+{n} allowed', { n: r.earlyApproved }))}
+      </>
+    ),
+    total: (l) => total(l, (r) => r.early),
+  },
+  { id: 'mc', label: 'MC', csvHead: ['MC'], csv: (r) => [r.mc], cell: (r) => r.mc, total: (l) => total(l, (r) => r.mc) },
+  {
+    id: 'leave', label: 'Excused', csvHead: ['Excused', 'Half days', ...LEAVE_KINDS.map((k) => LEAVE_LABEL[k])], csv: (r) => [r.leave, r.halfDays, ...LEAVE_KINDS.map((k) => r.leaveBy[k])],
+    cell: (r) => (
+      <>
+        {r.leave}
+        {r.halfDays > 0 && sub(t(r.halfDays === 1 ? '+1 half day' : '+{n} half days', { n: r.halfDays }))}
+        {r.leave > 0 && sub(LEAVE_KINDS.filter((k) => r.leaveBy[k] > 0 && (k !== 'other' || r.leaveBy.other !== r.leave)).map((k) => `${r.leaveBy[k]} ${t(SHORT_LEAVE[k])}`).join(', '))}
+      </>
+    ),
+    total: (l) => total(l, (r) => r.leave),
+  },
+  { id: 'absent', label: 'Absent', csvHead: ['Absent'], csv: (r) => [r.absent], cell: (r) => <span className="font-semibold">{r.absent}</span>, total: (l) => total(l, (r) => r.absent) },
+  { id: 'noClockOut', label: 'No clock-out', csvHead: ['No clock-out', 'Wrong shift'], csv: (r) => [r.noClockOut, r.wrongShift], cell: (r) => r.noClockOut, total: (l) => total(l, (r) => r.noClockOut) },
+]
+
+interface Setup {
+  sections: Section[]
+  columns: string[]
+  groupBy: GroupBy
+}
+const DEFAULT_SETUP: Setup = { sections: ['charts', 'attention', 'table'], columns: ['days', 'rate', 'hours', 'overtime', 'late', 'early', 'mc', 'leave', 'absent'], groupBy: 'both' }
+const SETUP_KEY = 'attend.reportSetup'
+const loadSetup = (): Setup => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETUP_KEY) ?? 'null')
+    if (saved && Array.isArray(saved.sections) && Array.isArray(saved.columns)) return { ...DEFAULT_SETUP, ...saved }
+  } catch {
+    // Storage blocked or bad data: the standard report.
+  }
+  return DEFAULT_SETUP
+}
+const SECTIONS: { id: Section; label: string }[] = [
+  { id: 'charts', label: 'Charts' },
+  { id: 'attention', label: 'Needs attention' },
+  { id: 'table', label: 'Totals for each person' },
+  { id: 'grid', label: 'Day-by-day grid' },
+]
+const GROUPS: { id: GroupBy; label: string }[] = [
+  { id: 'both', label: 'Office and department' },
+  { id: 'department', label: 'Department' },
+  { id: 'office', label: 'Office' },
+  { id: 'none', label: 'No grouping' },
+]
+
+/** Prints the page so the browser can save it as a PDF, named after the report. */
+function savePdf(name: string) {
+  const before = document.title
+  document.title = name
+  const restore = () => {
+    document.title = before
+    window.removeEventListener('afterprint', restore)
+  }
+  window.addEventListener('afterprint', restore)
+  window.print()
+}
+
+/** Attendance for everyone over a week, month, year or any dates: charts, exceptions, totals and the payroll sheet. */
 export function Payroll() {
   const profile = useProfile()
   const mySessions = useMySessions()
   const classes = useEditableClasses()
-  const [month, setMonth] = useState(isoDate().slice(0, 7))
+  const today = isoDate()
+  const [period, setPeriod] = useState<Period>('month')
+  const [weekOf, setWeekOf] = useState(today)
+  const [month, setMonth] = useState(today.slice(0, 7))
+  const [year, setYear] = useState(today.slice(0, 4))
   // Payroll often runs on a cut-off (say the 26th to the 25th), so any dates can be picked.
-  const [custom, setCustom] = useState(false)
-  const [fromDate, setFromDate] = useState(`${isoDate().slice(0, 7)}-01`)
-  const [toDate, setToDate] = useState(isoDate())
-  const from = custom ? fromDate : `${month}-01`
-  const to = custom ? (toDate < fromDate ? fromDate : toDate) : lastDay(month)
-  const [view, setView] = useState<'summary' | 'grid'>('summary')
+  const [fromDate, setFromDate] = useState(`${today.slice(0, 7)}-01`)
+  const [toDate, setToDate] = useState(today)
+  const [from, to] =
+    period === 'week' ? [weekStart(weekOf), addDays(weekStart(weekOf), 6)]
+    : period === 'year' ? [`${year}-01-01`, `${year}-12-31`]
+    : period === 'custom' ? [fromDate, toDate < fromDate ? fromDate : toDate]
+    : [`${month}-01`, lastDay(month)]
+  const [setup, setSetupState] = useState<Setup>(loadSetup)
+  const [customising, setCustomising] = useState(false)
+  const setSetup = (next: Setup) => {
+    setSetupState(next)
+    try {
+      localStorage.setItem(SETUP_KEY, JSON.stringify(next))
+    } catch {
+      // Not saved; it still applies until the page is left.
+    }
+  }
   const [person, setPerson] = useState<string | null>(null)
   const [department, setDepartment] = useState('')
   const [office, setOffice] = useState('')
   const [rows, setRows] = useState<PayrollRow[] | null>(null)
   const [failed, setFailed] = useState(false)
-
   // An admin's report covers the whole company: every office, whoever manages it.
   const admin = profile.role === 'admin'
   const orgSessions = useLive<Session[]>(
@@ -127,28 +264,40 @@ export function Payroll() {
 
   if (source.loading || classes.loading) return <PageLoader />
 
+  const has = (x: Section) => setup.sections.includes(x)
+  const columns = COLUMNS.filter((c) => setup.columns.includes(c.id))
   const departments = [...new Set((rows ?? []).map((r) => r.department).filter(Boolean))]
   const offices = [...new Set((rows ?? []).map((r) => r.office).filter(Boolean))]
   const shown = (rows ?? []).filter((r) => (!department || r.department === department) && (!office || r.office === office))
-  const sum = (list: PayrollRow[], field: 'minutes' | 'overtime' | 'late' | 'absent' | 'days' | 'restMinutes' | 'holidayMinutes') => list.reduce((a, r) => a + r[field], 0)
-  const due = sum(shown, 'days') + sum(shown, 'absent')
-  const rate = due ? Math.round((sum(shown, 'days') / due) * 1000) / 10 : null
+  const days = total(shown, (r) => r.days)
+  const due = days + total(shown, (r) => r.absent)
+  const rate = due ? Math.round((days / due) * 1000) / 10 : null
   const flagged = shown.map((r) => ({ r, why: concerns(r) })).filter((x) => x.why.length)
-  const periodName = custom ? `${formatDate(from)} – ${formatDate(to)}` : parseDate(from).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+  const periodName =
+    period === 'week' ? t('Week of {date}', { date: formatDate(from) })
+    : period === 'year' ? year
+    : period === 'custom' ? `${formatDate(from)} – ${formatDate(to)}`
+    : parseDate(from).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+  const title = t(period === 'week' ? 'Weekly attendance report' : period === 'year' ? 'Yearly attendance report' : period === 'month' ? 'Monthly report' : 'Attendance report')
   const selected = shown.find((r) => r.key === person) ?? (rows ?? []).find((r) => r.key === person)
-  // The grid shows every day of the period up to today.
+  // The grid shows every day of the period up to today; a year is too wide for it.
   const dates: string[] = []
-  for (let d = from; d <= to && d <= isoDate() && dates.length < 62; d = addDays(d, 1)) dates.push(d)
-  // Grouped by office first when there is more than one, then by department.
-  const label = (r: PayrollRow) => [offices.length > 1 ? r.office : '', r.department].filter(Boolean).join(' · ')
+  for (let d = from; d <= to && d <= today && dates.length < 62; d = addDays(d, 1)) dates.push(d)
+  const gridFits = (parseDate(to).getTime() - parseDate(from).getTime()) / 86_400_000 < 62
+  const label = (r: PayrollRow) =>
+    setup.groupBy === 'none' ? ''
+    : setup.groupBy === 'office' ? r.office
+    : setup.groupBy === 'department' ? r.department
+    : [offices.length > 1 ? r.office : '', r.department].filter(Boolean).join(' · ')
   const groups = [...new Set(shown.map(label))].map((name) => ({ name, list: shown.filter((r) => label(r) === name) }))
+  const fileName = `attendance-${period === 'month' ? month : period === 'year' ? year : `${from}-to-${to}`}${department ? `-${department.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : ''}`
 
   const exportCsv = () =>
     downloadCsv(
-      `payroll-${custom ? `${from}-to-${to}` : month}${department ? `-${department.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : ''}-excel.csv`,
+      `${fileName}-excel.csv`,
       [
-        ['Office', 'Department', 'Student ID', 'Student Name', 'Days worked', 'Attendance %', 'Hours', 'Overtime hours', 'Rest day hours', 'Public holiday hours', 'Late', 'Late minutes', 'Left early', 'Early minutes', 'Allowed to leave early', 'Half days', 'MC', 'Excused', ...LEAVE_KINDS.map((k) => LEAVE_LABEL[k]), 'Absent', 'No clock-out', 'Wrong shift'].map((h) => t(h)),
-        ...shown.map((r) => [r.office, r.department, r.staffId, r.name, r.days, r.rate ?? '', hours(r.minutes), hours(r.overtime), hours(r.restMinutes), hours(r.holidayMinutes), r.late, Math.round(r.lateMinutes), r.early, Math.round(r.earlyMinutes), r.earlyApproved, r.halfDays, r.mc, r.leave, ...LEAVE_KINDS.map((k) => r.leaveBy[k]), r.absent, r.noClockOut, r.wrongShift]),
+        ['Office', 'Department', 'Student ID', 'Student Name', ...columns.flatMap((c) => c.csvHead)].map((h) => t(h)),
+        ...shown.map((r) => [r.office, r.department, r.staffId, r.name, ...columns.flatMap((c) => c.csv(r))]),
       ]
         .map((line) => line.map(csvCell).join(','))
         .join('\r\n') + '\r\n',
@@ -162,44 +311,71 @@ export function Payroll() {
       {r.name}
     </button>
   )
+  const toggle = <T,>(list: T[], x: T) => (list.includes(x) ? list.filter((y) => y !== x) : [...list, x])
+  const chip = (on: boolean) => `inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm ${on ? 'border-accent bg-accent-soft text-ink' : 'border-line bg-white text-muted'}`
 
   return (
-    <div className="space-y-5">
+    <div className="report-wide space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('Monthly report')}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
           <p className="text-sm text-muted">
-            <span className="hidden print:inline">{periodName} · </span>
+            <span className="hidden print:inline">{[periodName, office, department].filter(Boolean).join(' · ')} · </span>
             {t('Days, hours, overtime and lateness for each person. Ready for payroll.')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">
-          <Button variant="secondary" disabled={shown.length === 0} onClick={() => window.print()}>{t('Print')}</Button>
+          <Button variant="secondary" onClick={() => setCustomising(!customising)}>{t('Customise report')}</Button>
+          <Button variant="secondary" disabled={shown.length === 0} onClick={() => savePdf(fileName)}>{t('Download PDF')}</Button>
           <Button disabled={shown.length === 0} onClick={exportCsv}>{t('Export for Excel')}</Button>
         </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3 print:hidden">
-        {custom ? (
+        <div>
+          <span className="block text-xs font-medium text-muted">{t('Period')}</span>
+          <div className="mt-1 inline-flex rounded-lg border border-line bg-white p-0.5 text-sm" role="tablist">
+            {(['week', 'month', 'year', 'custom'] as const).map((v) => (
+              <button key={v} type="button" role="tab" aria-selected={period === v} onClick={() => setPeriod(v)} className={`rounded-md px-3 py-1.5 font-medium ${period === v ? 'bg-accent text-white' : 'text-muted hover:text-ink'}`}>
+                {t(v === 'week' ? 'Week' : v === 'month' ? 'Month' : v === 'year' ? 'Year' : 'Pick dates')}
+              </button>
+            ))}
+          </div>
+        </div>
+        {period === 'week' && (
+          <label className="block text-xs font-medium text-muted">
+            {t('Any day in the week')}
+            <input type="date" value={weekOf} max={today} onChange={(e) => e.target.value && setWeekOf(e.target.value)} className={`${inputClass} mt-1`} />
+          </label>
+        )}
+        {period === 'month' && (
+          <label className="block text-xs font-medium text-muted">
+            {t('Month')}
+            <input type="month" value={month} max={today.slice(0, 7)} onChange={(e) => e.target.value && setMonth(e.target.value)} className={`${inputClass} mt-1`} />
+          </label>
+        )}
+        {period === 'year' && (
+          <label className="block text-xs font-medium text-muted">
+            {t('Year')}
+            <select value={year} onChange={(e) => setYear(e.target.value)} className={`${inputClass} mt-1`}>
+              {[0, 1, 2, 3].map((n) => String(Number(today.slice(0, 4)) - n)).map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </label>
+        )}
+        {period === 'custom' && (
           <>
             <label className="block text-xs font-medium text-muted">
               {t('From')}
-              <input type="date" value={fromDate} max={isoDate()} onChange={(e) => e.target.value && setFromDate(e.target.value)} className={`${inputClass} mt-1`} />
+              <input type="date" value={fromDate} max={today} onChange={(e) => e.target.value && setFromDate(e.target.value)} className={`${inputClass} mt-1`} />
             </label>
             <label className="block text-xs font-medium text-muted">
               {t('To')}
-              <input type="date" value={toDate} min={fromDate} max={isoDate()} onChange={(e) => e.target.value && setToDate(e.target.value)} className={`${inputClass} mt-1`} />
+              <input type="date" value={toDate} min={fromDate} max={today} onChange={(e) => e.target.value && setToDate(e.target.value)} className={`${inputClass} mt-1`} />
             </label>
           </>
-        ) : (
-          <label className="block text-xs font-medium text-muted">
-            {t('Month')}
-            <input type="month" value={month} max={isoDate().slice(0, 7)} onChange={(e) => e.target.value && setMonth(e.target.value)} className={`${inputClass} mt-1`} />
-          </label>
         )}
-        <button type="button" onClick={() => setCustom(!custom)} className="pb-2.5 text-sm font-medium text-accent hover:underline">
-          {custom ? t('Whole month') : t('Pick dates (pay cut-off)')}
-        </button>
         {offices.length > 1 && (
           <label className="block text-xs font-medium text-muted">
             {t('Office')}
@@ -224,24 +400,69 @@ export function Payroll() {
         )}
       </div>
 
+      {customising && (
+        <Card className="space-y-4 p-5 print:hidden">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-semibold">{t('Customise report')}</h2>
+            <button type="button" onClick={() => setSetup(DEFAULT_SETUP)} className="text-sm font-medium text-accent hover:underline">{t('Back to the standard report')}</button>
+          </div>
+          <p className="text-sm text-muted">{t('Choose what goes in the report. The screen, the PDF and the Excel file all follow it, and it is kept for next time on this device.')}</p>
+          <fieldset>
+            <legend className="text-xs font-medium text-muted">{t('Show')}</legend>
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              {SECTIONS.map((x) => (
+                <label key={x.id} className={chip(has(x.id))}>
+                  <input type="checkbox" className="accent-accent" checked={has(x.id)} onChange={() => setSetup({ ...setup, sections: toggle(setup.sections, x.id) })} />
+                  {t(x.label)}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend className="text-xs font-medium text-muted">{t('Columns')}</legend>
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              {COLUMNS.map((c) => (
+                <label key={c.id} className={chip(setup.columns.includes(c.id))}>
+                  <input type="checkbox" className="accent-accent" checked={setup.columns.includes(c.id)} onChange={() => setSetup({ ...setup, columns: COLUMNS.map((x) => x.id).filter((id) => (id === c.id ? !setup.columns.includes(id) : setup.columns.includes(id))) })} />
+                  {t(c.label)}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend className="text-xs font-medium text-muted">{t('Group people by')}</legend>
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              {GROUPS.map((g) => (
+                <label key={g.id} className={chip(setup.groupBy === g.id)}>
+                  <input type="radio" name="groupBy" className="accent-accent" checked={setup.groupBy === g.id} onChange={() => setSetup({ ...setup, groupBy: g.id })} />
+                  {t(g.label)}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </Card>
+      )}
+
       {failed ? (
         <ErrorNote>{t('The report could not be loaded. Check your connection and reload.')}</ErrorNote>
       ) : !rows ? (
         <PageLoader />
       ) : shown.length === 0 ? (
-        <EmptyState title={t('Nothing recorded this month')} text={t('Once people clock in, their days and hours appear here.')} />
+        <EmptyState title={t('Nothing recorded in this period')} text={t('Once people clock in, their days and hours appear here.')} />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             <Stat label={t('People')} value={shown.length} />
             <Stat label={t('Attendance')} value={rate === null ? '—' : `${rate}%`} />
-            <Stat label={t('Hours')} value={formatDuration(sum(shown, 'minutes'))} />
-            <Stat label={t('Overtime')} value={formatDuration(sum(shown, 'overtime') + sum(shown, 'restMinutes') + sum(shown, 'holidayMinutes'))} />
-            <Stat label={t('Late')} value={sum(shown, 'late')} />
+            <Stat label={t('Hours')} value={formatDuration(total(shown, (r) => r.minutes))} />
+            <Stat label={t('Overtime')} value={formatDuration(total(shown, (r) => r.overtime + r.restMinutes + r.holidayMinutes))} />
+            <Stat label={t('Late')} value={total(shown, (r) => r.late)} />
           </div>
 
-          {flagged.length > 0 && (
-            <Card className="p-5">
+          {has('charts') && <ReportCharts rows={shown} groups={groups} from={from} to={to < today ? to : today} />}
+
+          {has('attention') && flagged.length > 0 && (
+            <Card className="break-inside-avoid p-5">
               <h2 className="font-semibold">{t('Needs attention')} <span className="font-normal text-muted">· {flagged.length}</span></h2>
               <p className="text-sm text-muted">{t('Absent without leave, late or leaving early three times or more, or a day with no clock-out to fix before payroll.')}</p>
               <ul className="mt-3 divide-y divide-line text-sm">
@@ -258,90 +479,62 @@ export function Payroll() {
             </Card>
           )}
 
-          <div className="inline-flex rounded-lg border border-line bg-white p-0.5 text-sm print:hidden" role="tablist">
-            {(['summary', 'grid'] as const).map((v) => (
-              <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`rounded-md px-3 py-1.5 font-medium ${view === v ? 'bg-accent text-white' : 'text-muted hover:text-ink'}`}>
-                {t(v === 'summary' ? 'Totals' : 'Day by day')}
-              </button>
-            ))}
-          </div>
-
-          {view === 'grid' ? (
-            <MonthGrid groups={groups} dates={dates} nameButton={nameButton} />
-          ) : (
-          <Card className="overflow-x-auto">
-            <table className="w-full min-w-[56rem] text-left text-sm">
-              <thead className="bg-slate-50 text-xs text-muted">
-                <tr>
-                  <th className="py-2.5 pr-2 pl-5 font-medium">{t('Student ID')}</th>
-                  <th className="px-2 py-2.5 font-medium">{t('Name')}</th>
-                  {['Days worked', 'Attendance', 'Hours', 'Overtime', 'Late', 'Left early', 'MC', 'Excused', 'Absent'].map((h) => (
-                    <th key={h} className="px-2 py-2.5 text-right font-medium last:pr-5">{t(h)}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="tabular divide-y divide-line">
-                {groups.map((g) => (
-                  <Fragment key={g.name}>
-                    {(departments.length > 0 || offices.length > 1 || g.name) && (
-                      <tr className="bg-slate-50/70 text-xs font-semibold">
-                        <td colSpan={4} className="py-2 pr-2 pl-5">{g.name || t('No department')} <span className="font-normal text-muted">· {g.list.length}</span></td>
-                        <td className="px-2 py-2 text-right whitespace-nowrap">{formatDuration(sum(g.list, 'minutes'))}</td>
-                        <td className="px-2 py-2 text-right whitespace-nowrap">{formatDuration(sum(g.list, 'overtime') + sum(g.list, 'restMinutes') + sum(g.list, 'holidayMinutes'))}</td>
-                        <td className="px-2 py-2 text-right">{sum(g.list, 'late')}</td>
-                        <td colSpan={3} />
-                        <td className="py-2 pr-5 pl-2 text-right">{sum(g.list, 'absent')}</td>
-                      </tr>
-                    )}
-                    {g.list.map((r) => (
-                      <tr key={r.key}>
-                        <td className="py-2.5 pr-2 pl-5 font-medium whitespace-nowrap">{r.staffId}</td>
-                        <td className="px-2 py-2.5 break-words">{nameButton(r)}</td>
-                        <td className="px-2 py-2.5 text-right">
-                          {r.days}
-                          {r.wrongShift > 0 && <span className="block text-xs text-[#b25e00]">{t('{n} on another shift', { n: r.wrongShift })}</span>}
-                        </td>
-                        <td className={`px-2 py-2.5 text-right ${r.rate !== null && r.rate < 90 ? 'font-semibold text-[#b25e00]' : ''}`}>{r.rate === null ? '—' : `${r.rate}%`}</td>
-                        <td className="px-2 py-2.5 text-right whitespace-nowrap">
-                          {formatDuration(r.minutes)}
-                          {r.noClockOut > 0 && <span className="block text-xs text-[#b25e00]">{t('{n} without clock-out', { n: r.noClockOut })}</span>}
-                        </td>
-                        <td className="px-2 py-2.5 text-right whitespace-nowrap">
-                          {r.overtime >= 1 ? formatDuration(r.overtime) : '—'}
-                          {r.restMinutes >= 1 && <span className="block text-xs text-muted">{t('rest day {h}', { h: formatDuration(r.restMinutes) })}</span>}
-                          {r.holidayMinutes >= 1 && <span className="block text-xs text-muted">{t('public holiday {h}', { h: formatDuration(r.holidayMinutes) })}</span>}
-                        </td>
-                        <td className="px-2 py-2.5 text-right whitespace-nowrap">
-                          {r.late}
-                          {r.lateMinutes >= 1 && <span className="text-xs text-muted"> · {Math.round(r.lateMinutes)} min</span>}
-                        </td>
-                        <td className="px-2 py-2.5 text-right whitespace-nowrap">
-                          {r.early}
-                          {r.earlyMinutes >= 1 && <span className="text-xs text-muted"> · {Math.round(r.earlyMinutes)} min</span>}
-                          {r.earlyApproved > 0 && <span className="block text-xs text-muted">{t('+{n} allowed', { n: r.earlyApproved })}</span>}
-                        </td>
-                        <td className="px-2 py-2.5 text-right">{r.mc}</td>
-                        <td className="px-2 py-2.5 text-right">
-                          {r.leave}
-                          {r.halfDays > 0 && <span className="block text-xs text-muted">{t(r.halfDays === 1 ? '+1 half day' : '+{n} half days', { n: r.halfDays })}</span>}
-                          {r.leave > 0 && (
-                            <span className="block text-xs text-muted">
-                              {LEAVE_KINDS.filter((k) => r.leaveBy[k] > 0 && (k !== 'other' || r.leaveBy.other !== r.leave)).map((k) => `${r.leaveBy[k]} ${t(SHORT_LEAVE[k])}`).join(', ')}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2.5 pr-5 pl-2 text-right font-semibold">{r.absent}</td>
-                      </tr>
+          {has('table') && columns.length > 0 && (
+            <Card className="overflow-x-auto">
+              <table className="report-table w-full text-left text-sm" style={{ ['--min' as string]: `${16 + columns.length * 5.5}rem` }}>
+                <thead className="bg-slate-50 text-xs text-muted">
+                  <tr>
+                    <th className="py-2.5 pr-2 pl-5 font-medium">{t('Student ID')}</th>
+                    <th className="px-2 py-2.5 font-medium">{t('Name')}</th>
+                    {columns.map((c) => (
+                      <th key={c.id} className="px-2 py-2.5 text-right font-medium last:pr-5">{t(c.label)}</th>
                     ))}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-          </Card>
+                  </tr>
+                </thead>
+                <tbody className="tabular divide-y divide-line">
+                  {groups.map((g) => (
+                    <Fragment key={g.name}>
+                      {(g.name || groups.length > 1) && (
+                        <tr className="bg-slate-50/70 text-xs font-semibold">
+                          <td colSpan={2} className="py-2 pr-2 pl-5">{g.name || t(setup.groupBy === 'office' ? 'No office' : 'No department')} <span className="font-normal text-muted">· {g.list.length}</span></td>
+                          {columns.map((c) => (
+                            <td key={c.id} className="px-2 py-2 text-right whitespace-nowrap last:pr-5">{c.total?.(g.list)}</td>
+                          ))}
+                        </tr>
+                      )}
+                      {g.list.map((r) => (
+                        <tr key={r.key}>
+                          <td className="py-2.5 pr-2 pl-5 font-medium whitespace-nowrap">{r.staffId}</td>
+                          <td className="px-2 py-2.5 break-words">{nameButton(r)}</td>
+                          {columns.map((c) => (
+                            <td key={c.id} className="px-2 py-2.5 text-right whitespace-nowrap last:pr-5">{c.cell(r)}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </Fragment>
+                  ))}
+                  <tr className="bg-slate-50 text-xs font-semibold">
+                    <td colSpan={2} className="py-2.5 pr-2 pl-5">{t('Everyone')} <span className="font-normal text-muted">· {shown.length}</span></td>
+                    {columns.map((c) => (
+                      <td key={c.id} className="px-2 py-2.5 text-right whitespace-nowrap last:pr-5">{c.total?.(shown)}</td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </Card>
           )}
+
+          {has('grid') &&
+            (gridFits ? (
+              <MonthGrid groups={groups} dates={dates} nameButton={nameButton} />
+            ) : (
+              <p className="text-sm text-muted print:hidden">{t('The day-by-day grid shows up to two months. Pick a shorter period to see it.')}</p>
+            ))}
+
           <div className="space-y-2 text-sm text-muted">
             <p>{t('Hours are from clock-in to clock-out, less the unpaid break on a day of more than five hours. Overtime is the time worked after the shift’s end time. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.')}</p>
             <p>{t('Attendance is the days worked out of the days each person was due; MC and leave are left out. Work on a rest day or a public holiday is shown apart. Under the Employment Act 1955 overtime is paid at least 1.5 times the hourly rate on a normal day, 2 times on a rest day and 3 times on a public holiday. Click a name for that person’s timesheet.')}</p>
+            <p className="hidden print:block">{t('Printed {date}', { date: formatDate(today) })}</p>
           </div>
         </>
       )}
@@ -440,7 +633,7 @@ function Timesheet({ row, period, onBack }: { row: PayrollRow; period: string; o
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{row.name}</h1>
           <p className="text-sm text-muted">{[t('Timesheet'), period, row.staffId, row.office, row.department].filter(Boolean).join(' · ')}</p>
         </div>
-        <Button variant="secondary" onClick={() => window.print()} className="print:hidden">{t('Print')}</Button>
+        <Button variant="secondary" onClick={() => savePdf(`timesheet-${row.staffId || row.name}`)} className="print:hidden">{t('Download PDF')}</Button>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Stat label={t('Days worked')} value={row.days} />

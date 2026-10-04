@@ -236,6 +236,13 @@ or early days, missing clock-outs and wrong shifts. "Day by day" shows the month
 by dates, with letters), and a name opens that person's timesheet, printable with signature
 lines. `buildPayroll` returns the `entries` behind both.
 
+**Report period, charts, PDF and builder.** The report runs by Week, Month, Year or picked dates.
+Charts (`ReportCharts`): attendance over time (stacked by on time / late / leave or MC / absent;
+days for up to two months, months beyond), attendance by group (lowest first) and the five people
+late most often. "Customise report" picks the sections, the columns and the grouping; the screen,
+the PDF and the Excel file follow it, saved per device (`attend.reportSetup`). "Download PDF" uses
+the browser's print-to-PDF on an A4 landscape page, with the file named after the report.
+
 **The same numbers on every page.** Hours shown anywhere to a manager come from one function,
 `countedMinutes` (start-time rule, unpaid break); the staff member's own phone shows plain time
 at work. A staff list change updates the open day's list and expected number. Class reports
