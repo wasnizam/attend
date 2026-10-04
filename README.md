@@ -214,6 +214,13 @@ office's manager on classes, staff lists and shift plans). Phone approvals and r
 limited to an admin, or the manager whose staff list the person is on (`canManagePhone`; each
 phone record keeps that list as `listId`).
 
+**The Working hours page, for a workplace** (`src/components/WorkHours.tsx`) shows one card per
+set of hours or shift, grouped by office: the week as day chips, the rules (grace, break,
+location, rotation, minimum), and the staff list. Shifts are offered at the bottom of that page
+("Do some people work shifts?"), where a company looks for them; with shifts on, the page is
+"Shifts", with the Shift plan beside "+ Add shift" and a three-step explanation. The shift form
+suggests existing offices and files a shift under the office of the list it shares.
+
 **Early leave with permission, and half days.** On the day's list a manager can allow an early
 leave with a reason (`earlyOk`: clinic, personal, work outside, other) and mark a morning or an
 afternoon off (`halfDay`). A morning off is never late and an afternoon off never early

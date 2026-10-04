@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorNote, PageLoader, buttonClass } from '../components/ui'
+import { WorkHours } from '../components/WorkHours'
 import { useMyClasses } from '../hooks/useClasses'
 import { WEEK, classSlots, courseLine, dayName, formatDate, formatDays, formatRange, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
@@ -30,6 +31,8 @@ export function Timetable() {
 
   if (loading) return <PageLoader />
   if (error) return <ErrorNote>{t('We could not load your timetable. Check your connection and reload.')}</ErrorNote>
+  // A workplace sees its hours (or shifts) as cards, not a semester timetable by weekday.
+  if (has('clock')) return <WorkHours classes={data ?? []} />
 
   const date = isoDate()
   const all = data ?? []

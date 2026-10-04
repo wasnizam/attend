@@ -320,7 +320,13 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
 
           {weekly && clock && (
             <div className="space-y-3 rounded-lg bg-canvas p-4">
-              <Field label={t('Office or branch')} hint={t('Optional')} placeholder={t('e.g. Main office')} maxLength={60} value={venue} onChange={(e) => setVenue(e.target.value)} />
+              <Field label={t('Office or branch')} hint={t('Optional')} placeholder={t('e.g. Main office')} maxLength={60} value={venue} onChange={(e) => setVenue(e.target.value)} list="offices" />
+              {/* The offices already set up, so a new shift is filed under the right one. */}
+              <datalist id="offices">
+                {[...new Set((myClasses ?? []).map((c) => c.venue).filter(Boolean))].map((o) => (
+                  <option key={o} value={o} />
+                ))}
+              </datalist>
               <div>
                 <p className="mb-1.5 text-sm font-medium">{t('Where it is')}</p>
                 <LocationPicker stored={editing} onChange={setFence} />
@@ -361,6 +367,9 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
                     onChange={(e) => {
                       setRosterFrom(e.target.value)
                       if (e.target.value) setRotating(true)
+                      // Sharing a list usually means the same office: fill it in if it is empty.
+                      const from = (myClasses ?? []).find((c) => c.id === e.target.value)
+                      if (from?.venue && !venue.trim()) setVenue(from.venue)
                     }}
                     className={inputClass}
                   >
