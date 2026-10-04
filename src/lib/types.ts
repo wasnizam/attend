@@ -76,6 +76,10 @@ export interface Organisation {
   seats?: number
   /** Workplace: shifts are switched on (several shifts, rotation, the shift plan). */
   shifts?: boolean
+  /** Workplace: when a normal day's overtime starts (see buildPayroll). Missing means 'fullDay'. */
+  otRule?: 'fullDay' | 'end'
+  /** Workplace: the company's time zone (IANA name), so a report read from elsewhere can warn. */
+  timezone?: string
   /** Workplace: a clock-in from a phone that is not the person's own is flagged, or refused. */
   phoneCheck?: 'flag' | 'block'
   name: string

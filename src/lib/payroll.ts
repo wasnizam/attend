@@ -1,4 +1,4 @@
-import { addDays, countedMinutes, earlyFor, endOf, lateFor, parseDate } from './format'
+import { BREAK_AFTER_MIN, addDays, countedMinutes, earlyFor, endOf, lateFor, parseDate } from './format'
 
 /** The Monday that starts the week a date falls in. */
 const mondayOf = (date: string) => addDays(date, -((parseDate(date).getDay() + 6) % 7))
@@ -81,6 +81,13 @@ export interface DayEntry {
 export type DayType = 'normal' | 'rest' | 'holiday'
 
 export type LeaveKind = 'annual' | 'emergency' | 'unpaid' | 'other'
+export type OvertimeRule = 'fullDay' | 'end'
+
+/** A shift's normal working minutes: start to end, less the unpaid break on a long day. */
+export function normalMinutes(session: Pick<Session, 'date' | 'startTime' | 'endTime' | 'breakMin'>) {
+  const span = (endOf(session).getTime() - parseDate(session.date, session.startTime).getTime()) / 60_000
+  return span > BREAK_AFTER_MIN ? span - (session.breakMin ?? 0) : span
+}
 
 type Outs = Map<string, { toMillis(): number }>
 
@@ -100,6 +107,12 @@ export function buildPayroll(
   leaveTypes: Map<string, Map<string, LeaveKind>> = new Map(),
   /** Working hours (or staff list) -> its working days and its days off (public holidays), to tell rest-day and holiday work apart. */
   calendars: Map<string, { days: number[]; off: Set<string> }> = new Map(),
+  /**
+   * When a normal day's overtime starts. 'fullDay' (the Employment Act's meaning): only the hours past a
+   * full day's normal hours, so coming in late and staying late is not overtime. 'end': any time after
+   * the shift's end time.
+   */
+  otRule: OvertimeRule = 'fullDay',
 ): PayrollRow[] {
   const people = new Map<string, PayrollRow>()
   const person = (key: string, staffId: string, name: string) => {
@@ -182,7 +195,7 @@ export function buildPayroll(
           if (dayType === 'rest') row.restMinutes += counted
           else if (dayType === 'holiday') row.holidayMinutes += counted
           // Overtime on a normal day; on a rest day or holiday every hour is already counted apart.
-          else row.overtime += Math.max(0, to - Math.max(end, from)) / 60_000
+          else row.overtime += otRule === 'end' ? Math.max(0, to - Math.max(end, from)) / 60_000 : r.halfDay ? 0 : Math.max(0, counted - normalMinutes(session))
         } else if (over) row.noClockOut += 1
         else row.openDays += 1
         entry(r, {

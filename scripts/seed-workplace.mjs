@@ -91,7 +91,7 @@ await env.withSecurityRulesDisabled(async (ctx) => {
     const slots = Object.entries(o.days).map(([day, [startTime, endTime]]) => ({ day: Number(day), startTime, endTime }))
     batch.set(
       doc(db, 'classes', o.classId),
-      { slots, days: slots.map((s) => s.day), startTime: '09:00', endTime: '18:00', breakMin: 60, graceMin: 10, startDate: '2026-08-01', rosterCount: o.staff.length, cancelled: { [`${HOLIDAY}_0900`]: 'Malaysia Day' } },
+      { slots, days: slots.map((s) => s.day), startTime: '09:00', endTime: '18:00', breakMin: 60, graceMin: 10, startDate: '2026-09-01', rosterCount: o.staff.length, cancelled: { [`${HOLIDAY}_0900`]: 'Malaysia Day' } },
       { merge: true },
     )
     for (const s of o.staff) {

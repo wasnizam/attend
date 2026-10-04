@@ -47,8 +47,11 @@ service cloud.firestore {
         && !('paidUntil' in request.resource.data) && !('seats' in request.resource.data);
       // The purpose and the plan are what the customer pays for: not theirs to change.
       allow update: if adminOf(orgId)
-        && onlyChanges(['name', 'shifts', 'phoneCheck'])
+        && onlyChanges(['name', 'shifts', 'phoneCheck', 'otRule', 'timezone'])
         && request.resource.data.get('shifts', false) is bool
+        && request.resource.data.get('otRule', 'fullDay') in ['fullDay', 'end']
+        && request.resource.data.get('timezone', '') is string
+        && request.resource.data.get('timezone', '').size() <= 64
         && request.resource.data.get('phoneCheck', 'flag') in ['flag', 'block']
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0

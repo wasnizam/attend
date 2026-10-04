@@ -279,3 +279,15 @@ describe('the shift plan on fixed hours', () => {
     expect(by.E3.absent).toBe(1)
   })
 })
+
+describe('overtime rule', () => {
+  // Late by 45 minutes, stays 30 minutes past the end: 8 h 45 min at work, less than a full 9 h day.
+  const args = (rule: 'fullDay' | 'end') =>
+    build([session('d1', '2026-10-01')], new Map([['d1', [rec('E1', '2026-10-01', '09:45')]]]) as never, new Map([['d1', new Map([['E1', at('2026-10-01', '18:30')]])]]) as never, roster as never, [], new Map(), LATER, new Map(), new Map(), rule)
+  it('pays overtime only past a full day by default', () => {
+    expect(args('fullDay').find((r) => r.key === 'E1')!.overtime).toBe(0)
+  })
+  it('can count any time after the end instead', () => {
+    expect(Math.round(args('end').find((r) => r.key === 'E1')!.overtime)).toBe(30)
+  })
+})

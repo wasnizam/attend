@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { PARTS, ReportCharts, buckets, chartData } from '../components/ReportCharts'
 import { getOrganisation } from '../data/account'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, inputClass } from '../components/ui'
@@ -11,7 +12,7 @@ import { useEditableClasses } from '../hooks/useClasses'
 import { useLive } from '../hooks/useLive'
 import { useMySessions } from '../hooks/useSessions'
 import { subscribeOrgSessions } from '../data/sessions'
-import type { Session } from '../lib/types'
+import type { Organisation, Session } from '../lib/types'
 import { downloadCsv } from '../lib/csv'
 import { addDays, formatClock, formatDate, formatDuration, isoDate, parseDate, weekStart } from '../lib/format'
 import { t } from '../lib/i18n'
@@ -75,6 +76,8 @@ const groupRate = (list: PayrollRow[]) => {
   const due = worked + total(list, (r) => r.absent)
   return due ? `${Math.round((worked / due) * 1000) / 10}%` : '—'
 }
+/** Days of leave, with each half day off as half a day. */
+const leaveDays = (r: PayrollRow) => r.leave + r.halfDays / 2
 const sub = (text: string, warn = false) => <span className={`block text-xs ${warn ? 'text-[#b25e00]' : 'text-muted'}`}>{text}</span>
 
 const COLUMNS: Column[] = [
@@ -149,15 +152,15 @@ const COLUMNS: Column[] = [
   },
   { id: 'mc', label: 'MC', csvHead: ['MC'], csv: (r) => [r.mc], text: (r) => String(r.mc), cell: (r) => r.mc, total: (l) => total(l, (r) => r.mc) },
   {
-    id: 'leave', label: 'Excused', csvHead: ['Excused', 'Half days', ...LEAVE_KINDS.map((k) => LEAVE_LABEL[k])], csv: (r) => [r.leave, r.halfDays, ...LEAVE_KINDS.map((k) => r.leaveBy[k])],
-    text: (r) => [String(r.leave), r.halfDays ? t(r.halfDays === 1 ? '+1 half day' : '+{n} half days', { n: r.halfDays }) : '', r.leave ? LEAVE_KINDS.filter((k) => r.leaveBy[k] > 0 && (k !== 'other' || r.leaveBy.other !== r.leave)).map((k) => `${r.leaveBy[k]} ${t(SHORT_LEAVE[k])}`).join(', ') : ''].filter(Boolean).join('\n'), cell: (r) => (
+    id: 'leave', label: 'Excused', csvHead: ['Leave days (half day = 0.5)', 'Half days', ...LEAVE_KINDS.map((k) => LEAVE_LABEL[k])], csv: (r) => [leaveDays(r), r.halfDays, ...LEAVE_KINDS.map((k) => r.leaveBy[k])],
+    text: (r) => [String(leaveDays(r)), r.halfDays ? t(r.halfDays === 1 ? '+1 half day' : '+{n} half days', { n: r.halfDays }) : '', r.leave ? LEAVE_KINDS.filter((k) => r.leaveBy[k] > 0 && (k !== 'other' || r.leaveBy.other !== r.leave)).map((k) => `${r.leaveBy[k]} ${t(SHORT_LEAVE[k])}`).join(', ') : ''].filter(Boolean).join('\n'), cell: (r) => (
       <>
-        {r.leave}
+        {leaveDays(r)}
         {r.halfDays > 0 && sub(t(r.halfDays === 1 ? '+1 half day' : '+{n} half days', { n: r.halfDays }))}
         {r.leave > 0 && sub(LEAVE_KINDS.filter((k) => r.leaveBy[k] > 0 && (k !== 'other' || r.leaveBy.other !== r.leave)).map((k) => `${r.leaveBy[k]} ${t(SHORT_LEAVE[k])}`).join(', '))}
       </>
     ),
-    total: (l) => total(l, (r) => r.leave),
+    total: (l) => total(l, leaveDays),
   },
   { id: 'absent', label: 'Absent', csvHead: ['Absent'], csv: (r) => [r.absent], text: (r) => String(r.absent), cell: (r) => <span className="font-semibold">{r.absent}</span>, total: (l) => total(l, (r) => r.absent) },
   { id: 'noClockOut', label: 'No clock-out', csvHead: ['No clock-out', 'Wrong shift'], csv: (r) => [r.noClockOut, r.wrongShift], text: (r) => String(r.noClockOut), cell: (r) => r.noClockOut, total: (l) => total(l, (r) => r.noClockOut) },
@@ -234,9 +237,10 @@ export function Payroll() {
   }
   const [person, setPerson] = useState<string | null>(null)
   const [making, setMaking] = useState(false)
-  const [company, setCompany] = useState('')
+  const [org, setOrg] = useState<Organisation | null>(null)
+  const company = org?.name ?? ''
   useEffect(() => {
-    getOrganisation(profile.organisationId).then((o) => setCompany(o?.name ?? ''), () => {})
+    getOrganisation(profile.organisationId).then(setOrg, () => {})
   }, [profile.organisationId])
   const [department, setDepartment] = useState('')
   const [office, setOffice] = useState('')
@@ -288,6 +292,7 @@ export function Payroll() {
             new Map(leave),
             // Each list's working days, and the days it was closed (public holidays), for rest-day and holiday hours.
             new Map((classes.data ?? []).map((c) => [c.id, { days: c.days, off: new Set(Object.keys(c.cancelled ?? {}).map((k) => k.slice(0, 10))) }] as const)),
+            org?.otRule ?? 'fullDay',
           ),
         ),
       () => !stale && setFailed(true),
@@ -296,7 +301,7 @@ export function Payroll() {
       stale = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature, from, to, profile.id, classes.data])
+  }, [signature, from, to, profile.id, classes.data, org?.otRule])
 
   if (source.loading || classes.loading) return <PageLoader />
 
@@ -313,6 +318,22 @@ export function Payroll() {
   const due = workedDays + total(shown, (r) => r.absent)
   const rate = due ? Math.round((workedDays / due) * 1000) / 10 : null
   const flagged = shown.map((r) => ({ r, why: concerns(r) })).filter((x) => x.why.length)
+  // Working days that should have been opened and were not: nobody could clock in, and nobody shows
+  // as absent, so the day would otherwise vanish from the report.
+  const opened = new Set((source.data ?? []).filter((x) => x.status !== 'scheduled').map((x) => `${x.classId}|${x.date}`))
+  const notOpened: { office: string; date: string }[] = []
+  for (const c of classes.data ?? []) {
+    if (c.rotating || (office && (c.venue || c.name) !== office)) continue
+    const closed = new Set(Object.keys(c.cancelled ?? {}).map((k) => k.slice(0, 10)))
+    for (let d = from < (c.startDate ?? from) ? c.startDate! : from; d <= to && d < today && (!c.endDate || d <= c.endDate); d = addDays(d, 1)) {
+      if (c.days.map(Number).includes(parseDate(d).getDay()) && !closed.has(d) && !opened.has(`${c.id}|${d}`)) notOpened.push({ office: c.venue || c.name, date: d })
+    }
+  }
+  // A month or more with no public holiday marked anywhere is worth a reminder.
+  const holidayMarked = (classes.data ?? []).some((c) => Object.keys(c.cancelled ?? {}).some((k) => k.slice(0, 10) >= from && k.slice(0, 10) <= to))
+  const remindHolidays = !holidayMarked && (parseDate(to < today ? to : today).getTime() - parseDate(from).getTime()) / 86_400_000 >= 27
+  const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const otherZone = org?.timezone && org.timezone !== browserZone ? org.timezone : ''
   const periodName =
     period === 'week' ? t('Week of {date}', { date: formatDate(from) })
     : period === 'year' ? year
@@ -354,7 +375,7 @@ export function Payroll() {
     const totals = (list: PayrollRow[], name: string) => [name, '', ...columns.map((c) => String(c.total?.(list) ?? ''))]
     const absent = total(shown, (r) => r.absent)
     const late = total(shown, (r) => r.late)
-    const off = total(shown, (r) => r.leave + r.mc)
+    const off = total(shown, (r) => leaveDays(r) + r.mc)
     const noOut = total(shown, (r) => r.noClockOut)
     const open = total(shown, (r) => r.openDays)
     const timed = total(shown, (r) => r.timedDays)
@@ -379,8 +400,16 @@ export function Payroll() {
             : t('Hours cover {a} of {b} days worked: {d} still at work.', { a: timed, b: days, d: open })
         : '',
       flagged.length ? t('{n} people need attention (listed below).', { n: flagged.length }) : '',
+      notOpened.length ? t('{n} working days were never opened; nobody could clock in.', { n: notOpened.length }) : '',
+      remindHolidays ? t('No public holiday is marked in these dates.') : '',
     ].filter(Boolean)
     const sections: PdfReport['sections'] = []
+    if (has('attention') && notOpened.length)
+      sections.push({
+        heading: `${t('Working days nobody opened')} (${notOpened.length})`,
+        note: t('Nobody could clock in, so nobody shows as absent. If people worked, add them on the day; if it was a day off, mark it on the Calendar.'),
+        lines: notOpened.map((x) => [parseDate(x.date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }), x.office]),
+      })
     if (has('attention') && flagged.length)
       sections.push({ heading: `${t('Needs attention')} (${flagged.length})`, note: t('Absent without leave, late or leaving early three times or more, or a day with no clock-out to fix before payroll.'), lines: flagged.map(({ r, why }) => [[r.name, r.office, r.department].filter(Boolean).join(' - '), why.join(', ')]) })
     if (has('table') && columns.length)
@@ -436,8 +465,10 @@ export function Payroll() {
       notes: {
         heading: t('How the figures are worked out'),
         items: [
-          t('Hours are from clock-in to clock-out, less the unpaid break on a day of more than five hours. Overtime is the time worked after the shift’s end time. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.'),
+          t('Hours are from clock-in to clock-out, less the unpaid break on a day of more than five hours. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.'),
           t('Attendance is the days worked out of the days each person was due; MC and leave are left out. Work on a rest day or a public holiday is shown apart. Under the Employment Act 1955 overtime is paid at least 1.5 times the hourly rate on a normal day, 2 times on a rest day and 3 times on a public holiday. Click a name for that person’s timesheet.').replace(/ Click a name.*$/, '').replace(/ Klik nama.*$/, ''),
+          t(org?.otRule === 'end' ? 'Overtime on a normal day is any time after the end time (company setting).' : 'Overtime on a normal day is the time past a full day’s normal hours, as in the Employment Act (company setting). A half day off counts as half a day of leave.'),
+          ...(otherZone ? [t('Made on a computer set to {here}; the company works in {zone}.', { here: browserZone, zone: otherZone })] : []),
           ...(toDate_ ? [t('Figures are as at {time}. A day still in progress counts nobody as absent yet, and hours for people still at work are added when they clock out.', { time: `${formatDate(today)}, ${formatClock(new Date())}` })] : []),
         ],
       },
@@ -611,6 +642,33 @@ export function Payroll() {
 
           {has('charts') && <ReportCharts rows={shown} groups={groups} from={from} to={to < today ? to : today} />}
 
+          {otherZone && (
+            <p className="rounded-lg bg-[#fff4d6] px-4 py-2.5 text-sm text-[#8a5a00]">
+              {t('This computer is set to {here}, but the company works in {zone}. Late and overtime minutes may be off; open the report on a computer set to {zone}.', { here: browserZone.replace(/_/g, ' '), zone: otherZone.replace(/_/g, ' ') })}
+            </p>
+          )}
+          {remindHolidays && (
+            <p className="rounded-lg bg-accent-soft px-4 py-2.5 text-sm text-ink print:hidden">
+              {t('No public holiday is marked in these dates. If there was one, mark it on the Calendar (Day off for everyone) so work that day counts at the holiday rate.')}{' '}
+              <Link to="/app/calendar" className="font-semibold text-accent">{t('Open the Calendar')}</Link>
+            </p>
+          )}
+          {has('attention') && notOpened.length > 0 && (
+            <Card className="break-inside-avoid p-5">
+              <h2 className="font-semibold">{t('Working days nobody opened')} <span className="font-normal text-muted">· {notOpened.length}</span></h2>
+              <p className="text-sm text-muted">{t('Nobody could clock in, so nobody shows as absent. If people worked, add them on the day; if it was a day off, mark it on the Calendar.')}</p>
+              <ul className="mt-3 flex flex-wrap gap-2 text-sm">
+                {notOpened.slice(0, 40).map((x) => (
+                  <li key={`${x.office}${x.date}`} className="rounded-md bg-canvas px-2.5 py-1">
+                    {parseDate(x.date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}
+                    {offices.length > 1 || (classes.data ?? []).length > 1 ? <span className="text-muted"> · {x.office}</span> : null}
+                  </li>
+                ))}
+                {notOpened.length > 40 && <li className="px-2.5 py-1 text-muted">{t('and {n} more', { n: notOpened.length - 40 })}</li>}
+              </ul>
+            </Card>
+          )}
+
           {has('attention') && flagged.length > 0 && (
             <Card className="break-inside-avoid p-5">
               <h2 className="font-semibold">{t('Needs attention')} <span className="font-normal text-muted">· {flagged.length}</span></h2>
@@ -682,7 +740,8 @@ export function Payroll() {
             ))}
 
           <div className="space-y-2 text-sm text-muted">
-            <p>{t('Hours are from clock-in to clock-out, less the unpaid break on a day of more than five hours. Overtime is the time worked after the shift’s end time. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.')}</p>
+            <p>{t('Hours are from clock-in to clock-out, less the unpaid break on a day of more than five hours. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.')}</p>
+            <p>{t(org?.otRule === 'end' ? 'Overtime on a normal day is any time after the end time (company setting).' : 'Overtime on a normal day is the time past a full day’s normal hours, as in the Employment Act (company setting). A half day off counts as half a day of leave.')}</p>
             <p>{t('Attendance is the days worked out of the days each person was due; MC and leave are left out. Work on a rest day or a public holiday is shown apart. Under the Employment Act 1955 overtime is paid at least 1.5 times the hourly rate on a normal day, 2 times on a rest day and 3 times on a public holiday. Click a name for that person’s timesheet.')}</p>
             <p className="hidden print:block">{t('Printed {date}', { date: formatDate(today) })}</p>
           </div>

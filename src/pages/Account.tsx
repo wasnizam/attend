@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, ErrorNote, Field, friendlyError, inputClass } from '../components/ui'
-import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, setPhoneCheckFor, setShifts, signOut } from '../data/account'
+import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, setPhoneCheckFor, setOrgSetting, setShifts, signOut } from '../data/account'
 import { useCurrency } from '../lib/currency'
 import { editionForPurpose } from '../lib/editions'
 import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, paidUntil, trialDaysLeft } from '../lib/plan'
@@ -34,6 +34,10 @@ function useSave() {
   }
   return { busy, error, done, run }
 }
+
+
+const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+const ZONES = ['Asia/Kuala_Lumpur', 'Asia/Singapore', 'Asia/Jakarta', 'Asia/Bangkok', 'Asia/Manila', 'Asia/Brunei', 'Asia/Dubai', 'Europe/London', 'Australia/Sydney']
 
 export function Account() {
   const profile = useProfile()
@@ -187,6 +191,47 @@ export function Account() {
               <option value="block">{t('Refuse it until I approve the phone')}</option>
             </select>
             <span className="mt-1.5 block text-xs text-muted">{t('Each person’s first clock-in registers their phone. A new phone can be approved in one tap on the day’s list. Applies to days opened from now on.')}</span>
+          </label>
+        )}
+        {profile.role === 'admin' && org && getPurpose() === 'workplace' && (
+          <label className="mt-5 block border-t border-line pt-4">
+            <span className="mb-1.5 block text-sm font-medium">{t('Overtime on a normal day starts')}</span>
+            <select
+              value={org.otRule ?? 'fullDay'}
+              onChange={(e) => {
+                const value = e.target.value as 'fullDay' | 'end'
+                orgSave.run(async () => {
+                  await setOrgSetting(org.id, 'otRule', value)
+                  setOrg({ ...org, otRule: value })
+                }, '')
+              }}
+              className={inputClass}
+            >
+              <option value="fullDay">{t('After a full day’s hours (Employment Act)')}</option>
+              <option value="end">{t('Any time after the end time')}</option>
+            </select>
+            <span className="mt-1.5 block text-xs text-muted">{t('With a full day, someone who comes in 45 minutes late and stays 30 minutes late has no overtime. Rest days and public holidays are always counted apart.')}</span>
+          </label>
+        )}
+        {profile.role === 'admin' && org && getPurpose() === 'workplace' && (
+          <label className="mt-5 block border-t border-line pt-4">
+            <span className="mb-1.5 block text-sm font-medium">{t('Company time zone')}</span>
+            <select
+              value={org.timezone ?? browserZone}
+              onChange={(e) => {
+                const value = e.target.value
+                orgSave.run(async () => {
+                  await setOrgSetting(org.id, 'timezone', value)
+                  setOrg({ ...org, timezone: value })
+                }, '')
+              }}
+              className={inputClass}
+            >
+              {[...new Set([org.timezone ?? browserZone, browserZone, ...ZONES])].map((z) => (
+                <option key={z} value={z}>{z.replace(/_/g, ' ')}</option>
+              ))}
+            </select>
+            <span className="mt-1.5 block text-xs text-muted">{t('Reports warn when they are opened on a computer set to another time zone, because late and overtime minutes would shift.')}</span>
           </label>
         )}
         <p className="mt-3 text-sm text-muted">

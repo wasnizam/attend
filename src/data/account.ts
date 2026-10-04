@@ -79,6 +79,8 @@ export function subscribeOrganisation(id: string, onData: (org: Organisation | n
 /** Workplace: flag, or refuse, a clock-in from a phone that is not the person's own. */
 export const setPhoneCheckFor = (id: string, value: 'flag' | 'block') => updateDoc(doc(db, 'organisations', id), { phoneCheck: value })
 
+export const setOrgSetting = (id: string, field: 'otRule' | 'timezone', value: string) => updateDoc(doc(db, 'organisations', id), { [field]: value })
+
 export const setShifts = (id: string, on: boolean) => updateDoc(doc(db, 'organisations', id), { shifts: on })
 
 export async function renameOrganisation(org: Organisation, name: string) {
