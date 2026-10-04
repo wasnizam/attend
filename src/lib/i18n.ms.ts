@@ -1129,4 +1129,6 @@ export const ms: Record<string, string> = {
   "from {a} of {b} days worked": "daripada {a} / {b} hari bekerja",
   "Figures are as at {time}. A day still in progress counts nobody as absent yet, and hours for people still at work are added when they clock out.": "Angka setakat {time}. Hari yang masih berjalan belum mengira sesiapa tidak hadir, dan jam bagi yang masih bekerja ditambah selepas mereka rekod keluar.",
   "+{n} on leave or MC": "+{n} cuti atau MC",
+  "Covers {from} – {to}": "Meliputi {from} – {to}",
+  "up to today": "sehingga hari ini",
 }

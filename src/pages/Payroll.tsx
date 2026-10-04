@@ -442,8 +442,8 @@ export function Payroll() {
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">
           <Button variant="secondary" onClick={() => setCustomising(!customising)}>{t('Customise report')}</Button>
-          <Button variant="secondary" disabled={shown.length === 0} busy={making} onClick={() => savePdf(pdf(), setMaking)}>{t('Download PDF')}</Button>
-          <Button disabled={shown.length === 0} onClick={exportCsv}>{t('Export for Excel')}</Button>
+          <Button variant="secondary" disabled={shown.every((r) => r.entries.length === 0)} busy={making} onClick={() => savePdf(pdf(), setMaking)}>{t('Download PDF')}</Button>
+          <Button disabled={shown.every((r) => r.entries.length === 0)} onClick={exportCsv}>{t('Export for Excel')}</Button>
         </div>
       </div>
 
@@ -492,6 +492,10 @@ export function Payroll() {
             </label>
           </>
         )}
+        <p className="pb-2.5 text-sm text-muted">
+          {t('Covers {from} – {to}', { from: formatDate(from), to: formatDate(to) })}
+          {to > today && from <= today && <span> · {t('up to today')}</span>}
+        </p>
         {offices.length > 1 && (
           <label className="block text-xs font-medium text-muted">
             {t('Office')}
@@ -563,7 +567,7 @@ export function Payroll() {
         <ErrorNote>{t('The report could not be loaded. Check your connection and reload.')}</ErrorNote>
       ) : !rows ? (
         <PageLoader />
-      ) : shown.length === 0 ? (
+      ) : shown.every((r) => r.entries.length === 0) ? (
         <EmptyState title={t('Nothing recorded in this period')} text={t('Once people clock in, their days and hours appear here.')} />
       ) : (
         <>
