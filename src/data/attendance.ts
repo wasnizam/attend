@@ -216,6 +216,24 @@ export function subscribeSessionAttendance(
   )
 }
 
+/** Session ID -> how many people were on leave or MC that day, for the days someone may see. */
+export function subscribeAwayCounts(viewer: UserProfile, onData: (counts: Map<string, number>) => void, onError: (e: Error) => void) {
+  const constraints: QueryConstraint[] = [where('organisationId', '==', viewer.organisationId), where('status', 'in', ['mc', 'excused'])]
+  if (viewer.role !== 'admin') constraints.push(where('ownerId', '==', viewer.id))
+  return onSnapshot(
+    query(attendance, ...constraints),
+    (snap) => {
+      const counts = new Map<string, number>()
+      for (const d of snap.docs) {
+        const id = d.data().sessionId as string
+        counts.set(id, (counts.get(id) ?? 0) + 1)
+      }
+      onData(counts)
+    },
+    onError,
+  )
+}
+
 /** Admin: every attendance record in the organisation within a date range. */
 export function subscribeOrgAttendance(
   organisationId: string,

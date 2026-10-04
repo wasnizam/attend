@@ -1131,4 +1131,9 @@ export const ms: Record<string, string> = {
   "+{n} on leave or MC": "+{n} cuti atau MC",
   "Covers {from} – {to}": "Meliputi {from} – {to}",
   "up to today": "sehingga hari ini",
+  "Hours cover {a} of {b} days worked: {c} without a clock-out, to fix before payroll.": "Jam meliputi {a} daripada {b} hari bekerja: {c} tanpa rekod keluar, perlu dibetulkan sebelum gaji.",
+  "Hours cover {a} of {b} days worked: {d} still at work.": "Jam meliputi {a} daripada {b} hari bekerja: {d} masih bekerja.",
+  "{n} more in the table": "{n} lagi dalam jadual",
+  "1 on leave": "1 bercuti",
+  "{n} on leave": "{n} bercuti",
 }

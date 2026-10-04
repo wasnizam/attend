@@ -27,6 +27,8 @@ export interface PayrollRow {
   absent: number
   /** Days with a clock-in and no clock-out: hours for those days are not counted. */
   noClockOut: number
+  /** Of `days`, those on a rest day or a public holiday: extra days, not part of the attendance rate. */
+  extraDays: number
   /** Days clocked in today (or any day not over yet) and not clocked out: still at work, hours to come. */
   openDays: number
   /** Days whose hours are counted (clocked in and out). */
@@ -98,7 +100,7 @@ export function buildPayroll(
   const people = new Map<string, PayrollRow>()
   const person = (key: string, staffId: string, name: string) => {
     if (!people.has(key)) {
-      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, openDays: 0, timedDays: 0, wrongShift: 0, early: 0, earlyMinutes: 0, earlyApproved: 0, halfDays: 0, leaveBy: { annual: 0, emergency: 0, unpaid: 0, other: 0 }, restMinutes: 0, holidayMinutes: 0, rate: null, entries: [] })
+      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, openDays: 0, timedDays: 0, extraDays: 0, wrongShift: 0, early: 0, earlyMinutes: 0, earlyApproved: 0, halfDays: 0, leaveBy: { annual: 0, emergency: 0, unpaid: 0, other: 0 }, restMinutes: 0, holidayMinutes: 0, rate: null, entries: [] })
     }
     return people.get(key)!
   }
@@ -136,6 +138,7 @@ export function buildPayroll(
       }
       else {
         row.days += 1
+        if (dayType !== 'normal') row.extraDays += 1
         if (r.halfDay) row.halfDays += 1
         const late = lateFor(r, session)
         if (late || (status === 'late' && r.halfDay !== 'am')) {
@@ -227,7 +230,9 @@ export function buildPayroll(
     }
   }
   for (const row of people.values()) {
-    row.rate = row.days + row.absent ? Math.round((row.days / (row.days + row.absent)) * 1000) / 10 : null
+    // Only working days count: coming in on a rest day or holiday does not make up for an absence.
+    const worked = row.days - row.extraDays
+    row.rate = worked + row.absent ? Math.round((worked / (worked + row.absent)) * 1000) / 10 : null
     row.entries.sort((a, b) => a.date.localeCompare(b.date) || (a.clockIn ?? 0) - (b.clockIn ?? 0))
   }
   return [...people.values()].sort((a, b) => a.office.localeCompare(b.office) || a.department.localeCompare(b.department) || a.name.localeCompare(b.name))

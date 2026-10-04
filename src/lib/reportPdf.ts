@@ -47,6 +47,8 @@ export interface PdfReport {
   /** Lines to sign at the end (a timesheet). */
   signatures?: string[]
   footer: string
+  /** "{n} more in the table", in the reader's language. */
+  moreLabel?: string
 }
 
 type RGB = [number, number, number]
@@ -97,15 +99,26 @@ export async function downloadReportPdf(report: PdfReport) {
 
   // Trend beside the key findings, then the two bar charts side by side.
   if (report.trend || report.findings) {
-    const h = 62
-    room(h)
     const trendW = report.findings ? CONTENT * 0.62 : CONTENT
+    // As tall as the findings need, never shorter than the chart wants.
+    const h = Math.max(56, report.findings ? findingsHeight(doc, report.findings, report.trend ? CONTENT - trendW - 6 : CONTENT) : 0)
+    room(h)
     if (report.trend) trendChart(doc, report.trend, M, y, trendW, h)
     if (report.findings) findingsBox(doc, report.findings, report.trend ? M + trendW + 6 : M, y, report.trend ? CONTENT - trendW - 6 : CONTENT, h)
     y += h + 7
   }
   const bars = report.bars ?? []
   if (bars.length) {
+    // Keep the charts on this page when at least three rows fit: show the first rows (lowest first) and say so.
+    const fit = Math.floor((BOTTOM - y - 19 - 3) / ROW)
+    if (Math.max(...bars.map(barsHeight)) > BOTTOM - y && fit >= 3) {
+      for (const b of bars) {
+        if (b.items.length > fit) {
+          b.note = `${b.note ? `${b.note} ` : ''}(${(report.moreLabel ?? '{n} more in the table').replace('{n}', String(b.items.length - fit))})`
+          b.items = b.items.slice(0, fit)
+        }
+      }
+    }
     const h = Math.max(...bars.map(barsHeight))
     room(h)
     const w = bars.length > 1 ? (CONTENT - 6) / 2 : CONTENT
@@ -317,6 +330,11 @@ function trendChart(doc: JsPDF, c: PdfTrend, x: number, y: number, w: number, h:
   }
 }
 
+const findingsHeight = (doc: JsPDF, f: NonNullable<PdfReport['findings']>, w: number) => {
+  doc.setFont('helvetica', 'normal').setFontSize(8.2)
+  return 15 + f.items.reduce((a, item) => a + (doc.splitTextToSize(plain(item), w - 15) as string[]).length * 3.8 + 2.2, 0)
+}
+
 function findingsBox(doc: JsPDF, f: NonNullable<PdfReport['findings']>, x: number, y: number, w: number, h: number) {
   doc.setFillColor(...SOFT).setDrawColor(...LINE).setLineWidth(0.25).roundedRect(x, y, w, h, 1.8, 1.8, 'FD')
   doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(...INK).text(plain(f.heading), x + 5, y + 7.5)
@@ -331,14 +349,14 @@ function findingsBox(doc: JsPDF, f: NonNullable<PdfReport['findings']>, x: numbe
   }
 }
 
-const ROW = 6
-const barsHeight = (b: PdfBars) => 20 + Math.min(8, b.items.length) * ROW
+const ROW = 5.4
+const barsHeight = (b: PdfBars) => 19 + Math.min(8, b.items.length) * ROW
 
 /** Horizontal bars, value written at the end, one row per group or person. */
 function barsChart(doc: JsPDF, b: PdfBars, x: number, y: number, w: number, h: number) {
   let ty = panel(doc, x, y, w, h, b.title, b.note) + 1.5
-  const labelW = Math.min(56, w * 0.38)
-  const valueW = 36
+  const labelW = Math.min(66, w * 0.46)
+  const valueW = 30
   const trackX = x + 5 + labelW
   const trackW = w - 10 - labelW - valueW
   for (const it of b.items.slice(0, 8)) {

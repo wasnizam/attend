@@ -193,7 +193,7 @@ function Bars({ items, unit, max }: { items: { label: string; value: number; not
 export function chartData(rows: PayrollRow[], groups: { name: string; list: PayrollRow[] }[]) {
   const byGroup = groups
     .map((g) => {
-      const days = g.list.reduce((a, r) => a + r.days, 0)
+      const days = g.list.reduce((a, r) => a + r.days - r.extraDays, 0)
       const due = days + g.list.reduce((a, r) => a + r.absent, 0)
       const late = g.list.reduce((a, r) => a + r.late, 0)
       return { label: g.name || t('No department'), value: due ? Math.round((days / due) * 1000) / 10 : 0, due, note: t(late === 1 ? '1 late' : '{n} late', { n: late }) }

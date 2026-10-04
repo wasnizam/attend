@@ -1,13 +1,21 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorNote, PageLoader, inputClass } from '../components/ui'
+import { subscribeAwayCounts } from '../data/attendance'
+import { useProfile } from '../hooks/useAuth'
+import { useLive } from '../hooks/useLive'
 import { useMySessions, useNow } from '../hooks/useSessions'
 import { effectiveStatus, formatDate, formatPercent, headcount, isoDate, percent } from '../lib/format'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 
 export function History() {
   const { data, loading, error } = useMySessions()
   const [search, setSearch] = useState('')
+  const profile = useProfile()
+  // At work, leave and MC are not missed days: the rate is out of the people who were due.
+  const work = has('clock')
+  const away = useLive<Map<string, number>>(work ? (onData, onError) => subscribeAwayCounts(profile, onData, onError) : null, [work, profile.id, profile.role])
   useNow()
   const today = isoDate()
 
@@ -41,7 +49,8 @@ export function History() {
             <ul className="divide-y divide-line overflow-hidden rounded-xl bg-white shadow-card">
               {shown.map((s) => {
                 const total = headcount(s.presentCount, s.expected)
-                const pct = percent(s.presentCount, total)
+                const off = away.data?.get(s.id) ?? 0
+                const pct = percent(s.presentCount, total ? total - off : total)
                 const held = s.status !== 'scheduled'
                 return (
                   <li key={s.id}>
@@ -57,7 +66,12 @@ export function History() {
                               {s.presentCount}
                               {total ? ` / ${total}` : ` ${t('present')}`}
                             </p>
-                            {pct !== null && <p className="text-sm text-muted">{formatPercent(pct)}</p>}
+                            {pct !== null && (
+                              <p className="text-sm text-muted">
+                                {off > 0 && `${t(off === 1 ? '1 on leave' : '{n} on leave', { n: off })} · `}
+                                {formatPercent(pct)}
+                              </p>
+                            )}
                           </>
                         ) : (
                           <p className="text-sm text-muted">{t('Not held')}</p>

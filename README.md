@@ -373,3 +373,11 @@ firestore.rules  access control          tests/rules.test.ts  its tests
 - Admin views load at most 1,000 sessions / 5,000 records per date range; history shows a
   lecturer's latest 300 sessions.
 - Session dates and times use the lecturer's device time zone.
+
+**Realistic test month (local emulator only).** `node scripts/seed-workplace.mjs <orgId> <ownerUid> <ownerName> <hqClassId> <branchClassId>`
+fills two offices (16 + 6 staff) with September 2026 and 1–3 October: Mon–Fri 09:00–18:00 with a
+1 h unpaid lunch (Penang also Sat 09:00–13:00), Malaysia Day 16 Sep as a public holiday with two
+people working it, a Saturday stock-take, annual / emergency / unpaid leave, MC, half days, allowed
+and unallowed early leave, habitual lateness, forgotten clock-outs and four days absent without
+leave. It uses a fixed random seed, so the same month comes out every time.
+

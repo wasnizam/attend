@@ -184,6 +184,8 @@ describe('what HR needs on top of the totals', () => {
     expect(Math.round(by.E1.overtime)).toBe(60)
     expect(Math.round(by.E1.holidayMinutes)).toBe(240)
     expect(Math.round(by.E1.restMinutes)).toBe(180)
+    // Days on a rest day or holiday are worked, but kept out of the attendance rate.
+    expect(by.E1).toMatchObject({ days: 3, extraDays: 2 })
   })
 
   it('gives an attendance rate from days worked out of days due', () => {

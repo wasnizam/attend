@@ -71,9 +71,9 @@ interface Column {
 
 const total = (list: PayrollRow[], f: (r: PayrollRow) => number) => list.reduce((a, r) => a + f(r), 0)
 const groupRate = (list: PayrollRow[]) => {
-  const days = total(list, (r) => r.days)
-  const due = days + total(list, (r) => r.absent)
-  return due ? `${Math.round((days / due) * 1000) / 10}%` : '—'
+  const worked = total(list, (r) => r.days - r.extraDays)
+  const due = worked + total(list, (r) => r.absent)
+  return due ? `${Math.round((worked / due) * 1000) / 10}%` : '—'
 }
 const sub = (text: string, warn = false) => <span className={`block text-xs ${warn ? 'text-[#b25e00]' : 'text-muted'}`}>{text}</span>
 
@@ -289,8 +289,10 @@ export function Payroll() {
   const offices = [...new Set((rows ?? []).map((r) => r.office).filter(Boolean))]
   const shown = (rows ?? []).filter((r) => (!department || r.department === department) && (!office || r.office === office))
   const days = total(shown, (r) => r.days)
-  const due = days + total(shown, (r) => r.absent)
-  const rate = due ? Math.round((days / due) * 1000) / 10 : null
+  // The rate compares working days only; extra days on a rest day or holiday are left out.
+  const workedDays = days - total(shown, (r) => r.extraDays)
+  const due = workedDays + total(shown, (r) => r.absent)
+  const rate = due ? Math.round((workedDays / due) * 1000) / 10 : null
   const flagged = shown.map((r) => ({ r, why: concerns(r) })).filter((x) => x.why.length)
   const periodName =
     period === 'week' ? t('Week of {date}', { date: formatDate(from) })
@@ -351,8 +353,12 @@ export function Payroll() {
       off ? t(off === 1 ? '1 day of leave or MC.' : '{n} days of leave or MC.', { n: off }) : '',
       overtime + rest + holiday >= 1 ? t('Overtime {h}; rest days {r}; public holidays {p}.', { h: formatDuration(overtime), r: formatDuration(rest), p: formatDuration(holiday) }) : '',
       timed < days
-        ? t('Hours cover {a} of {b} days worked: {c} without a clock-out (fix before payroll), {d} still at work.', { a: timed, b: days, c: noOut, d: open })
-        : noOut ? t('{n} days without a clock-out need fixing before payroll.', { n: noOut }) : '',
+        ? open && noOut
+          ? t('Hours cover {a} of {b} days worked: {c} without a clock-out (fix before payroll), {d} still at work.', { a: timed, b: days, c: noOut, d: open })
+          : noOut
+            ? t('Hours cover {a} of {b} days worked: {c} without a clock-out, to fix before payroll.', { a: timed, b: days, c: noOut })
+            : t('Hours cover {a} of {b} days worked: {d} still at work.', { a: timed, b: days, d: open })
+        : '',
       flagged.length ? t('{n} people need attention (listed below).', { n: flagged.length }) : '',
     ].filter(Boolean)
     const sections: PdfReport['sections'] = []
@@ -417,6 +423,7 @@ export function Payroll() {
         ],
       },
       footer: [company, t('Confidential'), t('Made with Attend')].filter(Boolean).join('  |  '),
+      moreLabel: t('{n} more in the table'),
     }
   }
 
