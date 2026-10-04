@@ -15,6 +15,7 @@ import { downloadCsv } from '../lib/csv'
 import { addDays, formatClock, formatDate, formatDuration, isoDate, parseDate, weekStart } from '../lib/format'
 import { t } from '../lib/i18n'
 import { type DayEntry, type PayrollRow, buildPayroll, hours } from '../lib/payroll'
+import { type PdfReport, downloadReportPdf } from '../lib/reportPdf'
 
 const LEAVE_KINDS = ['annual', 'emergency', 'unpaid', 'other'] as const
 const SHORT_LEAVE = { annual: 'annual', emergency: 'emergency', unpaid: 'unpaid', other: 'other' }
@@ -62,7 +63,9 @@ interface Column {
   csvHead: string[]
   csv: (r: PayrollRow) => (string | number)[]
   cell: (r: PayrollRow) => ReactNode
-  total?: (list: PayrollRow[]) => ReactNode
+  /** The same cell as plain text, for the PDF. */
+  text: (r: PayrollRow) => string
+  total?: (list: PayrollRow[]) => string | number
 }
 
 const total = (list: PayrollRow[], f: (r: PayrollRow) => number) => list.reduce((a, r) => a + f(r), 0)
@@ -76,22 +79,22 @@ const sub = (text: string, warn = false) => <span className={`block text-xs ${wa
 const COLUMNS: Column[] = [
   {
     id: 'days', label: 'Days worked', csvHead: ['Days worked'], csv: (r) => [r.days],
-    cell: (r) => <>{r.days}{r.wrongShift > 0 && sub(t('{n} on another shift', { n: r.wrongShift }), true)}</>,
+    text: (r) => `${r.days}${r.wrongShift ? `\n${t('{n} on another shift', { n: r.wrongShift })}` : ''}`, cell: (r) => <>{r.days}{r.wrongShift > 0 && sub(t('{n} on another shift', { n: r.wrongShift }), true)}</>,
     total: (l) => total(l, (r) => r.days),
   },
   {
     id: 'rate', label: 'Attendance', csvHead: ['Attendance %'], csv: (r) => [r.rate ?? ''],
-    cell: (r) => <span className={r.rate !== null && r.rate < 90 ? 'font-semibold text-[#b25e00]' : ''}>{r.rate === null ? '—' : `${r.rate}%`}</span>,
+    text: (r) => (r.rate === null ? '-' : `${r.rate}%`), cell: (r) => <span className={r.rate !== null && r.rate < 90 ? 'font-semibold text-[#b25e00]' : ''}>{r.rate === null ? '—' : `${r.rate}%`}</span>,
     total: groupRate,
   },
   {
     id: 'hours', label: 'Hours', csvHead: ['Hours'], csv: (r) => [hours(r.minutes)],
-    cell: (r) => <>{formatDuration(r.minutes)}{r.noClockOut > 0 && sub(t('{n} without clock-out', { n: r.noClockOut }), true)}</>,
+    text: (r) => `${formatDuration(r.minutes)}${r.noClockOut ? `\n${t('{n} without clock-out', { n: r.noClockOut })}` : ''}`, cell: (r) => <>{formatDuration(r.minutes)}{r.noClockOut > 0 && sub(t('{n} without clock-out', { n: r.noClockOut }), true)}</>,
     total: (l) => formatDuration(total(l, (r) => r.minutes)),
   },
   {
     id: 'overtime', label: 'Overtime', csvHead: ['Overtime hours', 'Rest day hours', 'Public holiday hours'], csv: (r) => [hours(r.overtime), hours(r.restMinutes), hours(r.holidayMinutes)],
-    cell: (r) => (
+    text: (r) => [r.overtime >= 1 ? formatDuration(r.overtime) : '-', r.restMinutes >= 1 ? t('rest day {h}', { h: formatDuration(r.restMinutes) }) : '', r.holidayMinutes >= 1 ? t('public holiday {h}', { h: formatDuration(r.holidayMinutes) }) : ''].filter(Boolean).join('\n'), cell: (r) => (
       <>
         {r.overtime >= 1 ? formatDuration(r.overtime) : '—'}
         {r.restMinutes >= 1 && sub(t('rest day {h}', { h: formatDuration(r.restMinutes) }))}
@@ -102,12 +105,12 @@ const COLUMNS: Column[] = [
   },
   {
     id: 'late', label: 'Late', csvHead: ['Late', 'Late minutes'], csv: (r) => [r.late, Math.round(r.lateMinutes)],
-    cell: (r) => <>{r.late}{r.lateMinutes >= 1 && <span className="text-xs text-muted"> · {Math.round(r.lateMinutes)} min</span>}</>,
+    text: (r) => `${r.late}${r.lateMinutes >= 1 ? ` (${Math.round(r.lateMinutes)} min)` : ''}`, cell: (r) => <>{r.late}{r.lateMinutes >= 1 && <span className="text-xs text-muted"> · {Math.round(r.lateMinutes)} min</span>}</>,
     total: (l) => total(l, (r) => r.late),
   },
   {
     id: 'early', label: 'Left early', csvHead: ['Left early', 'Early minutes', 'Allowed to leave early'], csv: (r) => [r.early, Math.round(r.earlyMinutes), r.earlyApproved],
-    cell: (r) => (
+    text: (r) => `${r.early}${r.earlyMinutes >= 1 ? ` (${Math.round(r.earlyMinutes)} min)` : ''}${r.earlyApproved ? `\n${t('+{n} allowed', { n: r.earlyApproved })}` : ''}`, cell: (r) => (
       <>
         {r.early}
         {r.earlyMinutes >= 1 && <span className="text-xs text-muted"> · {Math.round(r.earlyMinutes)} min</span>}
@@ -116,10 +119,10 @@ const COLUMNS: Column[] = [
     ),
     total: (l) => total(l, (r) => r.early),
   },
-  { id: 'mc', label: 'MC', csvHead: ['MC'], csv: (r) => [r.mc], cell: (r) => r.mc, total: (l) => total(l, (r) => r.mc) },
+  { id: 'mc', label: 'MC', csvHead: ['MC'], csv: (r) => [r.mc], text: (r) => String(r.mc), cell: (r) => r.mc, total: (l) => total(l, (r) => r.mc) },
   {
     id: 'leave', label: 'Excused', csvHead: ['Excused', 'Half days', ...LEAVE_KINDS.map((k) => LEAVE_LABEL[k])], csv: (r) => [r.leave, r.halfDays, ...LEAVE_KINDS.map((k) => r.leaveBy[k])],
-    cell: (r) => (
+    text: (r) => [String(r.leave), r.halfDays ? t(r.halfDays === 1 ? '+1 half day' : '+{n} half days', { n: r.halfDays }) : '', r.leave ? LEAVE_KINDS.filter((k) => r.leaveBy[k] > 0 && (k !== 'other' || r.leaveBy.other !== r.leave)).map((k) => `${r.leaveBy[k]} ${t(SHORT_LEAVE[k])}`).join(', ') : ''].filter(Boolean).join('\n'), cell: (r) => (
       <>
         {r.leave}
         {r.halfDays > 0 && sub(t(r.halfDays === 1 ? '+1 half day' : '+{n} half days', { n: r.halfDays }))}
@@ -128,8 +131,8 @@ const COLUMNS: Column[] = [
     ),
     total: (l) => total(l, (r) => r.leave),
   },
-  { id: 'absent', label: 'Absent', csvHead: ['Absent'], csv: (r) => [r.absent], cell: (r) => <span className="font-semibold">{r.absent}</span>, total: (l) => total(l, (r) => r.absent) },
-  { id: 'noClockOut', label: 'No clock-out', csvHead: ['No clock-out', 'Wrong shift'], csv: (r) => [r.noClockOut, r.wrongShift], cell: (r) => r.noClockOut, total: (l) => total(l, (r) => r.noClockOut) },
+  { id: 'absent', label: 'Absent', csvHead: ['Absent'], csv: (r) => [r.absent], text: (r) => String(r.absent), cell: (r) => <span className="font-semibold">{r.absent}</span>, total: (l) => total(l, (r) => r.absent) },
+  { id: 'noClockOut', label: 'No clock-out', csvHead: ['No clock-out', 'Wrong shift'], csv: (r) => [r.noClockOut, r.wrongShift], text: (r) => String(r.noClockOut), cell: (r) => r.noClockOut, total: (l) => total(l, (r) => r.noClockOut) },
 ]
 
 interface Setup {
@@ -161,16 +164,16 @@ const GROUPS: { id: GroupBy; label: string }[] = [
   { id: 'none', label: 'No grouping' },
 ]
 
-/** Prints the page so the browser can save it as a PDF, named after the report. */
-function savePdf(name: string) {
-  const before = document.title
-  document.title = name
-  const restore = () => {
-    document.title = before
-    window.removeEventListener('afterprint', restore)
+/** Makes the PDF and downloads it; says so if it fails. */
+async function savePdf(report: PdfReport, setBusy: (b: boolean) => void) {
+  setBusy(true)
+  try {
+    await downloadReportPdf(report)
+  } catch {
+    window.alert(t('The PDF could not be made. Try again, or use Export for Excel.'))
+  } finally {
+    setBusy(false)
   }
-  window.addEventListener('afterprint', restore)
-  window.print()
 }
 
 /** Attendance for everyone over a week, month, year or any dates: charts, exceptions, totals and the payroll sheet. */
@@ -202,6 +205,7 @@ export function Payroll() {
     }
   }
   const [person, setPerson] = useState<string | null>(null)
+  const [making, setMaking] = useState(false)
   const [department, setDepartment] = useState('')
   const [office, setOffice] = useState('')
   const [rows, setRows] = useState<PayrollRow[] | null>(null)
@@ -304,6 +308,53 @@ export function Payroll() {
       true,
     )
 
+  const pdf = (): PdfReport => {
+    const head = [t('Student ID'), t('Name'), ...columns.map((c) => t(c.label))]
+    const totals = (list: PayrollRow[], name: string) => [name, '', ...columns.map((c) => String(c.total?.(list) ?? ''))]
+    const sections: PdfReport['sections'] = []
+    if (has('attention') && flagged.length)
+      sections.push({ heading: `${t('Needs attention')} (${flagged.length})`, note: t('Absent without leave, late or leaving early three times or more, or a day with no clock-out to fix before payroll.'), lines: flagged.map(({ r, why }) => [[r.name, r.office, r.department].filter(Boolean).join(' - '), why.join(', ')]) })
+    if (has('table') && columns.length)
+      sections.push({
+        heading: t('Totals for each person'),
+        table: {
+          head,
+          groups: groups.map((g) => ({ name: g.name || (groups.length > 1 ? t(setup.groupBy === 'office' ? 'No office' : 'No department') : ''), rows: g.list.map((r) => [r.staffId, r.name, ...columns.map((c) => c.text(r))]), total: totals(g.list, '') })),
+          total: totals(shown, `${t('Everyone')} (${shown.length})`),
+        },
+      })
+    if (has('grid') && gridFits)
+      sections.push({
+        heading: t('Day-by-day grid'),
+        note: Object.values(MARK).map((m) => `${m.letter} = ${t(m.label)}`).join('   '),
+        table: {
+          head: [t('Name'), ...dates.map((d) => String(parseDate(d).getDate()))],
+          left: 1,
+          compact: true,
+          groups: groups.map((g) => ({ name: g.name, rows: g.list.map((r) => [r.name, ...dates.map((d) => r.entries.filter((e) => e.date === d).map((e) => t(MARK[e.mark].letter)).join(' '))]) })),
+        },
+      })
+    return {
+      fileName,
+      title,
+      subtitle: [periodName, office, department].filter(Boolean).join(' - '),
+      stats: [
+        [t('People'), String(shown.length)],
+        [t('Attendance'), rate === null ? '-' : `${rate}%`],
+        [t('Hours'), formatDuration(total(shown, (r) => r.minutes))],
+        [t('Overtime'), formatDuration(total(shown, (r) => r.overtime + r.restMinutes + r.holidayMinutes))],
+        [t('Late'), String(total(shown, (r) => r.late))],
+      ],
+      pictures: has('charts') ? [...document.querySelectorAll<HTMLElement>('#report-charts [data-pdf-chart]')] : [],
+      sections,
+      notes: [
+        t('Hours are from clock-in to clock-out, less the unpaid break on a day of more than five hours. Overtime is the time worked after the shift’s end time. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.'),
+        t('Attendance is the days worked out of the days each person was due; MC and leave are left out. Work on a rest day or a public holiday is shown apart. Under the Employment Act 1955 overtime is paid at least 1.5 times the hourly rate on a normal day, 2 times on a rest day and 3 times on a public holiday. Click a name for that person’s timesheet.').replace(/ Click a name.*$/, '').replace(/ Klik nama.*$/, ''),
+      ],
+      footer: `Attend - ${t('Printed {date}', { date: formatDate(today) })}`,
+    }
+  }
+
   if (selected) return <Timesheet row={selected} period={periodName} onBack={() => setPerson(null)} />
 
   const nameButton = (r: PayrollRow) => (
@@ -326,7 +377,7 @@ export function Payroll() {
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">
           <Button variant="secondary" onClick={() => setCustomising(!customising)}>{t('Customise report')}</Button>
-          <Button variant="secondary" disabled={shown.length === 0} onClick={() => savePdf(fileName)}>{t('Download PDF')}</Button>
+          <Button variant="secondary" disabled={shown.length === 0} busy={making} onClick={() => savePdf(pdf(), setMaking)}>{t('Download PDF')}</Button>
           <Button disabled={shown.length === 0} onClick={exportCsv}>{t('Export for Excel')}</Button>
         </div>
       </div>
@@ -625,6 +676,33 @@ function Timesheet({ row, period, onBack }: { row: PayrollRow; period: string; o
     return bits.join(' · ')
   }
   const time = (ms?: number) => (ms ? formatClock(new Date(ms)) : '—')
+  const [making, setMaking] = useState(false)
+  const day = (d: string) => parseDate(d).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+  const timesheetPdf = (): PdfReport => ({
+    fileName: `timesheet-${(row.staffId || row.name).replace(/[^A-Za-z0-9]+/g, '-')}`,
+    title: `${t('Timesheet')}: ${row.name}`,
+    subtitle: [period, row.staffId, row.office, row.department].filter(Boolean).join(' - '),
+    stats: [
+      [t('Days worked'), String(row.days)],
+      [t('Attendance'), row.rate === null ? '-' : `${row.rate}%`],
+      [t('Hours'), formatDuration(row.minutes)],
+      [t('Overtime'), formatDuration(row.overtime + row.restMinutes + row.holidayMinutes)],
+      [t('Absent'), String(row.absent)],
+    ],
+    sections: [
+      {
+        heading: t('Day by day'),
+        table: {
+          head: ['Date', 'Shift', 'In', 'Out', 'Hours', 'Status'].map((h) => t(h)),
+          left: 6,
+          groups: [{ name: '', rows: row.entries.map((e) => [day(e.date), e.sessionName, time(e.clockIn), time(e.clockOut), e.minutes ? formatDuration(e.minutes) : '-', status(e)]) }],
+          total: [t('Total'), '', '', '', formatDuration(row.minutes), ''],
+        },
+      },
+    ],
+    signatures: [t('Employee signature'), t('Checked by (HR)')],
+    footer: `Attend - ${t('Printed {date}', { date: formatDate(isoDate()) })}`,
+  })
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -633,7 +711,7 @@ function Timesheet({ row, period, onBack }: { row: PayrollRow; period: string; o
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{row.name}</h1>
           <p className="text-sm text-muted">{[t('Timesheet'), period, row.staffId, row.office, row.department].filter(Boolean).join(' · ')}</p>
         </div>
-        <Button variant="secondary" onClick={() => savePdf(`timesheet-${row.staffId || row.name}`)} className="print:hidden">{t('Download PDF')}</Button>
+        <Button variant="secondary" busy={making} onClick={() => savePdf(timesheetPdf(), setMaking)} className="print:hidden">{t('Download PDF')}</Button>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Stat label={t('Days worked')} value={row.days} />

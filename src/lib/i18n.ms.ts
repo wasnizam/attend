@@ -1089,4 +1089,6 @@ export const ms: Record<string, string> = {
   "of the {n} who came": "daripada {n} yang hadir",
   "left {time}": "keluar {time}",
   "in now": "masih di sini",
+  "The PDF could not be made. Try again, or use Export for Excel.": "PDF tidak dapat dibuat. Cuba lagi, atau guna Eksport ke Excel.",
+  "Total": "Jumlah",
 }

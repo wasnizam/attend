@@ -240,8 +240,11 @@ lines. `buildPayroll` returns the `entries` behind both.
 Charts (`ReportCharts`): attendance over time (stacked by on time / late / leave or MC / absent;
 days for up to two months, months beyond), attendance by group (lowest first) and the five people
 late most often. "Customise report" picks the sections, the columns and the grouping; the screen,
-the PDF and the Excel file follow it, saved per device (`attend.reportSetup`). "Download PDF" uses
-the browser's print-to-PDF on an A4 landscape page, with the file named after the report.
+the PDF and the Excel file follow it, saved per device (`attend.reportSetup`). "Download PDF" makes a
+real PDF file in the browser (`src/lib/reportPdf.ts`: jsPDF + autotable for text tables,
+html-to-image for the charts; loaded only on click) and downloads it straight away: A4
+landscape, headline figures, charts, needs attention, the people table, the grid, notes and page
+numbers. A timesheet PDF has signature lines.
 
 **The same numbers on every page.** Hours shown anywhere to a manager come from one function,
 `countedMinutes` (start-time rule, unpaid break); the staff member's own phone shows plain time

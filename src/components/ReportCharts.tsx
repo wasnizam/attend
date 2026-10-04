@@ -62,11 +62,13 @@ const niceMax = (n: number) => {
 
 function ChartCard({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
   return (
-    <Card className="break-inside-avoid p-5">
-      <h3 className="font-semibold">{title}</h3>
-      {note && <p className="text-sm text-muted">{note}</p>}
-      <div className="mt-4">{children}</div>
-    </Card>
+    <div data-pdf-chart className="h-full break-inside-avoid">
+      <Card className="h-full p-5">
+        <h3 className="font-semibold">{title}</h3>
+        {note && <p className="text-sm text-muted">{note}</p>}
+        <div className="mt-4">{children}</div>
+      </Card>
+    </div>
   )
 }
 
@@ -204,7 +206,7 @@ export function ReportCharts({ rows, groups, from, to }: { rows: PayrollRow[]; g
     .slice(0, 5)
     .map((r) => ({ label: r.name, value: r.late, note: `${Math.round(r.lateMinutes)} min` }))
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div id="report-charts" className="grid gap-4 lg:grid-cols-2">
       <div className="lg:col-span-2">
         <ChartCard title={t('Attendance over time')} note={t('Each bar is everyone who was due that day: on time, late, on leave or MC, or absent.')}>
           <Trend data={data} />
