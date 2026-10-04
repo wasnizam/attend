@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react'
-import { type ClockOuts, clockOutFor, markManually, removeAttendance, setAttendanceStatus, subscribeClockOuts, subscribeLocations, undoClockOut } from '../data/attendance'
+import { type ClockOuts, clockOutFor, markPhoneChecked, markManually, removeAttendance, setAttendanceStatus, subscribeClockOuts, subscribeLocations, undoClockOut } from '../data/attendance'
 import { type Evidence, saveEvidence, subscribeEvidence } from '../data/evidence'
 import { useProfile } from '../hooks/useAuth'
 import { missedChecks, useCheckins } from '../hooks/useCheckins'
@@ -64,21 +64,36 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
   const phones = useLive<Phones>(clocking ? (onData, onError) => subscribePhones(session.organisationId, onData, onError) : null, [session.organisationId, clocking])
   const nameOf = (key: string) => records.find((x) => x.studentKey === key)?.studentName ?? key
   const phoneActions = new Map<string, React.ReactNode>()
+  const button = 'mt-0.5 mr-3 inline-block text-xs font-medium text-accent hover:underline'
+  const checked = (r: AttendanceRecord) => (
+    <button key="ok" type="button" className={button} onClick={() => run(() => markPhoneChecked(r.id))}>
+      {t('Checked, it is fine')}
+    </button>
+  )
   if (phones.data) {
     for (const r of records) {
-      if (r.method === 'manual') continue
+      if (r.method === 'manual' || r.phoneChecked) continue
       const p = phoneNote(r.studentKey, r.device, phones.data)
+      if (p.kind === 'ok') continue
       if (p.kind === 'other') note(r.id, t('Phone belongs to {name}', { name: nameOf(p.owner) }))
       if (p.kind === 'none') note(r.id, t('Phone not recognised'))
-      if (p.kind === 'unknown') {
-        note(r.id, t('Not their usual phone'))
-        phoneActions.set(
-          r.id,
-          <button type="button" className="mt-0.5 block text-xs font-medium text-accent hover:underline" onClick={() => run(() => approvePhone(session.organisationId, r.studentKey, r.device!, viewer, phones.data?.byDevice.get(p.registered) === r.studentKey ? p.registered : undefined))}>
-            {t('This is their new phone')}
-          </button>,
-        )
-      }
+      if (p.kind === 'unknown') note(r.id, t('Not their usual phone'))
+      phoneActions.set(
+        r.id,
+        <span className="block">
+          {p.kind === 'unknown' && (
+            <button type="button" className={button} onClick={() => run(() => approvePhone(session.organisationId, r.studentKey, r.device!, viewer, phones.data?.byDevice.get(p.registered) === r.studentKey ? p.registered : undefined))}>
+              {t('This is their new phone')}
+            </button>
+          )}
+          {p.kind === 'other' && (
+            <button type="button" className={button} onClick={() => run(() => approvePhone(session.organisationId, r.studentKey, r.device!, viewer, phones.data?.byStaff.get(r.studentKey)))}>
+              {t('It is {name}’s phone now', { name: r.studentName })}
+            </button>
+          )}
+          {checked(r)}
+        </span>,
+      )
     }
   }
   // One phone used for more than one person: worth a look (clocking in for a friend).
@@ -87,7 +102,11 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
   for (const [device, group] of shared) {
     // When the phone is registered, "Phone belongs to …" already says it, and its owner is fine.
     if (group.length < 2 || phones.data?.byDevice.has(device)) continue
-    for (const r of group) note(r.id, t('Same phone as {name}', { name: group.filter((x) => x.id !== r.id).map((x) => x.studentName).join(', ') }))
+    for (const r of group) {
+      if (r.phoneChecked) continue
+      note(r.id, t('Same phone as {name}', { name: group.filter((x) => x.id !== r.id).map((x) => x.studentName).join(', ') }))
+      if (!phoneActions.has(r.id)) phoneActions.set(r.id, <span className="block">{checked(r)}</span>)
+    }
   }
   if (fence && locations.data) {
     for (const r of records) {

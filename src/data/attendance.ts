@@ -187,6 +187,9 @@ export async function markManually(
 export const setAttendanceStatus = (id: string, status: AttendanceStatus) =>
   updateDoc(doc(attendance, id), { status })
 
+/** A manager clears a phone flag on one record: they looked, and it is fine. */
+export const markPhoneChecked = (id: string) => updateDoc(doc(attendance, id), { phoneChecked: true })
+
 /** Live list of who has checked in to a session, earliest first. */
 export function subscribeSessionAttendance(
   session: Pick<Session, 'id' | 'organisationId'>,

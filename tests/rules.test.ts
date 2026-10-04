@@ -688,3 +688,13 @@ describe('registered phones', () => {
     await assertFails(getDoc(doc(as('adminB'), 'phones/orgA_ST040')))
   })
 })
+
+describe('clearing a phone flag', () => {
+  it('the manager can mark a record as checked; nobody else, and nothing else changes with it', async () => {
+    await assertSucceeds(updateDoc(doc(as('lecA'), 'attendance/live_ST001'), { phoneChecked: true }))
+    await assertFails(updateDoc(doc(as('lecA'), 'attendance/live_ST001'), { phoneChecked: 'yes' }))
+    await assertFails(updateDoc(doc(as('lecA2'), 'attendance/live_ST001'), { phoneChecked: true }))
+    await assertFails(updateDoc(doc(anon(), 'attendance/live_ST001'), { phoneChecked: true }))
+    await assertFails(updateDoc(doc(as('lecA'), 'attendance/live_ST001'), { phoneChecked: true, studentName: 'Other' }))
+  })
+})

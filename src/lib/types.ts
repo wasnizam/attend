@@ -182,6 +182,8 @@ export interface AttendanceRecord {
   method?: 'qr' | 'manual'
   /** A random label for the phone that checked in. The same label on two people is worth a look. */
   device?: string
+  /** A manager looked at a phone flag on this record and cleared it. */
+  phoneChecked?: boolean
 }
 
 /** A class that repeats every week of a semester. It becomes a real session the day it is started. */

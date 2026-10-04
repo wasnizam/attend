@@ -57,6 +57,15 @@ export async function approvePhone(organisationId: string, staffKey: string, dev
   await batch.commit()
 }
 
+/** Forget a person's phone: their next clock-in registers whatever phone they use. */
+export async function resetPhone(organisationId: string, staffKey: string, phones: Phones) {
+  const batch = writeBatch(db)
+  batch.delete(doc(db, 'phones', `${organisationId}_${staffKey}`))
+  const device = phones.byStaff.get(staffKey)
+  if (device && phones.byDevice.get(device) === staffKey) batch.delete(doc(db, 'devices', `${organisationId}_${device}`))
+  await batch.commit()
+}
+
 export type PhoneNote = { kind: 'ok' } | { kind: 'unknown'; registered: string } | { kind: 'other'; owner: string } | { kind: 'none' }
 
 /** How a check-in's phone compares with what is registered. */

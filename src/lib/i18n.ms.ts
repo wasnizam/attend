@@ -941,4 +941,8 @@ export const ms: Record<string, string> = {
   "Allow it, and flag it for me": "Benarkan, dan tandakan untuk saya",
   "Refuse it until I approve the phone": "Tolak sehingga saya luluskan telefon itu",
   "Each person’s first clock-in registers their phone. A new phone can be approved in one tap on the day’s list. Applies to days opened from now on.": "Rekod masuk pertama setiap orang mendaftarkan telefonnya. Telefon baharu boleh diluluskan dengan satu ketikan pada senarai hari itu. Berkuat kuasa untuk hari yang dibuka mulai sekarang.",
+  "Checked, it is fine": "Sudah disemak, tiada masalah",
+  "It is {name}’s phone now": "Kini telefon {name}",
+  "Reset phone": "Set semula telefon",
+  "Forget {name}’s phone? Their next clock-in registers the phone they use then.": "Lupakan telefon {name}? Rekod masuk seterusnya akan mendaftarkan telefon yang digunakan ketika itu.",
 }

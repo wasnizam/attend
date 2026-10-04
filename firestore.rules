@@ -489,11 +489,12 @@ service cloud.firestore {
       allow delete: if memberOf(resource.data.organisationId)
         && (resource.data.ownerId == request.auth.uid || me().role == 'admin');
 
-      // The only thing that can change on a record is its status, and only by the lecturer.
+      // Only the lecturer or manager changes a record: its status, or that its phone was checked.
       allow update: if memberOf(resource.data.organisationId)
         && (resource.data.ownerId == request.auth.uid || me().role == 'admin')
-        && onlyChanges(['status'])
-        && request.resource.data.status in ['present', 'late', 'excused', 'mc'];
+        && onlyChanges(['status', 'phoneChecked'])
+        && request.resource.data.status in ['present', 'late', 'excused', 'mc']
+        && request.resource.data.get('phoneChecked', false) is bool;
     }
   }
 }

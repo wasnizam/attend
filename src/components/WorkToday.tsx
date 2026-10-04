@@ -124,7 +124,7 @@ function Day({ item, session, now }: { item: AgendaItem; session: Session; now: 
   const late = came.map((r) => ({ r, by: r.method === 'manual' ? 0 : minutesLate(r.timestamp, session) })).filter((x) => x.by > 0 || x.r.status === 'late')
   // The same phone label on more than one person today.
   const phones = new Map<string, number>()
-  for (const r of came) if (r.device) phones.set(r.device, (phones.get(r.device) ?? 0) + 1)
+  for (const r of came) if (r.device && !r.phoneChecked) phones.set(r.device, (phones.get(r.device) ?? 0) + 1)
   const shared = [...phones.values()].filter((n) => n > 1).reduce((a, n) => a + n, 0)
   const figures: [string, number, string][] = [
     [closed ? t('Did not clock out') : t('In now'), inNow.length, closed && inNow.length ? 'text-[#b25e00]' : 'text-ink'],

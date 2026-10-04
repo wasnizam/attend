@@ -2,7 +2,9 @@ import { type FormEvent, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ListUploader } from '../components/ListUploader'
 import { Button, Card, EmptyState, ErrorNote, Field, PageLoader, friendlyError } from '../components/ui'
+import { type Phones, resetPhone, subscribePhones } from '../data/phones'
 import { addToRoster, removeFromRoster } from '../data/roster'
+import { useLive } from '../hooks/useLive'
 import { useMyClasses } from '../hooks/useClasses'
 import { useRoster } from '../hooks/useRoster'
 import { downloadCsv, rosterCsv, slug } from '../lib/csv'
@@ -34,6 +36,8 @@ function RosterEditor({ cls }: { cls: WeeklyClass }) {
   const [newName, setNewName] = useState('')
   const [newDept, setNewDept] = useState('')
   const withDept = has('clock')
+  // Workplace: who has a registered phone, so a lost or replaced one can be forgotten.
+  const phones = useLive<Phones>(withDept ? (onData, onError) => subscribePhones(cls.organisationId, onData, onError) : null, [cls.organisationId, withDept])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -122,6 +126,19 @@ function RosterEditor({ cls }: { cls: WeeklyClass }) {
                     {s.studentName}
                     {s.department && <span className="block text-xs text-muted">{s.department}</span>}
                   </span>
+                  {phones.data?.byStaff.has(s.studentKey) && (
+                    <button
+                      disabled={busy}
+                      onClick={() => {
+                        if (window.confirm(t('Forget {name}’s phone? Their next clock-in registers the phone they use then.', { name: s.studentName }))) {
+                          run(() => resetPhone(cls.organisationId, s.studentKey, phones.data!))
+                        }
+                      }}
+                      className="shrink-0 text-xs font-medium text-muted hover:text-ink"
+                    >
+                      {t('Reset phone')}
+                    </button>
+                  )}
                   <button
                     disabled={busy}
                     aria-label={t('Remove {name}', { name: s.studentName })}
