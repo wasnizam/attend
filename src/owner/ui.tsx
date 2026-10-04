@@ -109,7 +109,9 @@ export function useAction() {
       await fn()
       setDone(ok)
     } catch (e) {
-      setError(String((e as { code?: string }).code ?? '').includes('permission') ? t('Your role does not allow this.') : t('That did not save. Check your connection and try again.'))
+      const { code, message } = e as { code?: string; message?: string }
+      // Our own plain-language messages have no code; Firebase's do, and are reworded here.
+      setError(String(code ?? '').includes('permission') ? t('Your role does not allow this.') : !code && message ? message : t('That did not save. Check your connection and try again.'))
     } finally {
       setBusy('')
     }
@@ -120,7 +122,12 @@ export function useAction() {
       {done && <p className="rounded-lg bg-good-soft px-4 py-2 text-sm text-good">{done}</p>}
     </>
   )
-  return { busy, run, messages, setError }
+  // A new problem replaces an old success message, so the two never show together.
+  const showError = (message: string) => {
+    setDone('')
+    setError(message)
+  }
+  return { busy, run, messages, setError: showError }
 }
 
 /** A row of tiny bars: activity per week. */

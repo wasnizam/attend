@@ -572,6 +572,11 @@ service cloud.firestore {
         && request.resource.data.role in ['owner', 'admin', 'finance', 'support', 'viewer']
         && request.resource.data.email is string;
       allow delete: if staffCan(['owner']) && request.auth.uid != uid;
+      // Each team member may change their own display name, and nothing else about themselves.
+      allow update: if signedIn() && request.auth.uid == uid
+        && onlyChanges(['name'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 80;
       // Someone invited by email takes up the invitation themselves, with the role it gives.
       allow create: if signedIn() && request.auth.uid == uid
         && request.auth.token.email_verified == true

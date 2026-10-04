@@ -2,7 +2,7 @@ import { type User, onAuthStateChanged } from 'firebase/auth'
 import { type FormEvent, type ReactNode, Suspense, lazy, useEffect, useState } from 'react'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { Button, Card, ErrorNote, Field, Logo, PageLoader } from '../components/ui'
-import { signIn, signInWithGoogle, signOut } from '../data/account'
+import { resetPassword, signIn, signInWithGoogle, signOut } from '../data/account'
 import { ROLE_LABEL, type StaffRole, can, claimInvite, staffRoleOf } from '../data/platform'
 import { auth } from '../lib/auth'
 import { t } from '../lib/i18n'
@@ -20,6 +20,7 @@ const Team = lazy(() => import('./Team'))
 const Audit = lazy(() => import('./Audit'))
 const Announcements = lazy(() => import('./Announcements'))
 const Settings = lazy(() => import('./Settings'))
+const Account = lazy(() => import('./Account'))
 
 /**
  * Attend's back office, separate from the customers' app: its own address (/owner), sign-in, frame
@@ -77,6 +78,7 @@ export default function OwnerApp() {
           {can(role, 'audit') && <Route path="audit" element={<Audit />} />}
           <Route path="announcements" element={<Announcements />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="account" element={<Account />} />
           <Route path="*" element={<Navigate to="/owner" replace />} />
         </Routes>
         </Suspense>
@@ -136,8 +138,10 @@ function Shell({ email, role, children }: { email: string; role: StaffRole; chil
           ))}
         </nav>
         <div className="border-t border-white/10 px-5 py-4 text-sm">
-          <p className="truncate text-white/90">{email}</p>
-          <p className="text-xs text-white/50">{t(ROLE_LABEL[role])}</p>
+          <NavLink to="/owner/account" onClick={() => setOpen(false)} className={({ isActive }) => `-mx-2 block rounded-lg px-2 py-1.5 ${isActive ? 'bg-white/10' : 'hover:bg-white/5'}`}>
+            <p className="truncate text-white/90">{email}</p>
+            <p className="text-xs text-white/50">{t(ROLE_LABEL[role])} · {t('My account')}</p>
+          </NavLink>
           <button type="button" onClick={() => signOut()} className="mt-2 text-xs font-medium text-white/70 hover:text-white">{t('Log out')}</button>
         </div>
       </aside>
@@ -173,6 +177,18 @@ function OwnerLogin() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [sent, setSent] = useState('')
+  const forgot = async () => {
+    setError('')
+    setSent('')
+    if (!email.trim()) return setError(t('Type your email first, then tap Forgot password.'))
+    try {
+      await resetPassword(email)
+    } catch {
+      // Say the same either way, so nobody can test which emails have accounts.
+    }
+    setSent(t('If {email} has an account, a reset link is on its way. Check your inbox (and spam).', { email: email.trim() }))
+  }
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setBusy(true)
@@ -194,7 +210,9 @@ function OwnerLogin() {
           <Field label={t('Email')} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <Field label={t('Password')} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           <ErrorNote>{error}</ErrorNote>
+          {sent && <p className="rounded-lg bg-good-soft px-3 py-2 text-sm text-good">{sent}</p>}
           <Button type="submit" block busy={busy}>{t('Log in')}</Button>
+          <button type="button" onClick={forgot} className="block w-full text-center text-sm font-medium text-accent hover:underline">{t('Forgot password?')}</button>
         </form>
         <Button className="mt-3" variant="secondary" block onClick={() => signInWithGoogle().catch(() => setError(t('Google sign-in did not finish.')))}>{t('Continue with Google')}</Button>
       </Card>

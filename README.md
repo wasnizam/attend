@@ -409,6 +409,8 @@ page per customer (Overview, Subscription with price and billing cycle, Billing 
 payments / refunds, Users with password reset and disable, Activity, Notes & tasks, Audit),
 Subscriptions, Billing (numbered invoices with SST and a PDF, mark paid, void), Users (all customers),
 Tasks, Announcements (banners in customers' apps by edition and dates, closable), Team & roles, Audit
-log (append-only, exportable) and Settings (company on invoices, SST, numbering, how to pay). The
+log (append-only, exportable) and Settings (company on invoices, SST, numbering, how to pay). Each team member has My account
+(name, change password with the current one, reset email, sign-in method, sign out); the sign-in
+screen has Forgot password. A member may change only their own name on their team entry. The
 rules enforce every role; invoices, payments, notes and the audit log cannot be edited or deleted.
 

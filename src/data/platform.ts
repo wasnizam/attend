@@ -1,4 +1,4 @@
-import { sendPasswordResetEmail } from 'firebase/auth'
+import { sendPasswordResetEmail, updateProfile } from 'firebase/auth'
 import {
   Timestamp,
   collection,
@@ -307,6 +307,17 @@ export async function setUserStatus(user: UserProfile, status: 'active' | 'disab
   batch.update(doc(db, 'users', user.id), { status })
   batch.set(doc(collection(db, 'platformAudit')), auditDoc(me, 'user', `${status === 'disabled' ? 'Disabled' : 'Enabled'} ${user.email}`))
   await batch.commit()
+}
+
+// ---------- my account ----------
+
+/** The signed-in team member's own name, on their team entry and their sign-in profile. */
+export async function updateMyName(name: string, me: Actor) {
+  const user = auth.currentUser
+  if (!user) throw new Error('Not signed in')
+  await updateDoc(doc(db, 'platformOwners', me.id), { name: name.trim() })
+  await updateProfile(user, { displayName: name.trim() })
+  await audit(me, 'account', `Changed their name to ${name.trim()}`)
 }
 
 // ---------- team ----------

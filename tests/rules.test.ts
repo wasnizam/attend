@@ -850,3 +850,18 @@ describe("Attend's back-office team and roles", () => {
     await assertFails(updateDoc(doc(staff('admin1'), 'users/lecA'), { role: 'admin' }))
   })
 })
+
+describe('a team member’s own account', () => {
+  beforeEach(() =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'platformOwners/sup'), { email: 'sup@attend.my', role: 'support' })
+    }),
+  )
+  it('can change their own name, but never their own role or email', async () => {
+    const me = env.authenticatedContext('sup', { email: 'sup@attend.my' }).firestore()
+    await assertSucceeds(updateDoc(doc(me, 'platformOwners/sup'), { name: 'Aina' }))
+    await assertFails(updateDoc(doc(me, 'platformOwners/sup'), { role: 'owner' }))
+    await assertFails(updateDoc(doc(me, 'platformOwners/sup'), { name: 'Aina', email: 'boss@attend.my' }))
+    await assertFails(updateDoc(doc(as('lecA'), 'platformOwners/sup'), { name: 'Hacker' }))
+  })
+})
