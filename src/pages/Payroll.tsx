@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 import { PARTS, ReportCharts, buckets, chartData } from '../components/ReportCharts'
 import { getOrganisation } from '../data/account'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, inputClass } from '../components/ui'
-import { fetchClockOuts, fetchSessionAttendance } from '../data/attendance'
-import { LEAVE_LABEL, fetchLeaveTypes } from '../data/evidence'
+import { fetchManyAttendance, fetchManyClockOuts } from '../data/attendance'
+import { LEAVE_LABEL, fetchManyLeaveTypes } from '../data/evidence'
 import { fetchPlans } from '../data/plans'
 import { fetchRoster } from '../data/roster'
 import { useProfile } from '../hooks/useAuth'
@@ -266,8 +266,8 @@ export function Payroll() {
     // Every list this manager keeps, so a department is known even for a day opened without a list.
     const lists = [...new Set([...held.map((s) => s.rosterId), ...(classes.data ?? []).filter((c) => c.rosterCount).map((c) => c.id)].filter((id): id is string => Boolean(id)))]
     Promise.all([
-      Promise.all(held.map(async (s) => [s.id, await fetchSessionAttendance(s, profile)] as const)),
-      Promise.all(held.map(async (s) => [s.id, await fetchClockOuts(s, profile)] as const)),
+      fetchManyAttendance(held, profile),
+      fetchManyClockOuts(held, profile),
       Promise.all(lists.map(async (id) => [id, await fetchRoster(id, profile.organisationId, profile)] as const)),
       // The weekly plans for the lists people rotate on, so a planned day is checked exactly.
       Promise.all(
@@ -276,20 +276,20 @@ export function Payroll() {
         ),
       ),
       // What kind of leave each day off was.
-      Promise.all(held.map(async (s) => [s.id, await fetchLeaveTypes(s, profile).catch(() => new Map())] as const)),
+      fetchManyLeaveTypes(held, profile).catch(() => new Map()),
     ]).then(
       ([records, outs, rosters, plans, leave]) =>
         !stale &&
         setRows(
           buildPayroll(
             held,
-            new Map(records),
-            new Map(outs),
+            records,
+            outs,
             new Map(rosters),
             plans.flat(),
             new Map([...held.filter((s) => s.rosterId).map((s) => [s.rosterId!, s.venue || ''] as const), ...(classes.data ?? []).map((c) => [c.id, c.venue || ''] as const)]),
             Date.now(),
-            new Map(leave),
+            leave,
             // Each list's working days, and the days it was closed (public holidays), for rest-day and holiday hours.
             new Map((classes.data ?? []).map((c) => [c.id, { days: c.days, off: new Set(Object.keys(c.cancelled ?? {}).map((k) => k.slice(0, 10))) }] as const)),
             org?.otRule ?? 'fullDay',

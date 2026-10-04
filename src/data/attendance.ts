@@ -432,4 +432,36 @@ export async function fetchClockOuts(session: Pick<Session, 'id' | 'organisation
   return toClockOuts((await getDocs(clockoutQuery(session, viewer))).docs)
 }
 
+/**
+ * The same three reads for many days at once, for reports: one query per 30 days instead of one per
+ * day. The rules need the organisation (and, for a manager, their own records) in every query.
+ */
+export async function inChunks<T>(sessions: Pick<Session, 'id' | 'organisationId'>[], viewer: UserProfile, read: (constraints: QueryConstraint[]) => Promise<T[]>): Promise<T[]> {
+  const ids = [...new Set(sessions.map((x) => x.id))]
+  const chunks: string[][] = []
+  for (let i = 0; i < ids.length; i += 30) chunks.push(ids.slice(i, i + 30))
+  const parts = await Promise.all(
+    chunks.map((chunk) => {
+      const constraints: QueryConstraint[] = [where('organisationId', '==', viewer.organisationId), where('sessionId', 'in', chunk)]
+      if (viewer.role !== 'admin') constraints.push(where('ownerId', '==', viewer.id))
+      return read(constraints)
+    }),
+  )
+  return parts.flat()
+}
+
+export async function fetchManyAttendance(sessions: Pick<Session, 'id' | 'organisationId'>[], viewer: UserProfile): Promise<Map<string, AttendanceRecord[]>> {
+  const all = await inChunks(sessions, viewer, async (c) => (await getDocs(query(attendance, ...c))).docs.map((d) => toRecord(d.id, d.data())))
+  const by = new Map<string, AttendanceRecord[]>(sessions.map((x) => [x.id, []]))
+  for (const r of all) by.get(r.sessionId)?.push(r)
+  return by
+}
+
+export async function fetchManyClockOuts(sessions: Pick<Session, 'id' | 'organisationId'>[], viewer: UserProfile): Promise<Map<string, ClockOuts>> {
+  const all = await inChunks(sessions, viewer, async (c) => (await getDocs(query(clockouts, ...c))).docs.map((d) => d.data() as { sessionId: string; studentKey: string; timestamp: { toMillis(): number; toDate(): Date } | null }))
+  const by = new Map<string, ClockOuts>(sessions.map((x) => [x.id, new Map()]))
+  for (const d of all) if (d.timestamp) by.get(d.sessionId)?.set(d.studentKey, d.timestamp)
+  return by
+}
+
 export type { ClockOuts }

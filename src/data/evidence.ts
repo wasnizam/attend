@@ -1,3 +1,4 @@
+import { inChunks } from './attendance'
 import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
 import type { PreparedFile } from '../lib/evidenceFile'
 import { db } from '../lib/firebase'
@@ -60,6 +61,14 @@ export async function fetchLeaveTypes(session: Pick<Session, 'id' | 'organisatio
   if (viewer.role !== 'admin') constraints.push(where('ownerId', '==', viewer.id))
   const snap = await getDocs(query(evidence, ...constraints))
   return new Map(snap.docs.filter((d) => d.data().leaveType).map((d) => [d.data().studentKey as string, d.data().leaveType as LeaveType]))
+}
+
+/** The kinds of leave for many days at once (see inChunks), for reports. */
+export async function fetchManyLeaveTypes(sessions: Pick<Session, 'id' | 'organisationId'>[], viewer: UserProfile): Promise<Map<string, Map<string, LeaveType>>> {
+  const all = await inChunks(sessions, viewer, async (c) => (await getDocs(query(evidence, ...c))).docs.map((d) => d.data() as { sessionId: string; studentKey: string; leaveType?: LeaveType }))
+  const by = new Map<string, Map<string, LeaveType>>()
+  for (const d of all) if (d.leaveType) by.set(d.sessionId, (by.get(d.sessionId) ?? new Map()).set(d.studentKey, d.leaveType))
+  return by
 }
 
 /** Remarks and evidence for a session, by student key. Lecturer and admin only. */

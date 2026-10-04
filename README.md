@@ -389,3 +389,11 @@ measured by the week. Rest days and holidays use the shift's own calendar. The r
 column shows days on each shift and nights worked (for a night allowance); the Admin overview counts
 a list once per date, not once per shift.
 
+**Shift and flexible test data.** `node scripts/seed-shifts.mjs <orgId> <ownerUid> <ownerName>` adds
+Kilang Shah Alam (12 people rotating weekly between three 8-hour shifts, with a Shift plan for each
+week of September) and Studio KL (flexible hours), and prints what the September report should show.
+
+**Report loading.** The report reads attendance, clock-outs and leave kinds 30 days per query
+(`fetchManyAttendance`, `fetchManyClockOuts`, `fetchManyLeaveTypes`, using `sessionId in [...]` with
+the organisation and, for a manager, their own records), instead of three queries per day.
+
