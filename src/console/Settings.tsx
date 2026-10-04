@@ -54,7 +54,7 @@ export default function Settings() {
         {edit && <div className="lg:col-span-2"><Button type="submit" busy={busy === 'save'}>{t('Save settings')}</Button></div>}
       </form>
       <Section title={t('Prices and discounts')} sub={t('Plans, prices and discount codes are managed on their own page.')}>
-        <Link to="/owner/pricing" className="text-sm font-medium text-accent">{t('Open Pricing')} →</Link>
+        <Link to="/console/pricing" className="text-sm font-medium text-accent">{t('Open Pricing')} →</Link>
       </Section>
     </>
   )

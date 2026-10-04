@@ -16,7 +16,7 @@ export default function Team() {
     e.preventDefault()
     const v = email.trim().toLowerCase()
     if (!v) return
-    run('invite', async () => { await inviteStaff(v, role, me); setEmail('') }, t('Invitation saved. Ask {email} to sign in at /owner with that email (verified).', { email: v }))
+    run('invite', async () => { await inviteStaff(v, role, me); setEmail('') }, t('Invitation saved. Ask {email} to sign in at /console with that email (verified).', { email: v }))
   }
   return (
     <>
@@ -64,7 +64,7 @@ export default function Team() {
                 <select value={role} onChange={(e) => setRole(e.target.value as StaffRole)} className={inputClass}>{STAFF_ROLES.map((r) => <option key={r} value={r}>{t(ROLE_LABEL[r])}</option>)}</select>
                 <Button type="submit" busy={busy === 'invite'}>{t('Invite')}</Button>
               </form>
-              <p className="mt-2 text-xs text-muted">{t('They sign in at /owner with this email (Google, or a verified email account), and join with this role.')}</p>
+              <p className="mt-2 text-xs text-muted">{t('They sign in at /console with this email (Google, or a verified email account), and join with this role.')}</p>
             </Section>
           )}
           <Section title={t('What each role can do')}>

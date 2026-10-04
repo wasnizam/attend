@@ -397,8 +397,8 @@ week of September) and Studio KL (flexible hours), and prints what the September
 (`fetchManyAttendance`, `fetchManyClockOuts`, `fetchManyLeaveTypes`, using `sessionId in [...]` with
 the organisation and, for a manager, their own records), instead of three queries per day.
 
-**Back office (`/owner`).** Attend's own admin console, separate from the customers' app (own bundle,
-sign-in and dark sidebar; `src/owner/`). The team lives in `platformOwners/{uid}` with a role: Owner
+**Attend Console (`/console`).** Attend's own back office, separate from the customers' app (own bundle,
+sign-in and dark sidebar; `src/console/`). The team lives in `platformOwners/{uid}` with a role: Owner
 (everything, including the team), Admin (all but the team), Finance (plans, prices, invoices, payments,
 refunds), Support (notes, tasks, tags, trial days, password resets), Viewer (read-only). The first
 owner is added in the Firebase console; after that owners invite by email (`platformInvites`) and the

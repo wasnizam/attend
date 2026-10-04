@@ -29,7 +29,7 @@ export default function CustomerDetail() {
   return (
     <>
       <div>
-        <Link to="/owner/customers" className="text-sm font-medium text-accent hover:underline">← {t('Customers')}</Link>
+        <Link to="/console/customers" className="text-sm font-medium text-accent hover:underline">← {t('Customers')}</Link>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">{org.name}</h1>
           <StatusBadge c={c} />

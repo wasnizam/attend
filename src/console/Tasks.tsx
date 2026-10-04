@@ -64,7 +64,7 @@ export default function Tasks() {
                 <span className={`min-w-0 flex-1 ${x.done ? 'text-muted line-through' : ''}`}>
                   {x.title}
                   <span className="block text-xs text-muted">
-                    {x.organisationId && <Link to={`/owner/customers/${x.organisationId}`} className="text-accent hover:underline">{x.organisationName}</Link>}
+                    {x.organisationId && <Link to={`/console/customers/${x.organisationId}`} className="text-accent hover:underline">{x.organisationName}</Link>}
                     {x.organisationId && ' · '}
                     {staffName(x.assignee)}
                   </span>

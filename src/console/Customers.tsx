@@ -66,7 +66,7 @@ export default function Customers() {
             </thead>
             <tbody className="divide-y divide-line">
               {shown.map((c) => (
-                <tr key={c.org.id} className="cursor-pointer hover:bg-canvas/60" onClick={() => navigate(`/owner/customers/${c.org.id}`)}>
+                <tr key={c.org.id} className="cursor-pointer hover:bg-canvas/60" onClick={() => navigate(`/console/customers/${c.org.id}`)}>
                   <td className={td}>
                     <span className="block font-medium text-accent">{c.org.name}</span>
                     <span className="block text-xs text-muted">{t('joined {date}', { date: dateOf(c.joined) })}</span>

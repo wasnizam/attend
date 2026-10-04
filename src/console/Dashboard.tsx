@@ -87,7 +87,7 @@ export default function Dashboard() {
           </div>
           {unpaid.length > 0 && (
             <p className="mt-3 text-sm">
-              <Link to="/owner/billing" className="font-medium text-accent">{t('{n} unpaid invoices', { n: unpaid.length })}</Link>
+              <Link to="/console/billing" className="font-medium text-accent">{t('{n} unpaid invoices', { n: unpaid.length })}</Link>
               <span className="text-muted"> · {moneyMix(outstanding)}{overdue.length ? ` · ${t('{n} overdue', { n: overdue.length })}` : ''}</span>
             </p>
           )}
@@ -102,7 +102,7 @@ export default function Dashboard() {
             <ul className="divide-y divide-line text-sm">
               {renewals.slice(0, 8).map((c) => (
                 <li key={c.org.id} className="flex items-center justify-between gap-2 py-2">
-                  <Link to={`/owner/customers/${c.org.id}`} className="min-w-0 truncate font-medium text-accent hover:underline">{c.org.name}</Link>
+                  <Link to={`/console/customers/${c.org.id}`} className="min-w-0 truncate font-medium text-accent hover:underline">{c.org.name}</Link>
                   <span className="shrink-0 text-right text-xs text-muted"><StatusBadge c={c} /> <span className="block">{planUntil(c)}</span></span>
                 </li>
               ))}
@@ -117,7 +117,7 @@ export default function Dashboard() {
               {atRisk.slice(0, 8).map((c) => (
                 <li key={c.org.id} className="flex items-center justify-between gap-2 py-2">
                   <span className="min-w-0">
-                    <Link to={`/owner/customers/${c.org.id}`} className="block truncate font-medium text-accent hover:underline">{c.org.name}</Link>
+                    <Link to={`/console/customers/${c.org.id}`} className="block truncate font-medium text-accent hover:underline">{c.org.name}</Link>
                     <span className="block text-xs text-muted">{c.healthWhy}</span>
                   </span>
                   <HealthBadge c={c} />
@@ -126,7 +126,7 @@ export default function Dashboard() {
             </ul>
           )}
         </Section>
-        <Section title={t('Your tasks')} actions={<Link to="/owner/tasks" className="text-sm font-medium text-accent">{t('All tasks')}</Link>}>
+        <Section title={t('Your tasks')} actions={<Link to="/console/tasks" className="text-sm font-medium text-accent">{t('All tasks')}</Link>}>
           {myTasks.length === 0 ? (
             <p className="text-sm text-muted">{t('Nothing waiting for you.')}</p>
           ) : (
@@ -146,7 +146,7 @@ export default function Dashboard() {
       </div>
 
       {can(me.role, 'audit') && (
-        <Section title={t('Recent activity')} actions={<Link to="/owner/audit" className="text-sm font-medium text-accent">{t('Audit log')}</Link>}>
+        <Section title={t('Recent activity')} actions={<Link to="/console/audit" className="text-sm font-medium text-accent">{t('Audit log')}</Link>}>
           {audit.length === 0 ? (
             <p className="text-sm text-muted">{t('No activity yet.')}</p>
           ) : (

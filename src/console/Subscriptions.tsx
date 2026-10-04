@@ -57,7 +57,7 @@ export default function Subscriptions() {
             <thead className="bg-slate-50"><tr>{['Company', 'Edition', 'Plan', 'Price', 'Revenue / month', 'Staff covered', 'Ends or renews'].map((h) => <th key={h} className={th}>{t(h)}</th>)}</tr></thead>
             <tbody className="divide-y divide-line">
               {shown.map((c) => (
-                <tr key={c.org.id} className="cursor-pointer hover:bg-canvas/60" onClick={() => navigate(`/owner/customers/${c.org.id}`)}>
+                <tr key={c.org.id} className="cursor-pointer hover:bg-canvas/60" onClick={() => navigate(`/console/customers/${c.org.id}`)}>
                   <td className={`${td} font-medium text-accent`}>{c.org.name}</td>
                   <td className={td}>{editionName(c.org)}</td>
                   <td className={td}><StatusBadge c={c} /></td>

@@ -24,10 +24,10 @@ const Account = lazy(() => import('./Account'))
 const Pricing = lazy(() => import('./Pricing'))
 
 /**
- * Attend's back office, separate from the customers' app: its own address (/owner), sign-in, frame
+ * Attend Console, the back office, separate from the customers' app: its own address (/console), sign-in, frame
  * and bundle. Only the team in platformOwners gets in, each with a role.
  */
-export default function OwnerApp() {
+export default function ConsoleApp() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [role, setRole] = useState<StaffRole | null | undefined>(undefined)
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function OwnerApp() {
           <Route path="announcements" element={<Announcements />} />
           <Route path="settings" element={<Settings />} />
           <Route path="account" element={<Account />} />
-          <Route path="*" element={<Navigate to="/owner" replace />} />
+          <Route path="*" element={<Navigate to="/console" replace />} />
         </Routes>
         </Suspense>
       </Shell>
@@ -123,13 +123,13 @@ function Shell({ email, role, children }: { email: string; role: StaffRole; chil
       <aside className={`fixed inset-y-0 left-0 z-40 w-60 flex-col bg-ink text-white lg:flex ${open ? 'flex' : 'hidden'}`}>
         <div className="flex h-14 items-center gap-2 px-5">
           <Logo className="text-white" />
-          <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase">{t('Admin')}</span>
+          <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase">{t('Console')}</span>
         </div>
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
           {nav.map(([to, label, icon]) => (
             <NavLink
               key={to}
-              to={to ? `/owner/${to}` : '/owner'}
+              to={to ? `/console/${to}` : '/console'}
               end={!to}
               onClick={() => setOpen(false)}
               className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
@@ -142,7 +142,7 @@ function Shell({ email, role, children }: { email: string; role: StaffRole; chil
           ))}
         </nav>
         <div className="border-t border-white/10 px-5 py-4 text-sm">
-          <NavLink to="/owner/account" onClick={() => setOpen(false)} className={({ isActive }) => `-mx-2 block rounded-lg px-2 py-1.5 ${isActive ? 'bg-white/10' : 'hover:bg-white/5'}`}>
+          <NavLink to="/console/account" onClick={() => setOpen(false)} className={({ isActive }) => `-mx-2 block rounded-lg px-2 py-1.5 ${isActive ? 'bg-white/10' : 'hover:bg-white/5'}`}>
             <p className="truncate text-white/90">{email}</p>
             <p className="text-xs text-white/50">{t(ROLE_LABEL[role])} · {t('My account')}</p>
           </NavLink>
@@ -155,7 +155,7 @@ function Shell({ email, role, children }: { email: string; role: StaffRole; chil
           <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
         </button>
         <Logo />
-        <span className="rounded bg-ink px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-white uppercase">{t('Admin')}</span>
+        <span className="rounded bg-ink px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-white uppercase">{t('Console')}</span>
       </header>
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
     </div>
@@ -168,7 +168,7 @@ function Bare({ children }: { children: ReactNode }) {
       <header className="bg-ink">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4">
           <Logo className="text-white" />
-          <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-white uppercase">{t('Admin')}</span>
+          <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-white uppercase">{t('Console')}</span>
         </div>
       </header>
       <div className="mx-auto max-w-6xl px-4 py-6">{children}</div>
@@ -208,7 +208,7 @@ function OwnerLogin() {
   return (
     <Bare>
       <Card className="mx-auto mt-12 max-w-sm p-6">
-        <h1 className="text-xl font-semibold">{t('Attend admin sign-in')}</h1>
+        <h1 className="text-xl font-semibold">{t('Attend Console sign-in')}</h1>
         <p className="mt-1 text-sm text-muted">{t('For the Attend team. Customers sign in at the usual page.')}</p>
         <form onSubmit={submit} className="mt-5 space-y-4">
           <Field label={t('Email')} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />

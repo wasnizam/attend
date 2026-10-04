@@ -41,7 +41,7 @@ export default function Users() {
                 <tr key={u.id}>
                   <td className={td}>{u.name}</td>
                   <td className={td}>{u.email}</td>
-                  <td className={td}><Link to={`/owner/customers/${u.organisationId}`} className="text-accent hover:underline">{orgName(u.organisationId)}</Link></td>
+                  <td className={td}><Link to={`/console/customers/${u.organisationId}`} className="text-accent hover:underline">{orgName(u.organisationId)}</Link></td>
                   <td className={td}>{u.role === 'admin' ? t('Admin') : t('Manager')}</td>
                   <td className={`${td} whitespace-nowrap`}>{dateOf(u.createdAt?.toMillis())}</td>
                   <td className={td}>{u.status === 'active' ? t('Active') : <span className="text-bad">{t('Disabled')}</span>}</td>

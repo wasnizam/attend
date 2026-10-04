@@ -45,7 +45,7 @@ export default function Audit() {
                   <td className={`${td} whitespace-nowrap text-muted`}>{a.at ? a.at.toDate().toLocaleString() : '…'}</td>
                   <td className={td}>{a.actorEmail}</td>
                   <td className={td}><span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{a.action}</span></td>
-                  <td className={td}>{a.organisationId ? <Link to={`/owner/customers/${a.organisationId}`} className="text-accent hover:underline">{a.organisationName}</Link> : '—'}</td>
+                  <td className={td}>{a.organisationId ? <Link to={`/console/customers/${a.organisationId}`} className="text-accent hover:underline">{a.organisationName}</Link> : '—'}</td>
                   <td className={td}>{a.detail}</td>
                 </tr>
               ))}

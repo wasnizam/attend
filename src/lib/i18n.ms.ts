@@ -1254,4 +1254,8 @@ export const ms: Record<string, string> = {
   "You are on the free plan: {limit}. Paid plans open soon; the prices below are what they will cost. You will be told before anything changes.": "Anda dalam pelan percuma: {limit}. Pelan berbayar akan dibuka tidak lama lagi; harga di bawah ialah harganya nanti. Anda akan dimaklumkan sebelum apa-apa berubah.",
   "Paid plans open soon. Need more now? Contact Attend and we will set it up for you.": "Pelan berbayar akan dibuka tidak lama lagi. Perlu lebih sekarang? Hubungi Attend dan kami akan aturkan untuk anda.",
   "The free plan includes up to {n} staff. Paid plans open soon; contact Attend if you need more now.": "Pelan percuma termasuk sehingga {n} kakitangan. Pelan berbayar akan dibuka tidak lama lagi; hubungi Attend jika anda perlukan lebih sekarang.",
+  "Console": "Konsol",
+  "Attend Console sign-in": "Log masuk Attend Console",
+  "Invitation saved. Ask {email} to sign in at /console with that email (verified).": "Jemputan disimpan. Minta {email} log masuk di /console dengan e-mel itu (disahkan).",
+  "They sign in at /console with this email (Google, or a verified email account), and join with this role.": "Mereka log masuk di /console dengan e-mel ini (Google, atau akaun e-mel yang disahkan), dan menyertai dengan peranan ini.",
 }

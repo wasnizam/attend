@@ -103,7 +103,7 @@ export default function Billing() {
                 {shownInvoices.map((i) => (
                   <tr key={i.id}>
                     <td className={`${td} font-medium`}>{i.number}</td>
-                    <td className={td}><Link to={`/owner/customers/${i.organisationId}`} className="text-accent hover:underline">{i.organisationName}</Link><span className="block text-xs text-muted">{i.billTo.email}</span></td>
+                    <td className={td}><Link to={`/console/customers/${i.organisationId}`} className="text-accent hover:underline">{i.organisationName}</Link><span className="block text-xs text-muted">{i.billTo.email}</span></td>
                     <td className={`${td} whitespace-nowrap`}>{formatDate(i.issueDate)}</td>
                     <td className={`${td} whitespace-nowrap`}>{formatDate(i.dueDate)}</td>
                     <td className={`${td} tabular`}>{money(i.total, i.currency)}</td>
@@ -135,7 +135,7 @@ export default function Billing() {
                 <ul className="divide-y divide-line text-sm">
                   {list.map((b) => (
                     <li key={b.id} className="flex flex-wrap justify-between gap-x-3 px-5 py-2.5">
-                      <span><Link to={`/owner/customers/${b.organisationId}`} className="font-medium text-accent hover:underline">{b.organisationName ?? b.organisationId}</Link><span className="text-muted"> · {b.kind === 'refund' ? t('Refund') : t('Payment')} · {t(b.method ?? '')}{b.note ? ` · ${b.note}` : ''}</span></span>
+                      <span><Link to={`/console/customers/${b.organisationId}`} className="font-medium text-accent hover:underline">{b.organisationName ?? b.organisationId}</Link><span className="text-muted"> · {b.kind === 'refund' ? t('Refund') : t('Payment')} · {t(b.method ?? '')}{b.note ? ` · ${b.note}` : ''}</span></span>
                       <span className={`tabular ${b.kind === 'refund' ? 'text-bad' : ''}`}>{b.kind === 'refund' ? '−' : ''}{money(b.amount ?? 0, b.currency)} <span className="text-xs text-muted">· {b.at ? dateOf(b.at.toMillis()) : '…'}</span></span>
                     </li>
                   ))}
