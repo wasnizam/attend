@@ -38,7 +38,35 @@ export interface PayrollRow {
   halfDays: number
   /** `leave`, split by kind. Leave recorded without a kind is under `other`. */
   leaveBy: Record<LeaveKind, number>
+  /** Of `minutes`, the hours worked on a rest day, and on a public holiday (paid at other rates). */
+  restMinutes: number
+  holidayMinutes: number
+  /** Days attended out of the days they were due, as a percentage (leave and MC left out). Null when nothing was due. */
+  rate: number | null
+  /** Each day, for the person's own timesheet and the month grid. */
+  entries: DayEntry[]
 }
+
+/** One person on one day. */
+export interface DayEntry {
+  date: string
+  sessionId: string
+  sessionName: string
+  mark: 'present' | 'late' | 'half' | 'leave' | 'mc' | 'absent'
+  clockIn?: number
+  clockOut?: number
+  minutes: number
+  late: number
+  early: number
+  earlyOk?: string
+  halfDay?: 'am' | 'pm'
+  leaveType?: LeaveKind
+  dayType: DayType
+  noClockOut: boolean
+}
+
+/** Normal working day, the person's rest day, or a public holiday (a day off for everyone). */
+export type DayType = 'normal' | 'rest' | 'holiday'
 
 export type LeaveKind = 'annual' | 'emergency' | 'unpaid' | 'other'
 
@@ -58,11 +86,13 @@ export function buildPayroll(
   now = Date.now(),
   /** Session ID -> staff key -> the kind of leave recorded for that day. */
   leaveTypes: Map<string, Map<string, LeaveKind>> = new Map(),
+  /** Staff list -> its working days and its days off (public holidays), to tell rest-day and holiday work apart. */
+  calendars: Map<string, { days: number[]; off: Set<string> }> = new Map(),
 ): PayrollRow[] {
   const people = new Map<string, PayrollRow>()
   const person = (key: string, staffId: string, name: string) => {
     if (!people.has(key)) {
-      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, wrongShift: 0, early: 0, earlyMinutes: 0, earlyApproved: 0, halfDays: 0, leaveBy: { annual: 0, emergency: 0, unpaid: 0, other: 0 } })
+      people.set(key, { key, staffId, name, department: '', office: '', days: 0, minutes: 0, overtime: 0, late: 0, lateMinutes: 0, mc: 0, leave: 0, absent: 0, noClockOut: 0, wrongShift: 0, early: 0, earlyMinutes: 0, earlyApproved: 0, halfDays: 0, leaveBy: { annual: 0, emergency: 0, unpaid: 0, other: 0 }, restMinutes: 0, holidayMinutes: 0, rate: null, entries: [] })
     }
     return people.get(key)!
   }
@@ -80,14 +110,23 @@ export function buildPayroll(
     const seen = new Set<string>()
     const end = endOf(session).getTime()
     const over = end <= now
+    // Work on a day off counts apart: rest days and public holidays are paid at other rates.
+    const cal = session.rosterId && !pools.has(session.rosterId) ? calendars.get(session.rosterId) : undefined
+    const dayType: DayType = !cal ? 'normal' : cal.off.has(session.date) ? 'holiday' : cal.days.includes(parseDate(session.date).getDay()) ? 'normal' : 'rest'
+    const entry = (r: { studentKey: string; studentId: string; studentName: string }, e: Omit<DayEntry, 'date' | 'sessionId' | 'sessionName' | 'dayType'>) =>
+      person(r.studentKey, r.studentId, r.studentName).entries.push({ date: session.date, sessionId: session.id, sessionName: session.name, dayType, ...e })
     for (const r of records.get(session.id) ?? []) {
       seen.add(r.studentKey)
       const row = person(r.studentKey, r.studentId, r.studentName)
       const status = r.status ?? 'present'
-      if (status === 'mc') row.mc += 1
-      else if (status === 'excused') {
+      if (status === 'mc') {
+        row.mc += 1
+        entry(r, { mark: 'mc', minutes: 0, late: 0, early: 0, noClockOut: false })
+      } else if (status === 'excused') {
+        const kind = leaveTypes.get(session.id)?.get(r.studentKey) ?? 'other'
         row.leave += 1
-        row.leaveBy[leaveTypes.get(session.id)?.get(r.studentKey) ?? 'other'] += 1
+        row.leaveBy[kind] += 1
+        entry(r, { mark: 'leave', leaveType: kind, minutes: 0, late: 0, early: 0, noClockOut: false })
       }
       else {
         row.days += 1
@@ -98,22 +137,43 @@ export function buildPayroll(
           row.lateMinutes += late
         }
         const out = outs.get(session.id)?.get(r.studentKey)
+        let counted = 0
+        let gone = 0
         if (out && r.timestamp) {
           const from = r.timestamp.toMillis()
           const to = Math.max(from, out.toMillis())
-          const gone = earlyFor(r, out, session)
+          gone = earlyFor(r, out, session)
           if (gone && r.earlyOk) row.earlyApproved += 1
           else if (gone) {
             row.early += 1
             row.earlyMinutes += gone
           }
-          row.minutes += countedMinutes(from, to, session)
-          row.overtime += Math.max(0, to - Math.max(end, from)) / 60_000
+          counted = countedMinutes(from, to, session)
+          row.minutes += counted
+          if (dayType === 'rest') row.restMinutes += counted
+          else if (dayType === 'holiday') row.holidayMinutes += counted
+          // Overtime on a normal day; on a rest day or holiday every hour is already counted apart.
+          else row.overtime += Math.max(0, to - Math.max(end, from)) / 60_000
         } else if (over) row.noClockOut += 1
+        entry(r, {
+          mark: r.halfDay ? 'half' : late || (status === 'late' && r.halfDay !== 'am') ? 'late' : 'present',
+          clockIn: r.timestamp?.toMillis(),
+          clockOut: out?.toMillis(),
+          minutes: counted,
+          late,
+          early: gone,
+          earlyOk: r.earlyOk,
+          halfDay: r.halfDay,
+          noClockOut: !out && over,
+        })
       }
     }
-    for (const s of (over && session.rosterId && !pools.has(session.rosterId) && rosters.get(session.rosterId)) || []) {
-      if (!seen.has(s.studentKey)) person(s.studentKey, s.studentId, s.studentName).absent += 1
+    // Nobody is due on a rest day or a public holiday, so missing one is not an absence.
+    for (const s of (over && dayType === 'normal' && session.rosterId && !pools.has(session.rosterId) && rosters.get(session.rosterId)) || []) {
+      if (!seen.has(s.studentKey)) {
+        person(s.studentKey, s.studentId, s.studentName).absent += 1
+        entry(s, { mark: 'absent', minutes: 0, late: 0, early: 0, noClockOut: false })
+      }
     }
   }
   for (const pool of pools) {
@@ -137,7 +197,10 @@ export function buildPayroll(
             const due = mine.find((x) => x.date === date && x.classId === shift)
             if (!due || endOf(due).getTime() > now) continue
             const theirs = mine.filter((x) => x.date === date).flatMap((x) => (records.get(x.id) ?? []).filter((r) => r.studentKey === member.studentKey).map((r) => ({ x, r })))
-            if (theirs.length === 0) row.absent += 1
+            if (theirs.length === 0) {
+              row.absent += 1
+              row.entries.push({ date, sessionId: due.id, sessionName: due.name, dayType: 'normal', mark: 'absent', minutes: 0, late: 0, early: 0, noClockOut: false })
+            }
             else if (!theirs.some(({ x }) => x.id === due.id) && theirs.some(({ r }) => r.status !== 'mc' && r.status !== 'excused')) row.wrongShift += 1
           }
           continue
@@ -153,6 +216,10 @@ export function buildPayroll(
         row.absent += Math.max(0, expected - accounted.size)
       }
     }
+  }
+  for (const row of people.values()) {
+    row.rate = row.days + row.absent ? Math.round((row.days / (row.days + row.absent)) * 1000) / 10 : null
+    row.entries.sort((a, b) => a.date.localeCompare(b.date) || (a.clockIn ?? 0) - (b.clockIn ?? 0))
   }
   return [...people.values()].sort((a, b) => a.office.localeCompare(b.office) || a.department.localeCompare(b.department) || a.name.localeCompare(b.name))
 }

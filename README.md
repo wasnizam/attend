@@ -227,6 +227,15 @@ afternoon off (`halfDay`). A morning off is never late and an afternoon off neve
 (`lateFor`, `earlyFor`); the monthly report keeps allowed early leave and half days apart from
 plain early leaving.
 
+**HR reporting.** The monthly report runs for a month or any dates (pay cut-off). Each person
+gets an attendance rate (days worked out of days due; MC and leave left out). Work on a rest
+day (a weekday the working hours do not run) or a public holiday (a day called off on the
+Calendar) is counted apart from normal overtime, for the Employment Act rates (1.5x / 2x / 3x),
+and nobody is absent on those days. A "Needs attention" card lists absences, three or more late
+or early days, missing clock-outs and wrong shifts. "Day by day" shows the month grid (people
+by dates, with letters), and a name opens that person's timesheet, printable with signature
+lines. `buildPayroll` returns the `entries` behind both.
+
 **The same numbers on every page.** Hours shown anywhere to a manager come from one function,
 `countedMinutes` (start-time rule, unpaid break); the staff member's own phone shows plain time
 at work. A staff list change updates the open day's list and expected number. Class reports

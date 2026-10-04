@@ -155,3 +155,49 @@ describe('allowed early leave and half days', () => {
     expect([by.E2.late, by.E2.halfDays]).toEqual([0, 1])
   })
 })
+
+describe('what HR needs on top of the totals', () => {
+  // Monday to Friday; 2 Oct 2026 was a public holiday; 3 Oct is a Saturday.
+  const calendars = new Map([['shift', { days: [1, 2, 3, 4, 5], off: new Set(['2026-10-02']) }]])
+  const rows = build(
+    [session('thu', '2026-10-01'), session('hol', '2026-10-02'), session('sat', '2026-10-03')],
+    new Map([
+      ['thu', [rec('E1', '2026-10-01', '09:00'), rec('E2', '2026-10-01', '09:20')]],
+      ['hol', [rec('E1', '2026-10-02', '09:00')]],
+      ['sat', [rec('E1', '2026-10-03', '09:00')]],
+    ]) as never,
+    new Map([
+      ['thu', new Map([['E1', at('2026-10-01', '19:00')]])],
+      ['hol', new Map([['E1', at('2026-10-02', '13:00')]])],
+      ['sat', new Map([['E1', at('2026-10-03', '12:00')]])],
+    ]) as never,
+    roster as never,
+    [],
+    new Map(),
+    LATER,
+    new Map(),
+    calendars,
+  )
+  const by = Object.fromEntries(rows.map((r) => [r.key, r]))
+
+  it('keeps work on a rest day and a public holiday apart from normal overtime', () => {
+    expect(Math.round(by.E1.overtime)).toBe(60)
+    expect(Math.round(by.E1.holidayMinutes)).toBe(240)
+    expect(Math.round(by.E1.restMinutes)).toBe(180)
+  })
+
+  it('gives an attendance rate from days worked out of days due', () => {
+    expect(by.E1.rate).toBe(100)
+    // Siti came on the one working day; the holiday and the Saturday were not due.
+    expect(by.E2.rate).toBe(100)
+    expect(by.E3.rate).toBe(0)
+  })
+
+  it('lists each day for the timesheet and month grid', () => {
+    expect(by.E2.entries.map((e) => [e.date, e.mark])).toEqual([
+      ['2026-10-01', 'late'],
+    ])
+    expect(by.E3.entries.map((e) => e.mark)).toEqual(['absent'])
+    expect(by.E1.entries[1]).toMatchObject({ dayType: 'holiday', minutes: 240 })
+  })
+})
