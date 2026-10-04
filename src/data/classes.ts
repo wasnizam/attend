@@ -95,7 +95,6 @@ export const cancelMeeting = (cls: WeeklyClass, date: string, slot: Slot, reason
 export const restoreMeeting = (cls: WeeklyClass, date: string, slot: Slot) =>
   updateDoc(doc(classes, cls.id), { [`cancelled.${meetingKey(date, slot)}`]: deleteField() })
 
-/** Removes the class from the timetable. Sessions already held keep their records. */
 /** Where the workplace (or class) is, for the location check on every day opened from it. */
 export const setClassGeofence = (id: string, fence: { lat: number; lng: number; radius: number; mode: GeoMode } | null) =>
   updateDoc(
@@ -109,6 +108,7 @@ export const setClassGeofence = (id: string, fence: { lat: number; lng: number; 
 export const handOver = (cls: WeeklyClass, to: Pick<UserProfile, 'id' | 'name'>) =>
   updateDoc(doc(classes, cls.id), { ownerId: to.id, ownerName: to.name })
 
+/** Removes the class from the timetable. Sessions already held keep their records. */
 export const deleteClass = (id: string) => deleteDoc(doc(classes, id))
 
 export function subscribeMyClasses(
@@ -124,6 +124,15 @@ export function subscribeMyClasses(
           .map((d) => ({ id: d.id, ...d.data() }) as WeeklyClass)
           .sort((a, b) => a.startTime.localeCompare(b.startTime) || a.name.localeCompare(b.name)),
       ),
+    onError,
+  )
+}
+
+/** Admin: every class (or office) in the organisation, whoever runs it. */
+export function subscribeOrgClasses(organisationId: string, onData: (classes: WeeklyClass[]) => void, onError: (e: Error) => void) {
+  return onSnapshot(
+    query(classes, where('organisationId', '==', organisationId)),
+    (snap) => onData(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as WeeklyClass).sort((a, b) => (a.venue || a.name).localeCompare(b.venue || b.name))),
     onError,
   )
 }

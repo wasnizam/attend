@@ -83,7 +83,7 @@ function NotOpen({ item, now }: { item: AgendaItem; now: number }) {
         {over
           ? t('Nobody could clock in today because the door screen was not open. You can still open it now and add people by hand.')
           : cls?.rosterCount
-            ? t('It opens by itself on the door screen, 30 minutes before the start. {n} people are expected.', { n: cls.rosterCount })
+            ? t(cls.rosterCount === 1 ? 'It opens by itself on the door screen, 30 minutes before the start. 1 person is expected.' : 'It opens by itself on the door screen, 30 minutes before the start. {n} people are expected.', { n: cls.rosterCount })
             : t('It opens by itself on the door screen, 30 minutes before the start.')}
       </p>
       {cls && !cls.rosterCount && !cls.rosterFrom && (

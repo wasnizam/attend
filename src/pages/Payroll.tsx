@@ -7,7 +7,10 @@ import { fetchPlans } from '../data/plans'
 import { fetchRoster } from '../data/roster'
 import { useProfile } from '../hooks/useAuth'
 import { useMyClasses } from '../hooks/useClasses'
+import { useLive } from '../hooks/useLive'
 import { useMySessions } from '../hooks/useSessions'
+import { subscribeOrgSessions } from '../data/sessions'
+import type { Session } from '../lib/types'
 import { downloadCsv } from '../lib/csv'
 import { formatDuration, isoDate, weekStart } from '../lib/format'
 import { t } from '../lib/i18n'
@@ -33,9 +36,16 @@ export function Payroll() {
   const [rows, setRows] = useState<PayrollRow[] | null>(null)
   const [failed, setFailed] = useState(false)
 
+  // An admin's report covers the whole company: every office, whoever manages it.
+  const admin = profile.role === 'admin'
+  const orgSessions = useLive<Session[]>(
+    admin ? (onData, onError) => subscribeOrgSessions(profile.organisationId, `${month}-01`, `${month}-31`, onData, onError) : null,
+    [admin, month, profile.organisationId],
+  )
+  const source = admin ? orgSessions : mySessions
   const held = useMemo(
-    () => (mySessions.data ?? []).filter((s) => s.date.startsWith(month) && s.status !== 'scheduled'),
-    [mySessions.data, month],
+    () => (source.data ?? []).filter((s) => s.date.startsWith(month) && s.status !== 'scheduled'),
+    [source.data, month],
   )
   const signature = held.map((s) => `${s.id}:${s.presentCount}:${s.status}`).join(',')
 
@@ -60,7 +70,7 @@ export function Payroll() {
     ]).then(
       ([records, outs, rosters, plans, leave]) =>
         !stale &&
-        setRows(buildPayroll(held, new Map(records), new Map(outs), new Map(rosters), plans.flat(), new Map((classes.data ?? []).map((c) => [c.id, c.venue || ''] as const)), Date.now(), new Map(leave))),
+        setRows(buildPayroll(held, new Map(records), new Map(outs), new Map(rosters), plans.flat(), new Map([...held.filter((s) => s.rosterId).map((s) => [s.rosterId!, s.venue || ''] as const), ...(classes.data ?? []).map((c) => [c.id, c.venue || ''] as const)]), Date.now(), new Map(leave))),
       () => !stale && setFailed(true),
     )
     return () => {
@@ -69,7 +79,7 @@ export function Payroll() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature, month, profile.id, classes.data])
 
-  if (mySessions.loading || classes.loading) return <PageLoader />
+  if (source.loading || classes.loading) return <PageLoader />
 
   const departments = [...new Set((rows ?? []).map((r) => r.department).filter(Boolean))]
   const offices = [...new Set((rows ?? []).map((r) => r.office).filter(Boolean))]

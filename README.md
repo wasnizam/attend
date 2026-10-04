@@ -204,6 +204,11 @@ The organisation's `phoneCheck` setting (Account) is copied onto each day: `flag
 it; `block` makes the rules refuse any clock-in that is not from the person's own registered
 phone (`phoneOk`). Phones are readable only by members of the organisation.
 
+**Admin, for a workplace.** The Admin overview is by office (expected, came, late, on leave or MC,
+absent), the monthly report covers every office for an admin (`subscribeOrgSessions`), and the
+Users tab lists the offices with who runs each. A manager who joins through an invite lands on
+Today ("no office is yours yet"), not on company setup, which is for admins only.
+
 **Office first, shifts as an extra.** A workplace starts as a plain office: the menu reads
 "Working hours", the form opens on Monday to Friday, nine to five, and nothing mentions shifts.
 An admin ticks "We work in shifts" on the Account page (`organisations.shifts`, `has('shifts')`)

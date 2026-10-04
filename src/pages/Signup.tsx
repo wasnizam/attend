@@ -126,7 +126,7 @@ export function Signup() {
           )}
           <ErrorNote>{error}</ErrorNote>
           <Button type="submit" size="lg" block busy={busy}>
-            {finishing ? t('Continue') : t('Start Free')}
+            {finishing ? t('Continue') : joining ? t('Join') : t('Start Free')}
           </Button>
         </form>
         <button onClick={() => setJoining(!joining)} className="mt-4 w-full text-center text-sm font-medium text-accent">

@@ -108,6 +108,7 @@ const TERMS: Record<'en' | 'ms', Partial<Record<Purpose, Swap[]>>> = {
       ['Lecturers', 'Managers'], ['lecturers', 'managers'], ['Lecturer', 'Manager'], ['lecturer', 'manager'],
       ['Classes', 'Shifts'], ['classes', 'shifts'], ['Class', 'Shift'], ['class', 'shift'],
       ['PRESENT', 'IN'], ['Session Active', 'Open'],
+      ['Search participants by name or ID', 'Search staff by name or ID'], ['participants', 'staff'], ['Participants', 'Staff'],
       ['Excused', 'On leave'], ['excused', 'on leave'],
     ]),
   },

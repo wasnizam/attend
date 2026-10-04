@@ -31,7 +31,9 @@ export function Dashboard() {
   const sessions = data ?? []
   const myClasses = classes.data ?? []
   // A workplace with nothing set up yet starts with the four setup steps, not an empty page.
-  if (has('clock') && sessions.length + myClasses.length === 0) return <Navigate to="/app/setup" replace />
+  // (Only for whoever set the company up: a manager who joined it is handed an office instead.)
+  if (has('clock') && profile.role === 'admin' && sessions.length + myClasses.length === 0) return <Navigate to="/app/setup" replace />
+  const waiting = has('clock') && profile.role !== 'admin' && sessions.length + myClasses.length === 0
   // Anything still running belongs on this screen, even if it was scheduled for another day.
   const carriedOver: AgendaItem[] = sessions
     .filter((s) => s.date !== today && effectiveStatus(s) === 'active')
@@ -100,7 +102,15 @@ export function Dashboard() {
         // A workplace's day is about people: who is in, late, gone home, or missing.
         <div className="mx-auto max-w-3xl space-y-4">
           <ShiftAlerts sessions={sessions} now={now} />
-          <WorkToday items={todays} now={now} />
+          {waiting ? (
+            <Card className="p-6 text-center">
+              <p className="text-lg font-semibold tracking-tight">{t('Welcome. No office is yours yet.')}</p>
+              <p className="mx-auto mt-1 max-w-md text-sm text-muted">{t('Your admin can hand an office to you, with its staff list. Or add working hours yourself if you run a new one.')}</p>
+              <Link to="/app/new" className={`${buttonClass({ variant: 'secondary' })} mt-4`}>{t('Add working hours')}</Link>
+            </Card>
+          ) : (
+            <WorkToday items={todays} now={now} />
+          )}
         </div>
       ) : isNew ? (
         guide

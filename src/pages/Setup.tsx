@@ -91,7 +91,8 @@ export function Setup() {
     }
   }
 
-  if (!has('clock')) return <Navigate to="/app" replace />
+  // Setting up the company is the admin's job; a manager who joined it goes straight to Today.
+  if (!has('clock') || profile.role !== 'admin') return <Navigate to="/app" replace />
   if (classes.loading || !org) return <PageLoader />
   // Each office has its own working hours and its own staff list. They are made at the end of
   // step one, with the usual office defaults.
