@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorNote, PageLoader, inputClass } from '../components/ui'
 import { useMySessions, useNow } from '../hooks/useSessions'
-import { effectiveStatus, formatDate, formatPercent, isoDate, percent } from '../lib/format'
+import { effectiveStatus, formatDate, formatPercent, headcount, isoDate, percent } from '../lib/format'
 import { t } from '../lib/i18n'
 
 export function History() {
@@ -40,7 +40,8 @@ export function History() {
           ) : (
             <ul className="divide-y divide-line overflow-hidden rounded-xl bg-white shadow-card">
               {shown.map((s) => {
-                const pct = percent(s.presentCount, s.expected)
+                const total = headcount(s.presentCount, s.expected)
+                const pct = percent(s.presentCount, total)
                 const held = s.status !== 'scheduled'
                 return (
                   <li key={s.id}>
@@ -54,7 +55,7 @@ export function History() {
                           <>
                             <p className="font-semibold">
                               {s.presentCount}
-                              {s.expected ? ` / ${s.expected}` : ` ${t('present')}`}
+                              {total ? ` / ${total}` : ` ${t('present')}`}
                             </p>
                             {pct !== null && <p className="text-sm text-muted">{formatPercent(pct)}</p>}
                           </>

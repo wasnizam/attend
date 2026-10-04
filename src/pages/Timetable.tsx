@@ -3,6 +3,7 @@ import { EmptyState, ErrorNote, PageLoader, buttonClass } from '../components/ui
 import { useMyClasses } from '../hooks/useClasses'
 import { WEEK, classSlots, courseLine, dayName, formatDate, formatDays, formatRange, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import type { WeeklyClass } from '../lib/types'
 
 function ClassLinks({ c }: { c: WeeklyClass }) {
@@ -12,9 +13,12 @@ function ClassLinks({ c }: { c: WeeklyClass }) {
       <Link to={`/app/timetable/${c.rosterFrom || c.id}/students`} className={pill}>
         {c.rosterFrom ? t('Shared student list') : c.rosterCount ? t('{n} students', { n: c.rosterCount }) : t('+ Student list')}
       </Link>
-      <Link to={`/app/timetable/${c.id}/report`} className={pill}>
-        {t('Report')}
-      </Link>
+      {/* A workplace has one report: the monthly one. */}
+      {!has('clock') && (
+        <Link to={`/app/timetable/${c.id}/report`} className={pill}>
+          {t('Report')}
+        </Link>
+      )}
     </div>
   )
 }

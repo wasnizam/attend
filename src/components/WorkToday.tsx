@@ -8,7 +8,7 @@ import { useLive } from '../hooks/useLive'
 import { useAbsentees } from '../hooks/useRoster'
 import { useSessionAttendance } from '../hooks/useSessions'
 import type { AgendaItem } from '../lib/agenda'
-import { endOf, formatClock, formatDuration, formatRange, isAway, minutesLate } from '../lib/format'
+import { countedMinutes, endOf, formatClock, formatDuration, formatRange, isAway, minutesLate } from '../lib/format'
 import { t } from '../lib/i18n'
 import type { Session } from '../lib/types'
 import { Button, Card, ErrorNote, Spinner, friendlyError } from './ui'
@@ -175,7 +175,7 @@ function Day({ item, session, now }: { item: AgendaItem; session: Session; now: 
                   <span className="min-w-0 truncate">{r.studentName}</span>
                   <span className="tabular shrink-0 text-muted">
                     {formatClock(r.timestamp)}
-                    {out ? ` – ${formatClock(new Date(out.toMillis()))} · ${formatDuration((out.toMillis() - (r.timestamp?.toMillis() ?? out.toMillis())) / 60_000)}` : ''}
+                    {out ? ` – ${formatClock(new Date(out.toMillis()))} · ${formatDuration(countedMinutes(r.timestamp?.toMillis() ?? out.toMillis(), out.toMillis(), session))}` : ''}
                   </span>
                 </li>
               )

@@ -75,14 +75,14 @@ export async function addToRoster(cls: WeeklyClass, entries: RosterEntry[], exis
     await batch.commit()
   }
   await setCount(cls.id, added)
-  if (existing.length === 0) await attachToOpenDays(cls, entries.length).catch(() => {})
+  await syncOpenDays(cls, existing.length + added).catch(() => {})
 }
 
 /**
- * A day opened before the list existed takes anybody under any name. Once the list is there,
- * that day starts using it too.
+ * Keeps a day that is already open in step with its list: a day opened before the list existed
+ * starts using it, and the number expected follows people being added or removed.
  */
-async function attachToOpenDays(cls: WeeklyClass, count: number) {
+async function syncOpenDays(cls: WeeklyClass, count: number) {
   const open = await getDocs(
     query(collection(db, 'sessions'), where('organisationId', '==', cls.organisationId), where('ownerId', '==', cls.ownerId), where('classId', '==', cls.id), where('status', '==', 'active')),
   )
@@ -90,10 +90,10 @@ async function attachToOpenDays(cls: WeeklyClass, count: number) {
   let any = false
   open.forEach((d) => {
     const s = d.data()
-    if (s.rosterId || !s.token) return
+    if (!s.token || (s.rosterId && s.rosterId !== cls.id)) return
     any = true
     batch.update(d.ref, { rosterId: cls.id, expected: count })
-    batch.update(doc(db, 'sessionLinks', s.token), { rosterId: cls.id })
+    if (!s.rosterId) batch.update(doc(db, 'sessionLinks', s.token), { rosterId: cls.id })
   })
   if (any) await batch.commit()
 }
@@ -105,6 +105,7 @@ export async function removeFromRoster(cls: WeeklyClass, keys: string[]) {
     await batch.commit()
   }
   await setCount(cls.id, -keys.length)
+  await syncOpenDays(cls, Math.max(0, (cls.rosterCount ?? keys.length) - keys.length)).catch(() => {})
 }
 
 async function setCount(classId: string, delta: number) {

@@ -5,7 +5,7 @@ import { startSession } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
 import { usePresentCount } from '../hooks/useSessions'
 import type { AgendaItem } from '../lib/agenda'
-import { courseLine, formatPercent, formatRange, formatTime, parseDate, percent } from '../lib/format'
+import { courseLine, formatPercent, formatRange, formatTime, parseDate, percent, headcount } from '../lib/format'
 import { t } from '../lib/i18n'
 import { rotatePref } from '../lib/prefs'
 import type { Session } from '../lib/types'
@@ -50,12 +50,13 @@ function span(minutes: number): string {
 /** Present count that ticks up live while a session is running. */
 function LiveCount({ session, big = false }: { session: Session; big?: boolean }) {
   const present = usePresentCount(session, useProfile())
-  const pct = percent(present, session.expected)
+  const total = headcount(present, session.expected)
+  const pct = percent(present, total)
   return (
     <p className="tabular text-sm text-muted">
       <span className={`font-semibold tracking-tight text-ink ${big ? 'text-4xl' : 'text-base'}`}>
         {present}
-        {session.expected ? ` / ${session.expected}` : ''}
+        {total ? ` / ${total}` : ''}
       </span>{' '}
       {t('Present')}
       {pct !== null && <span> · {formatPercent(pct)}</span>}
@@ -163,9 +164,9 @@ function ScheduleRow({ item, isLast }: { item: AgendaItem; isLast: boolean }) {
               <Link to={hrefOf(item)} className="tabular text-sm hover:underline">
                 <span className="font-semibold">
                   {s.presentCount}
-                  {s.expected ? ` / ${s.expected}` : ''}
+                  {headcount(s.presentCount, s.expected) ? ` / ${s.expected}` : ''}
                 </span>
-                <span className="ml-2 text-muted">{s.expected ? formatPercent(percent(s.presentCount, s.expected)) : t('Present')}</span>
+                <span className="ml-2 text-muted">{headcount(s.presentCount, s.expected) ? formatPercent(percent(s.presentCount, s.expected)) : t('Present')}</span>
               </Link>
             ) : startable ? (
               <span className="flex items-center gap-3">

@@ -12,7 +12,7 @@ import { handOver, subscribeOrgClasses } from '../data/classes'
 import { PhoneReview } from '../components/PhoneReview'
 import { t } from '../lib/i18n'
 import { has } from '../lib/purpose'
-import { addDays, classSlots, countPresent, endOf, formatDays, isAway, effectiveStatus, formatClock24, formatDate, formatPercent, formatRange, isoDate, minutesLate, percent } from '../lib/format'
+import { addDays, classSlots, countPresent, endOf, formatDays, isAway, effectiveStatus, formatClock24, formatDate, formatPercent, formatRange, isoDate, minutesLate, percent, headcount } from '../lib/format'
 import type { AttendanceRecord, Organisation, Session, UserProfile, WeeklyClass } from '../lib/types'
 
 const TABS = ['overview', 'sessions', 'records', 'phones', 'users'] as const
@@ -249,8 +249,8 @@ export default function Admin() {
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="tabular font-semibold">
-                        {present}{s.expected ? ` / ${s.expected}` : ''}
-                        <span className="ml-2 font-normal text-muted">{formatPercent(percent(present, s.expected))}</span>
+                        {present}{headcount(present, s.expected) ? ` / ${s.expected}` : ''}
+                        <span className="ml-2 font-normal text-muted">{formatPercent(percent(present, headcount(present, s.expected)))}</span>
                       </p>
                       <div className="mt-1"><StatusBadge status={effectiveStatus(s)} /></div>
                     </div>

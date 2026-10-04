@@ -1,4 +1,4 @@
-import { addDays, endOf, minutesEarly, minutesLate, parseDate } from './format'
+import { addDays, countedMinutes, endOf, minutesEarly, minutesLate, parseDate } from './format'
 
 /** The Monday that starts the week a date falls in. */
 const mondayOf = (date: string) => addDays(date, -((parseDate(date).getDay() + 6) % 7))
@@ -37,9 +37,6 @@ export interface PayrollRow {
 }
 
 export type LeaveKind = 'annual' | 'emergency' | 'unpaid' | 'other'
-
-/** A break is only taken off a day longer than this. */
-export const BREAK_AFTER_MIN = 300
 
 type Outs = Map<string, { toMillis(): number }>
 
@@ -97,18 +94,14 @@ export function buildPayroll(
         }
         const out = outs.get(session.id)?.get(r.studentKey)
         if (out && r.timestamp) {
-          // Arriving early does not add hours, unless the company says it does.
-          const began = parseDate(session.date, session.startTime).getTime()
-          const from = session.countEarly || session.flexible ? r.timestamp.toMillis() : Math.max(r.timestamp.toMillis(), began)
+          const from = r.timestamp.toMillis()
+          const to = Math.max(from, out.toMillis())
           const gone = minutesEarly(out, session)
           if (gone) {
             row.early += 1
             row.earlyMinutes += gone
           }
-          const to = Math.max(from, out.toMillis())
-          // An unpaid break comes off a day of more than five hours; overtime is not touched.
-          const worked = (to - from) / 60_000
-          row.minutes += worked > BREAK_AFTER_MIN ? Math.max(0, worked - (session.breakMin ?? 0)) : worked
+          row.minutes += countedMinutes(from, to, session)
           row.overtime += Math.max(0, to - Math.max(end, from)) / 60_000
         } else if (over) row.noClockOut += 1
       }

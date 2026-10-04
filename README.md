@@ -214,6 +214,13 @@ office's manager on classes, staff lists and shift plans). Phone approvals and r
 limited to an admin, or the manager whose staff list the person is on (`canManagePhone`; each
 phone record keeps that list as `listId`).
 
+**The same numbers on every page.** Hours shown anywhere to a manager come from one function,
+`countedMinutes` (start-time rule, unpaid break); the staff member's own phone shows plain time
+at work. A staff list change updates the open day's list and expected number. Class reports
+leave out a day still under way, and while a working day is open the gap is "Not in yet", not
+"Absent". A headcount that later additions have passed is not shown (`headcount`), so a page
+never says "5 / 4". A workplace has one report, the monthly one.
+
 **Office first, shifts as an extra.** A workplace starts as a plain office: the menu reads
 "Working hours", the form opens on Monday to Friday, nine to five, and nothing mentions shifts.
 An admin ticks "We work in shifts" on the Account page (`organisations.shifts`, `has('shifts')`)

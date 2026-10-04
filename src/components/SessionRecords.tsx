@@ -8,7 +8,7 @@ import { useAbsentees } from '../hooks/useRoster'
 import { useNow } from '../hooks/useSessions'
 import { openEvidence } from '../lib/evidenceFile'
 import { type Phones, approvePhone, phoneNote, subscribePhones } from '../data/phones'
-import { isAway, minutesEarly, minutesLate, studentKey as studentKeyOf } from '../lib/format'
+import { countedMinutes, isAway, minutesEarly, minutesLate, studentKey as studentKeyOf } from '../lib/format'
 import { has } from '../lib/purpose'
 import { type Position, distanceMetres, formatDistance } from '../lib/geo'
 import { t } from '../lib/i18n'
@@ -202,6 +202,7 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
                   outs: outs.data,
                   onOut: (r) => run(() => clockOutFor(session, viewer, r.studentKey)),
                   onUndo: (r) => run(() => undoClockOut(session, r.studentKey)),
+                  minutes: (from, to) => countedMinutes(from, to, session),
                 }
               : undefined
           }

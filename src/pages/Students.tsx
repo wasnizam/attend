@@ -10,6 +10,7 @@ import { useRoster } from '../hooks/useRoster'
 import { useMySessions, usePresentCount } from '../hooks/useSessions'
 import { courseLine, formatDate, formatDays } from '../lib/format'
 import { t } from '../lib/i18n'
+import { has } from '../lib/purpose'
 import type { AttendanceRecord, Session, WeeklyClass } from '../lib/types'
 
 interface Person {
@@ -88,9 +89,11 @@ function ClassGroup({ cls, query, open, onToggle }: { cls: WeeklyClass; query: s
           <Link to={`/app/timetable/${cls.id}/students`} className={buttonClass({ variant: 'secondary' })}>
             {t('Edit list')}
           </Link>
-          <Link to={`/app/timetable/${cls.id}/report`} className={buttonClass({ variant: 'secondary' })}>
-            {t('Semester report')}
-          </Link>
+          {!has('clock') && (
+            <Link to={`/app/timetable/${cls.id}/report`} className={buttonClass({ variant: 'secondary' })}>
+              {t('Semester report')}
+            </Link>
+          )}
         </>
       }
     >

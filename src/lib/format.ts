@@ -175,6 +175,32 @@ export function minutesEarly(
   return early > (session.graceMin ?? LATE_GRACE_MIN) ? early : 0
 }
 
+/**
+ * The number to show after "present /". A headcount fixed when the day opened can be passed
+ * by people added to the list later; then it is no longer a real total, so none is shown.
+ */
+export const headcount = (present: number, expected: number | null | undefined) =>
+  expected && present <= expected ? expected : null
+
+/** A break is only taken off a day longer than this. */
+export const BREAK_AFTER_MIN = 300
+
+/**
+ * The hours that count for one day: from the start time (or the clock-in, if later or if the
+ * company counts early arrival), to the clock-out, less the unpaid break on a long day.
+ * The Today page, the day's list, the export and the monthly report all use this.
+ */
+export function countedMinutes(
+  clockIn: number,
+  clockOut: number,
+  session: Pick<Session, 'date' | 'startTime' | 'countEarly' | 'flexible' | 'breakMin'>,
+): number {
+  const began = parseDate(session.date, session.startTime).getTime()
+  const from = session.countEarly || session.flexible ? clockIn : Math.max(clockIn, began)
+  const worked = Math.max(0, clockOut - from) / 60_000
+  return worked > BREAK_AFTER_MIN ? Math.max(0, worked - (session.breakMin ?? 0)) : worked
+}
+
 /** When something ends. An end time at or before the start means it runs past midnight (a night shift). */
 export function endOf(item: { date: string; startTime: string; endTime: string }): Date {
   const end = parseDate(item.date, item.endTime)

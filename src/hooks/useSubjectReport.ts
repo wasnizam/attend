@@ -1,3 +1,4 @@
+import { endOf } from '../lib/format'
 import { useEffect, useMemo, useState } from 'react'
 import { fetchSessionAttendance } from '../data/attendance'
 import { fetchRoster } from '../data/roster'
@@ -19,7 +20,7 @@ export function useClassReports(classes: WeeklyClass[]): { reports: Map<string, 
       map.set(
         cls.id,
         (mySessions.data ?? [])
-          .filter((s) => (s.classId === cls.id || s.rosterId === cls.id) && s.status !== 'scheduled')
+          .filter((s) => (s.classId === cls.id || s.rosterId === cls.id) && s.status !== 'scheduled' && finished(s))
           .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)),
       )
     }
@@ -51,4 +52,9 @@ export function useClassReports(classes: WeeklyClass[]): { reports: Map<string, 
   }, [signature, profile.id, mySessions.loading])
 
   return { reports, failed }
+}
+
+/** A day still under way is left out, so nobody counts as absent before it is over. */
+function finished(s: { status: string; date: string; startTime: string; endTime: string }) {
+  return s.status === 'ended' || endOf(s).getTime() <= Date.now()
 }

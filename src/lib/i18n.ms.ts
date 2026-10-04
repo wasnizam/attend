@@ -976,4 +976,5 @@ export const ms: Record<string, string> = {
   "Take back": "Ambil balik",
   "Take “{name}” back from {person}? From its next day, you run it.": "Ambil balik “{name}” daripada {person}? Mulai hari seterusnya, anda yang menguruskannya.",
   "To give an office to a manager, open it with Edit and use “Who manages this office”.": "Untuk menyerahkan pejabat kepada pengurus, bukanya dengan Sunting dan guna “Siapa menguruskan pejabat ini”.",
+  "Not in yet · On leave or MC": "Belum masuk · Cuti atau MC",
 }

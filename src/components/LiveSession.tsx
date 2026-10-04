@@ -241,7 +241,8 @@ export function LiveSession({ session, records, owner }: Props) {
         <h2 className="text-xs font-semibold tracking-wider text-muted">{t('LIVE ATTENDANCE')}</h2>
         <div className="mt-3 grid grid-cols-3 gap-2">
           <Stat label={t('Present')} value={present} />
-          <Stat label={excused ? t('Absent · Excused / MC') : t('Absent')} value={absent === null ? '—' : excused ? `${absent} · ${excused}` : absent} />
+          {/* While a working day is open, nobody is absent yet: they have simply not come in. */}
+          <Stat label={has('clock') ? (excused ? t('Not in yet · On leave or MC') : t('Not in yet')) : excused ? t('Absent · Excused / MC') : t('Absent')} value={absent === null ? '—' : excused ? `${absent} · ${excused}` : absent} />
           <Stat label={t('Attendance')} value={formatPercent(pct)} />
         </div>
         {owner && (

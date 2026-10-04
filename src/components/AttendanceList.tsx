@@ -18,7 +18,7 @@ interface Props {
   /** Record ID -> extra lines under the name, such as MC remarks and evidence. */
   details?: Map<string, React.ReactNode>
   /** Workplace: clock-out times, with the manager's controls to clock someone out or undo it. */
-  clock?: { outs: ClockOuts; onOut: (record: AttendanceRecord) => void; onUndo: (record: AttendanceRecord) => void }
+  clock?: { outs: ClockOuts; onOut: (record: AttendanceRecord) => void; onUndo: (record: AttendanceRecord) => void; /** Minutes that count for a day, as in the monthly report. */ minutes: (clockIn: number, clockOut: number) => number }
 }
 
 export const STATUS_LABEL: Record<AttendanceStatus, string> = { present: 'Present', late: 'Late', excused: 'Excused', mc: 'MC' }
@@ -65,7 +65,7 @@ export function AttendanceList({ records, live = false, onRemove, onStatus, miss
                         {formatClock24(clock.outs.get(r.studentKey) as never)}
                         {r.timestamp && (
                           <span className="block text-xs text-muted">
-                            {formatDuration((clock.outs.get(r.studentKey)!.toMillis() - r.timestamp.toMillis()) / 60_000)}
+                            {formatDuration(clock.minutes(r.timestamp.toMillis(), clock.outs.get(r.studentKey)!.toMillis()))}
                           </span>
                         )}
                         <button type="button" className="text-xs font-medium text-accent hover:underline" onClick={() => clock.onUndo(r)}>

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { AgendaItem } from '../lib/agenda'
-import { formatPercent, formatRange, percent } from '../lib/format'
+import { formatPercent, formatRange, percent, headcount } from '../lib/format'
 import { t } from '../lib/i18n'
 import { MeetingActions } from './MeetingActions'
 
@@ -50,9 +50,9 @@ export function DayAgenda({ items, empty }: { items: AgendaItem[]; empty: string
                   <>
                     <span className="font-semibold">
                       {s.presentCount}
-                      {s.expected ? ` / ${s.expected}` : ''}
+                      {headcount(s.presentCount, s.expected) ? ` / ${s.expected}` : ''}
                     </span>
-                    {s.expected ? <span className="ml-2 text-muted">{formatPercent(percent(s.presentCount, s.expected))}</span> : null}
+                    {headcount(s.presentCount, s.expected) ? <span className="ml-2 text-muted">{formatPercent(percent(s.presentCount, s.expected))}</span> : null}
                   </>
                 ) : (
                   <span className={item.state === 'active' ? 'font-medium text-good' : item.state === 'cancelled' ? 'font-medium text-bad' : 'text-muted'}>{t(STATE_TEXT[item.state])}</span>

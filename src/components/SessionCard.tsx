@@ -4,7 +4,7 @@ import { startClassSession } from '../data/classes'
 import { startSession } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
 import { usePresentCount } from '../hooks/useSessions'
-import { courseLine, effectiveStatus, formatDate, formatPercent, formatRange, percent } from '../lib/format'
+import { courseLine, effectiveStatus, formatDate, formatPercent, formatRange, headcount, percent } from '../lib/format'
 import { t } from '../lib/i18n'
 import { rotatePref } from '../lib/prefs'
 import type { CourseDetails, Session, Slot, WeeklyClass } from '../lib/types'
@@ -28,12 +28,13 @@ export function RemoteLine({ item }: { item: CourseDetails }) {
 }
 
 export function PresentLine({ present, expected }: { present: number; expected: number | null }) {
-  const pct = percent(present, expected)
+  const total = headcount(present, expected)
+  const pct = percent(present, total)
   return (
     <p className="tabular text-sm text-muted">
       <span className="text-2xl font-semibold tracking-tight text-ink">
         {present}
-        {expected ? ` / ${expected}` : ''}
+        {total ? ` / ${total}` : ''}
       </span>{' '}
       {t('Present')}{pct !== null && <span> · {formatPercent(pct)}</span>}
     </p>

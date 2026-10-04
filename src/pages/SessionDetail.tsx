@@ -181,7 +181,7 @@ function EndedRecord({ session: s, records, loading, error, mine, busy, onReopen
         <Stat label={t('Attendance')} value={formatPercent(pct)} />
       </div>
       <div className="mt-5 flex flex-wrap items-center gap-2">
-        <ExportButtons records={records} absent={absentees} outs={clocking ? outs.data ?? new Map() : undefined} filename={`${slug(s.name)}-${s.date}`} />
+        <ExportButtons records={records} absent={absentees} outs={clocking ? outs.data ?? new Map() : undefined} session={s} filename={`${slug(s.name)}-${s.date}`} />
         {mine && (
           <Button variant="secondary" busy={busy} onClick={onReopen}>
             {t('Reopen attendance')}

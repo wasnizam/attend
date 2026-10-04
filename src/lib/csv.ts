@@ -1,6 +1,6 @@
-import { formatClock24, formatDate } from './format'
+import { countedMinutes, formatClock24, formatDate } from './format'
 import { t } from './i18n'
-import type { AttendanceRecord } from './types'
+import type { AttendanceRecord, Session } from './types'
 
 const HEADER = ['Student ID', 'Student Name', 'Session', 'Date', 'Time', 'Status']
 const STATUS = { present: 'Present', late: 'Late', excused: 'Excused', mc: 'MC' }
@@ -22,11 +22,18 @@ export interface Absentee {
  * `outs` (workplace) adds the time each person left and the hours between, as a decimal
  * number a payroll sheet can add up.
  */
-export function attendanceCsv(records: AttendanceRecord[], absent: Absentee[] = [], outs?: Map<string, { toMillis(): number }>): string {
+export function attendanceCsv(
+  records: AttendanceRecord[],
+  absent: Absentee[] = [],
+  outs?: Map<string, { toMillis(): number }>,
+  /** The day, so hours are counted as in the monthly report. */
+  session?: Pick<Session, 'date' | 'startTime' | 'countEarly' | 'flexible' | 'breakMin'>,
+): string {
   const left = (r: AttendanceRecord) => {
     const out = outs?.get(r.studentKey)
     if (!out) return ['', '']
-    const hours = r.timestamp ? Math.max(0, out.toMillis() - r.timestamp.toMillis()) / 3_600_000 : null
+    const from = r.timestamp?.toMillis()
+    const hours = from === undefined ? null : (session ? countedMinutes(from, out.toMillis(), session) : Math.max(0, out.toMillis() - from) / 60_000) / 60
     return [formatClock24(out as never), hours === null ? '' : hours.toFixed(2)]
   }
   const rows = [
