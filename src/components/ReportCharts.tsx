@@ -5,7 +5,7 @@ import type { DayEntry, PayrollRow } from '../lib/payroll'
 import { Card } from './ui'
 
 /** Attendance states, bottom of the stack first. Status colours, always shown with a legend and labels. */
-const PARTS = [
+export const PARTS = [
   { id: 'onTime', label: 'On time', color: '#0ca30c' },
   { id: 'late', label: 'Late', color: '#fab219' },
   { id: 'off', label: 'Leave or MC', color: '#94a3b8' },
@@ -19,7 +19,7 @@ const ACCENT = '#4f46e5'
 const INK2 = '#64748b'
 const GRID = '#e2e8f0'
 
-interface Bucket {
+export interface Bucket {
   key: string
   label: string
   title: string
@@ -27,7 +27,7 @@ interface Bucket {
 }
 
 /** Days for a short period, months for a long one. */
-function buckets(rows: PayrollRow[], from: string, to: string): Bucket[] {
+export function buckets(rows: PayrollRow[], from: string, to: string): Bucket[] {
   const last = to < from ? from : to
   const daily = (parseDate(last).getTime() - parseDate(from).getTime()) / 86_400_000 < 62
   const list = new Map<string, Bucket>()
@@ -189,8 +189,8 @@ function Bars({ items, unit, max }: { items: { label: string; value: number; not
 }
 
 /** The picture of the period: trend, groups and people who are late most. */
-export function ReportCharts({ rows, groups, from, to }: { rows: PayrollRow[]; groups: { name: string; list: PayrollRow[] }[]; from: string; to: string }) {
-  const data = buckets(rows, from, to)
+/** The figures behind the group and lateness charts, shared with the PDF. */
+export function chartData(rows: PayrollRow[], groups: { name: string; list: PayrollRow[] }[]) {
   const byGroup = groups
     .map((g) => {
       const days = g.list.reduce((a, r) => a + r.days, 0)
@@ -205,6 +205,13 @@ export function ReportCharts({ rows, groups, from, to }: { rows: PayrollRow[]; g
     .sort((a, b) => b.late - a.late || b.lateMinutes - a.lateMinutes)
     .slice(0, 5)
     .map((r) => ({ label: r.name, value: r.late, note: `${Math.round(r.lateMinutes)} min` }))
+  return { byGroup, late }
+}
+
+/** The picture of the period: trend, groups and people who are late most. */
+export function ReportCharts({ rows, groups, from, to }: { rows: PayrollRow[]; groups: { name: string; list: PayrollRow[] }[]; from: string; to: string }) {
+  const data = buckets(rows, from, to)
+  const { byGroup, late } = chartData(rows, groups)
   return (
     <div id="report-charts" className="grid gap-4 lg:grid-cols-2">
       <div className="lg:col-span-2">

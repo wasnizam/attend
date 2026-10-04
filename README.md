@@ -241,8 +241,10 @@ Charts (`ReportCharts`): attendance over time (stacked by on time / late / leave
 days for up to two months, months beyond), attendance by group (lowest first) and the five people
 late most often. "Customise report" picks the sections, the columns and the grouping; the screen,
 the PDF and the Excel file follow it, saved per device (`attend.reportSetup`). "Download PDF" makes a
-real PDF file in the browser (`src/lib/reportPdf.ts`: jsPDF + autotable for text tables,
-html-to-image for the charts; loaded only on click) and downloads it straight away: A4
+real PDF file in the browser (`src/lib/reportPdf.ts`: jsPDF + autotable, everything drawn as vector text and shapes, so the
+layout does not depend on the screen; loaded only on click). Page 1 is an executive summary: company,
+title, period, who prepared it, six headline figures, the trend chart, key findings written from
+the numbers, and the group and lateness charts and downloads it straight away: A4
 landscape, headline figures, charts, needs attention, the people table, the grid, notes and page
 numbers. A timesheet PDF has signature lines.
 

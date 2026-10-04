@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode, useEffect, useMemo, useState } from 'react'
-import { ReportCharts } from '../components/ReportCharts'
+import { PARTS, ReportCharts, buckets, chartData } from '../components/ReportCharts'
+import { getOrganisation } from '../data/account'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, inputClass } from '../components/ui'
 import { fetchClockOuts, fetchSessionAttendance } from '../data/attendance'
 import { LEAVE_LABEL, fetchLeaveTypes } from '../data/evidence'
@@ -206,6 +207,10 @@ export function Payroll() {
   }
   const [person, setPerson] = useState<string | null>(null)
   const [making, setMaking] = useState(false)
+  const [company, setCompany] = useState('')
+  useEffect(() => {
+    getOrganisation(profile.organisationId).then((o) => setCompany(o?.name ?? ''), () => {})
+  }, [profile.organisationId])
   const [department, setDepartment] = useState('')
   const [office, setOffice] = useState('')
   const [rows, setRows] = useState<PayrollRow[] | null>(null)
@@ -311,6 +316,26 @@ export function Payroll() {
   const pdf = (): PdfReport => {
     const head = [t('Student ID'), t('Name'), ...columns.map((c) => t(c.label))]
     const totals = (list: PayrollRow[], name: string) => [name, '', ...columns.map((c) => String(c.total?.(list) ?? ''))]
+    const absent = total(shown, (r) => r.absent)
+    const late = total(shown, (r) => r.late)
+    const off = total(shown, (r) => r.leave + r.mc)
+    const noOut = total(shown, (r) => r.noClockOut)
+    const overtime = total(shown, (r) => r.overtime)
+    const rest = total(shown, (r) => r.restMinutes)
+    const holiday = total(shown, (r) => r.holidayMinutes)
+    const { byGroup, late: lateList } = chartData(shown, groups)
+    const trend = buckets(shown, from, to < today ? to : today)
+    // Plain sentences an HR manager would write at the top of the report.
+    const findings = [
+      rate === null ? '' : t(rate >= 95 ? 'Attendance was {rate}%, a strong result.' : rate >= 90 ? 'Attendance was {rate}%.' : 'Attendance was {rate}%, below the usual 90% mark.', { rate }),
+      absent ? t(absent === 1 ? '1 day absent without leave.' : '{n} days absent without leave.', { n: absent }) : t('Nobody was absent without leave.'),
+      late ? t('{n} late arrivals; most often {name} ({k} times).', { n: late, name: lateList[0]?.label ?? '', k: lateList[0]?.value ?? 0 }) : t('Nobody arrived late.'),
+      byGroup.length > 1 ? t('Lowest attendance: {group} at {rate}%.', { group: byGroup[0].label, rate: byGroup[0].value }) : '',
+      off ? t(off === 1 ? '1 day of leave or MC.' : '{n} days of leave or MC.', { n: off }) : '',
+      overtime + rest + holiday >= 1 ? t('Overtime {h}; rest days {r}; public holidays {p}.', { h: formatDuration(overtime), r: formatDuration(rest), p: formatDuration(holiday) }) : '',
+      noOut ? t('{n} days without a clock-out need fixing before payroll.', { n: noOut }) : '',
+      flagged.length ? t('{n} people need attention (listed below).', { n: flagged.length }) : '',
+    ].filter(Boolean)
     const sections: PdfReport['sections'] = []
     if (has('attention') && flagged.length)
       sections.push({ heading: `${t('Needs attention')} (${flagged.length})`, note: t('Absent without leave, late or leaving early three times or more, or a day with no clock-out to fix before payroll.'), lines: flagged.map(({ r, why }) => [[r.name, r.office, r.department].filter(Boolean).join(' - '), why.join(', ')]) })
@@ -326,7 +351,8 @@ export function Payroll() {
     if (has('grid') && gridFits)
       sections.push({
         heading: t('Day-by-day grid'),
-        note: Object.values(MARK).map((m) => `${m.letter} = ${t(m.label)}`).join('   '),
+        newPage: true,
+        note: Object.values(MARK).map((m) => `${m.letter} = ${t(m.label)}`).join('     '),
         table: {
           head: [t('Name'), ...dates.map((d) => String(parseDate(d).getDate()))],
           left: 1,
@@ -337,25 +363,44 @@ export function Payroll() {
     return {
       fileName,
       title,
-      subtitle: [periodName, office, department].filter(Boolean).join(' - '),
-      stats: [
-        [t('People'), String(shown.length)],
-        [t('Attendance'), rate === null ? '-' : `${rate}%`],
-        [t('Hours'), formatDuration(total(shown, (r) => r.minutes))],
-        [t('Overtime'), formatDuration(total(shown, (r) => r.overtime + r.restMinutes + r.holidayMinutes))],
-        [t('Late'), String(total(shown, (r) => r.late))],
+      period: periodName,
+      organisation: company,
+      meta: [
+        [t('Covers'), [office || t('All offices'), department || t('All departments')].join(', ')],
+        [t('Prepared by'), profile.name],
+        [t('Generated'), `${formatDate(today)}, ${formatClock(new Date())}`],
       ],
-      pictures: has('charts') ? [...document.querySelectorAll<HTMLElement>('#report-charts [data-pdf-chart]')] : [],
+      kpis: [
+        { label: t('People'), value: String(shown.length), note: t('{n} days worked', { n: days }) },
+        { label: t('Attendance'), value: rate === null ? '-' : `${rate}%`, note: t('of {n} days due', { n: due }), warn: rate !== null && rate < 90 },
+        { label: t('Hours worked'), value: formatDuration(total(shown, (r) => r.minutes)), note: t('after unpaid breaks') },
+        { label: t('Overtime'), value: formatDuration(overtime + rest + holiday), note: rest + holiday >= 1 ? t('incl. rest days and holidays') : t('after the end time') },
+        { label: t('Late arrivals'), value: String(late), note: t('{n} minutes in all', { n: Math.round(total(shown, (r) => r.lateMinutes)) }), warn: late > 0 },
+        { label: t('Absent'), value: String(absent), note: t('{n} leave or MC', { n: off }), warn: absent > 0 },
+      ],
+      findings: has('charts') || findings.length ? { heading: t('Key findings'), items: findings } : undefined,
+      trend: has('charts')
+        ? { title: t('Attendance over time'), note: t('Each bar is everyone who was due that day: on time, late, on leave or MC, or absent.'), labels: trend.map((b) => b.label), series: PARTS.map((p) => ({ label: t(p.label), color: p.color, values: trend.map((b) => b.counts[p.id]) })) }
+        : undefined,
+      bars: has('charts')
+        ? [
+            ...(byGroup.length > 1 ? [{ title: t('Attendance by group'), note: t('Lowest first.'), items: byGroup.map((g) => ({ label: g.label, value: g.value, display: `${g.value}%`, note: g.note })), max: 100 }] : []),
+            ...(lateList.length ? [{ title: t('Late most often'), note: t('Times late, and minutes late in all.'), items: lateList.map((l) => ({ label: l.label, value: l.value, display: String(l.value), note: l.note })), max: lateList[0].value }] : []),
+          ]
+        : [],
       sections,
-      notes: [
-        t('Hours are from clock-in to clock-out, less the unpaid break on a day of more than five hours. Overtime is the time worked after the shift’s end time. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.'),
-        t('Attendance is the days worked out of the days each person was due; MC and leave are left out. Work on a rest day or a public holiday is shown apart. Under the Employment Act 1955 overtime is paid at least 1.5 times the hourly rate on a normal day, 2 times on a rest day and 3 times on a public holiday. Click a name for that person’s timesheet.').replace(/ Click a name.*$/, '').replace(/ Klik nama.*$/, ''),
-      ],
-      footer: `Attend - ${t('Printed {date}', { date: formatDate(today) })}`,
+      notes: {
+        heading: t('How the figures are worked out'),
+        items: [
+          t('Hours are from clock-in to clock-out, less the unpaid break on a day of more than five hours. Overtime is the time worked after the shift’s end time. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.'),
+          t('Attendance is the days worked out of the days each person was due; MC and leave are left out. Work on a rest day or a public holiday is shown apart. Under the Employment Act 1955 overtime is paid at least 1.5 times the hourly rate on a normal day, 2 times on a rest day and 3 times on a public holiday. Click a name for that person’s timesheet.').replace(/ Click a name.*$/, '').replace(/ Klik nama.*$/, ''),
+        ],
+      },
+      footer: [company, t('Confidential'), t('Made with Attend')].filter(Boolean).join('  |  '),
     }
   }
 
-  if (selected) return <Timesheet row={selected} period={periodName} onBack={() => setPerson(null)} />
+  if (selected) return <Timesheet row={selected} period={periodName} company={company} preparedBy={profile.name} onBack={() => setPerson(null)} />
 
   const nameButton = (r: PayrollRow) => (
     <button type="button" onClick={() => setPerson(r.key)} className="text-left font-medium text-accent hover:underline print:text-ink print:no-underline">
@@ -660,7 +705,7 @@ function MonthGrid({ groups, dates, nameButton }: { groups: Group[]; dates: stri
 }
 
 /** One person's days in full: what an HR officer checks before payroll, or hands to the person. */
-function Timesheet({ row, period, onBack }: { row: PayrollRow; period: string; onBack: () => void }) {
+function Timesheet({ row, period, company, preparedBy, onBack }: { row: PayrollRow; period: string; company: string; preparedBy: string; onBack: () => void }) {
   const status = (e: DayEntry) => {
     if (e.mark === 'leave') return `${t('Leave')}${e.leaveType && e.leaveType !== 'other' ? ` (${t(SHORT_LEAVE[e.leaveType])})` : ''}`
     const bits = [t(MARK[e.mark].label)]
@@ -680,29 +725,38 @@ function Timesheet({ row, period, onBack }: { row: PayrollRow; period: string; o
   const day = (d: string) => parseDate(d).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
   const timesheetPdf = (): PdfReport => ({
     fileName: `timesheet-${(row.staffId || row.name).replace(/[^A-Za-z0-9]+/g, '-')}`,
-    title: `${t('Timesheet')}: ${row.name}`,
-    subtitle: [period, row.staffId, row.office, row.department].filter(Boolean).join(' - '),
-    stats: [
-      [t('Days worked'), String(row.days)],
-      [t('Attendance'), row.rate === null ? '-' : `${row.rate}%`],
-      [t('Hours'), formatDuration(row.minutes)],
-      [t('Overtime'), formatDuration(row.overtime + row.restMinutes + row.holidayMinutes)],
-      [t('Absent'), String(row.absent)],
+    title: t('Timesheet'),
+    period: `${row.name} - ${period}`,
+    organisation: company,
+    meta: [
+      [t('Staff ID'), row.staffId || '-'],
+      [t('Office'), [row.office, row.department].filter(Boolean).join(', ') || '-'],
+      [t('Prepared by'), preparedBy],
+      [t('Generated'), formatDate(isoDate())],
+    ],
+    kpis: [
+      { label: t('Days worked'), value: String(row.days), note: row.halfDays ? t(row.halfDays === 1 ? '+1 half day' : '+{n} half days', { n: row.halfDays }) : '' },
+      { label: t('Attendance'), value: row.rate === null ? '-' : `${row.rate}%`, warn: row.rate !== null && row.rate < 90 },
+      { label: t('Hours worked'), value: formatDuration(row.minutes) },
+      { label: t('Overtime'), value: formatDuration(row.overtime + row.restMinutes + row.holidayMinutes) },
+      { label: t('Late arrivals'), value: String(row.late), note: row.late ? t('{n} minutes in all', { n: Math.round(row.lateMinutes) }) : '', warn: row.late > 0 },
+      { label: t('Absent'), value: String(row.absent), note: t('{n} leave or MC', { n: row.leave + row.mc }), warn: row.absent > 0 },
     ],
     sections: [
       {
         heading: t('Day by day'),
         table: {
-          head: ['Date', 'Shift', 'In', 'Out', 'Hours', 'Status'].map((h) => t(h)),
-          left: 6,
-          groups: [{ name: '', rows: row.entries.map((e) => [day(e.date), e.sessionName, time(e.clockIn), time(e.clockOut), e.minutes ? formatDuration(e.minutes) : '-', status(e)]) }],
-          total: [t('Total'), '', '', '', formatDuration(row.minutes), ''],
+          head: ['Date', 'Shift', 'In', 'Out', 'Status', 'Hours'].map((h) => t(h)),
+          left: 5,
+          groups: [{ name: '', rows: row.entries.map((e) => [day(e.date), e.sessionName, time(e.clockIn), time(e.clockOut), status(e), e.minutes ? formatDuration(e.minutes) : '-']) }],
+          total: [t('Total'), '', '', '', '', formatDuration(row.minutes)],
         },
       },
     ],
     signatures: [t('Employee signature'), t('Checked by (HR)')],
-    footer: `Attend - ${t('Printed {date}', { date: formatDate(isoDate()) })}`,
+    footer: [company, t('Confidential'), t('Made with Attend')].filter(Boolean).join('  |  '),
   })
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
