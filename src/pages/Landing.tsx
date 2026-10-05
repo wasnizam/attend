@@ -17,7 +17,7 @@ const FAQ = [
   ['Can someone send the QR to a friend who is not there?', 'With the rotating QR, a photo or a shared link stops working within a minute. Turn on the location check as well to flag or refuse anyone who is somewhere else.'],
   ['What if someone has no phone or no internet?', 'You can mark them present by hand in two taps, during the session or after it.'],
   ['Is it really free?', 'Yes. The free plan stays free, and you can do real work on it. You only pay if you need more than it includes.'],
-  ['Can I get my data out?', 'Yes. Every list and report can be exported to Excel.'],
+  ['Can I get my data out?', 'Yes. Lists and reports can be exported to Excel, and your records stay yours.'],
   ['Is our data safe?', 'Each organisation’s records are kept apart and protected by access rules on Google Cloud (Firebase): people see only what their role allows, attendance times cannot be changed by the person who clocked in, and anyone added by hand is labelled as such.'],
 ]
 
@@ -257,17 +257,21 @@ export function Landing({ show }: { show?: EditionId }) {
                   <span className="tabular text-4xl font-semibold tracking-tight">{plan.price[currency]}</span>
                   <span className="text-sm text-muted">{t(plan.per)}</span>
                 </p>
-                {!PAYMENTS_OPEN && !/^(RM|\$)0$/.test(plan.price[currency]) && (
-                  <span className="mt-2 inline-flex w-fit rounded-full bg-[#fff4d6] px-2.5 py-0.5 text-xs font-semibold text-[#8a5a00]">{t('Opens soon')}</span>
+                {!PAYMENTS_OPEN && (
+                  // Kept as an empty space on the free plan, so every card's list starts on the same line.
+                  <span aria-hidden={/^(RM|\$)0$/.test(plan.price[currency]) || undefined} className={`mt-2 inline-flex w-fit rounded-full bg-[#fff4d6] px-2.5 py-0.5 text-xs font-semibold text-[#8a5a00] ${/^(RM|\$)0$/.test(plan.price[currency]) ? 'invisible' : ''}`}>{t('Opens soon')}</span>
                 )}
                 <p className="mt-1.5 min-h-5 text-sm text-muted">{plan.alt ? t(typeof plan.alt === 'string' ? plan.alt : plan.alt[currency]) : ''}</p>
                 <ul className="mt-5 flex-1 space-y-2.5 border-t border-line pt-5 text-sm text-slate-700">
-                  {plan.items.map((item) => (
-                    <li key={item} className="flex gap-2">
-                      <span className="text-good" aria-hidden>✓</span>
-                      {t(item)}
-                    </li>
-                  ))}
+                  {plan.items.map((item) => {
+                    const no = item.startsWith('✕ ')
+                    return (
+                      <li key={item} className={`flex gap-2 ${no ? 'text-slate-400' : ''}`}>
+                        <span className={no ? '' : 'text-good'} aria-hidden>{no ? '✕' : '✓'}</span>
+                        {no ? <span><span className="sr-only">{t('Not included')}: </span>{t(item.slice(2))}</span> : t(item)}
+                      </li>
+                    )
+                  })}
                 </ul>
                 <Link to={signup} className={`${buttonClass({ size: 'lg', variant: plan.best ? 'primary' : 'secondary' })} mt-6`}>
                   {t('Start Free')}

@@ -123,8 +123,8 @@ function Plans() {
                 <input value={p.noteUsd ?? ''} onChange={(e) => patch(i, { noteUsd: e.target.value })} maxLength={120} placeholder={t('Line under the price (US$), optional')} className={inputClass} />
               </div>
               <label className="block text-xs font-medium text-muted">
-                {t('What is included (one per line)')}
-                <textarea rows={3} value={p.items.join('\n')} onChange={(e) => patch(i, { items: e.target.value.split('\n').map((x) => x.trimStart()).slice(0, 8) })} className={`${inputClass} mt-1`} />
+                {t('What is included (one per line; start a line with ✕ for not included)')}
+                <textarea rows={Math.min(14, Math.max(3, p.items.length))} value={p.items.join('\n')} onChange={(e) => patch(i, { items: e.target.value.split('\n').map((x) => x.trimStart()).slice(0, 16) })} className={`${inputClass} mt-1`} />
               </label>
               <div className="flex flex-wrap gap-4 text-sm">
                 <label className="flex items-center gap-2"><input type="radio" name={`best-${edition}`} checked={Boolean(p.best)} onChange={() => patch(i, { best: true })} className="accent-accent" />{t('Most popular')}</label>
