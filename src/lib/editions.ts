@@ -91,6 +91,8 @@ export interface Edition {
   without: { title: string; skip: string[]; need: string; focus?: string; saving?: string | Record<Currency, string> }
   /** Questions only this group asks, added to the shared FAQ. */
   faq?: [string, string][]
+  /** Four big facts under the top section; the general ones are used when missing. */
+  facts?: [string, string][]
   /** What is on offer, cheapest first. The first one is the free plan. */
   plans: PlanCard[]
 }
@@ -100,25 +102,31 @@ export const EDITIONS: Edition[] = [
     id: 'lecturers',
     purpose: 'education',
     label: 'Lecturers',
-    badge: 'QR attendance for lecturers',
-    headline: 'Attendance, without the hassle.',
-    sub: 'Start your class. Show the QR. Know who attended.',
+    badge: 'Works alongside your university system',
+    headline: 'Attendance in seconds. | No signing for friends.',
+    sub: 'Keep your university system. Attend takes attendance with a QR that cannot be shared, then exports to your portal in one click.',
     note: 'No app for students to install.',
-    featuresTitle: 'Everything a lecturer needs, nothing more',
+    facts: [
+      ['10 min', 'Back in a big class'],
+      ['45s', 'A new QR code, every 45 seconds'],
+      ['1 click', 'Export to your university portal'],
+      ['80%', 'Rule worked out for you'],
+    ],
+    featuresTitle: 'Built for the way lecturers really work',
     features: [
-      [ICON.calendar, 'Semester timetable', 'Add your classes once. Each one is waiting on the right day, ready to start in one tap.'],
-      [ICON.upload, 'Upload your class list', 'Excel, CSV or PDF. Students type only their ID, and you see who is absent by name.'],
-      [ICON.bolt, 'Live attendance', 'Names appear on your screen the moment students check in. No refreshing.'],
-      [ICON.screen, 'Lecture, tutorial and lab', 'Keep each type of class apart, and see a student’s attendance for all three side by side.'],
-      [ICON.pencil, 'Corrections made easy', 'Mark someone present by hand, or set late, excused or sick, during or after the session.'],
-      [ICON.chart, 'Semester reports', 'Every student’s percentage across the semester, with low attendance flagged. Export to Excel.'],
+      [ICON.bolt, 'Up to 10 minutes back, every class', 'Show the QR and students scan with their phone camera. No sheet passed round, no names called, no slow portal to open.'],
+      [ICON.upload, 'One-click export to your portal', 'Set the file up once the way your university system wants it: codes, date format, layout. Then upload in one click.'],
+      [ICON.file, 'Warning letters and barring list', 'See who is due a warning or barring at any moment. The letters and the list for your faculty are made for you as PDFs.'],
+      [ICON.chart, 'The 80% rule, worked out', 'Every student’s percentage and how many more classes they can miss, updated after every class.'],
+      [ICON.pencil, 'MCs and corrections', 'Mark late, excused or sick, keep the MC with the record, and fix anything during or after class.'],
+      [ICON.calendar, 'Your whole semester', 'Lectures, tutorials and labs, every section. Upload the class list from your portal’s export, and each class is ready on the right day.'],
     ],
     steps: [
-      ['1. Create', 'Add your semester classes once.'],
+      ['1. Add', 'Upload your class list from your portal’s export.'],
       ['2. Scan', 'Show the QR. Students scan with their phone.'],
-      ['3. Done', 'Attendance is recorded instantly.'],
+      ['3. Export', 'Upload to your portal in one click. Letters are ready when you need them.'],
     ],
-    cta: 'Take attendance in your next class.',
+    cta: 'Get your time back in your next class.',
     trust: {
       title: 'No more signing in for a friend',
       sub: 'Paper lists and plain QR codes are easy to cheat. Attend closes the gaps.',
@@ -144,13 +152,18 @@ export const EDITIONS: Edition[] = [
     preview: { title: 'DATABASE SYSTEMS', time: '10:00 AM – 12:00 PM', counted: 'PRESENT', rows: [['ST003', 'Kumar', '10:07'], ['ST002', 'Sarah', '10:05'], ['ST001', 'Ahmad', '10:03']] },
     orgPlaceholder: 'e.g. Faculty of Computing',
     without: {
-      title: 'Nothing to buy. Nothing to install.',
-      skip: ['A clicker or card reader', 'An app for students', 'Student accounts or passwords', 'Paper sign-in sheets passed around'],
-      need: 'Just your laptop or the projector, and your students’ own phones.',
+      title: 'Keep your university system. Lose the hassle.',
+      skip: ['Passing a sign-in sheet round', 'Calling out every name', 'Typing attendance into the portal again', 'Working out the 80% rule by hand'],
+      need: 'Your university system keeps the official record. Attend takes attendance for you, then exports in the exact format your portal accepts.',
+      focus: 'A big class can take 10 minutes to sign in. Over a semester, that is hours of teaching time back.',
     },
+    faq: [
+      ['My university already has a system. Why use Attend?', 'Keep it. Attend is for taking attendance quickly and honestly; your university system keeps the official record. Set up the export once, then upload in one click.'],
+      ['Is it allowed?', 'Attend is your own tool, like Excel or a quiz app. The official record still goes into your university system. If your university has rules on student data, check them; Attend keeps only the ID and name from your class list.'],
+    ],
     plans: [
       { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 class', 'Unlimited students', 'Every feature included'] },
-      { name: 'Pro', price: { myr: 'RM39', usd: '$9' }, per: 'per semester', alt: 'Pay once a semester. No monthly bill.', items: ['Unlimited classes', 'Unlimited students', 'Every feature included'], best: true },
+      { name: 'Pro', price: { myr: 'RM39', usd: '$9' }, per: 'per semester', alt: 'Pay once a semester. No monthly bill.', items: ['Unlimited classes', 'Unlimited students', 'Export to your university system', 'Warning letters and barring list', 'Every feature included'], best: true },
     ],
   },
   {

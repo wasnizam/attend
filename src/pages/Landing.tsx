@@ -35,6 +35,10 @@ const initials = (name: string) => name.split(' ').map((w) => w[0]).join('').sli
  */
 function LiveDemo({ edition }: { edition: Edition }) {
   const { title, time, counted } = edition.preview
+  // Arrivals run up to the start time shown in the demo (e.g. 10:00 AM), in the edition's own words.
+  const [, hh, mm, ap] = /(\d{1,2}):(\d{2})\s*(AM|PM)/.exec(time) ?? ['', '9', '00', 'AM']
+  const startMin = ((Number(hh) % 12) + (ap === 'PM' ? 12 : 0)) * 60 + Number(mm)
+  const work = edition.id === 'workplace'
   // Arrival number: starts at 3 so the first frame already shows a full list.
   const [n, setN] = useState(3)
   const [left, setLeft] = useState(45)
@@ -53,9 +57,10 @@ function LiveDemo({ edition }: { edition: Edition }) {
   // The newest four arrivals, newest first; times step on a minute each.
   const list = [0, 1, 2, 3].map((k) => {
     const i = n - k
-    // One arrival a minute from 8:20, so the newest is always latest.
-    const at = 8 * 60 + 17 + i
-    return { key: i, name: ARRIVALS[i % ARRIVALS.length], time: `${Math.floor(at / 60)}:${String(at % 60).padStart(2, '0')}`, colour: AVATAR[i % AVATAR.length] }
+    // Arrivals bunch up in the 10 minutes before the start, as they do; the newest is always latest.
+    const at = startMin - 12 + Math.floor(i / 4)
+    const h = Math.floor(at / 60)
+    return { key: i, name: ARRIVALS[i % ARRIVALS.length], time: `${((h + 11) % 12) + 1}:${String(at % 60).padStart(2, '0')}`, ampm: h < 12 ? 'AM' : 'PM', colour: AVATAR[i % AVATAR.length] }
   })
   const newest = list[0]
   const ring = 2 * Math.PI * 18
@@ -70,7 +75,7 @@ function LiveDemo({ edition }: { edition: Edition }) {
         </div>
         <div className="grid gap-4 p-4 sm:grid-cols-[11.5rem_1fr] sm:p-5">
           <div className="rounded-xl bg-night p-4 text-center text-white">
-            <p className="text-[11px] font-semibold tracking-wider text-white/60">{t('SCAN TO CLOCK IN')}</p>
+            <p className="text-[11px] font-semibold tracking-wider text-white/60">{t(work ? 'SCAN TO CLOCK IN' : 'SCAN TO CHECK IN')}</p>
             <div className="relative mx-auto mt-3 w-fit rounded-lg bg-white p-2">
               <QRCodeSVG value={`https://attend.example.com/door?t=${left}`} level="M" marginSize={0} style={{ width: '7.5rem', height: '7.5rem' }} />
               <span className="animate-scan absolute inset-x-1 h-0.5 rounded-full bg-sun shadow-[0_0_12px_2px_rgb(255_200_61/0.8)]" />
@@ -97,7 +102,7 @@ function LiveDemo({ edition }: { edition: Edition }) {
                   <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${r.colour}`}>{initials(r.name)}</span>
                   <span className="min-w-0 flex-1 truncate font-medium">{r.name}</span>
                   <span className="tabular text-muted">{r.time}</span>
-                  <span className="rounded-full bg-good-soft px-2 py-0.5 text-[11px] font-semibold text-good">{t('In')}</span>
+                  <span className="rounded-full bg-good-soft px-2 py-0.5 text-[11px] font-semibold text-good">{t(work ? 'In' : 'Present')}</span>
                 </li>
               ))}
             </ul>
@@ -110,8 +115,8 @@ function LiveDemo({ edition }: { edition: Edition }) {
           <span key={newest.key} className="animate-pop flex size-10 items-center justify-center rounded-full bg-good text-white">
             <svg viewBox="0 0 20 20" className="size-6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 10.5 3.2 3L15 7" /></svg>
           </span>
-          <p className="mt-2 text-xs font-semibold">{t('Clocked in')}</p>
-          <p className="tabular text-[10px] text-muted">{newest.time} AM</p>
+          <p className="mt-2 text-xs font-semibold">{t(work ? 'Clocked in' : 'Checked in')}</p>
+          <p className="tabular text-[10px] text-muted">{newest.time} {newest.ampm}</p>
           <p className="mt-2 w-full truncate text-[9px] font-semibold tracking-wide text-slate-500 uppercase">{newest.name}</p>
         </IPhone>
       </div>
@@ -228,15 +233,15 @@ export function Landing({ show }: { show?: EditionId }) {
       {/* Four plain facts, big and bright. */}
       <section aria-label={t('Attend in numbers')} className="border-b border-line bg-white">
         <dl className="mx-auto grid max-w-6xl grid-cols-2 gap-px bg-line sm:grid-cols-4">
-          {[
-            ['45s', 'A new QR code, every 45 seconds', 'text-accent'],
-            ['0', 'Machines to buy', 'text-amber-500'],
-            ['0', 'Apps for anyone to install', 'text-emerald-600'],
-            ['Live', 'See who is in, right now', 'text-rose-500'],
-          ].map(([big, label, colour]) => (
+          {(edition.facts ?? [
+            ['45s', 'A new QR code, every 45 seconds'],
+            ['0', 'Machines to buy'],
+            ['0', 'Apps for anyone to install'],
+            ['Live', 'See who is in, right now'],
+          ]).map(([big, label], i) => [big, label, ['text-accent', 'text-amber-500', 'text-emerald-600', 'text-rose-500'][i % 4]]).map(([big, label, colour]) => (
             <div key={label} className="bg-white px-5 py-7 text-center">
               <dt className="sr-only">{t(label)}</dt>
-              <dd className={`tabular font-display text-4xl font-bold tracking-tight ${colour}`}>{big}</dd>
+              <dd className={`tabular font-display text-4xl font-bold tracking-tight ${colour}`}>{t(big)}</dd>
               <dd className="mt-1 text-sm text-slate-600">{t(label)}</dd>
             </div>
           ))}
