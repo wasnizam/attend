@@ -72,6 +72,8 @@ export interface Edition {
   /** The made-up screen in the hero. */
   preview: { title: string; time: string; counted: string; rows: [string, string, string][] }
   orgPlaceholder: string
+  /** What a customer does not need to buy or set up: the case for no machine and no app. */
+  without: { title: string; skip: string[]; need: string; saving?: string }
   /** What is on offer, cheapest first. The first one is the free plan. */
   plans: PlanCard[]
 }
@@ -124,6 +126,11 @@ export const EDITIONS: Edition[] = [
     },
     preview: { title: 'DATABASE SYSTEMS', time: '10:00 AM – 12:00 PM', counted: 'PRESENT', rows: [['ST003', 'Kumar', '10:07'], ['ST002', 'Siti', '10:05'], ['ST001', 'Ahmad', '10:03']] },
     orgPlaceholder: 'e.g. Faculty of Computing',
+    without: {
+      title: 'Nothing to buy. Nothing to install.',
+      skip: ['A clicker or card reader', 'An app for students', 'Student accounts or passwords', 'Paper sign-in sheets passed around'],
+      need: 'Just your laptop or the projector, and your students’ own phones.',
+    },
     plans: [
       { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 class', 'Unlimited students', 'Every feature included'] },
       { name: 'Pro', price: { myr: 'RM39', usd: '$9' }, per: 'per semester', alt: 'Pay once a semester. No monthly bill.', items: ['Unlimited classes', 'Unlimited students', 'Every feature included'], best: true },
@@ -176,6 +183,11 @@ export const EDITIONS: Edition[] = [
     },
     preview: { title: 'EXCEL FOR MANAGERS', time: '9:00 AM – 5:00 PM', counted: 'PRESENT', rows: [['P003', 'Kumar', '9:07'], ['P002', 'Siti', '9:05'], ['P001', 'Ahmad', '9:03']] },
     orgPlaceholder: 'e.g. Bright Training Sdn Bhd',
+    without: {
+      title: 'Nothing to buy. Nothing to install.',
+      skip: ['A sign-in machine at the door', 'An app for participants', 'Participant accounts or passwords', 'Paper sign-in sheets'],
+      need: 'Just your laptop or the screen in the room, and participants’ own phones.',
+    },
     plans: [
       { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 course', 'Unlimited participants', 'Every feature included'] },
       { name: 'Pro', price: { myr: 'RM39', usd: '$9' }, per: 'a month', alt: { myr: 'Or RM390 a year: 12 months for the price of 10.', usd: 'Or $90 a year: 12 months for the price of 10.' }, items: ['Unlimited courses', 'Unlimited participants', 'Every feature included'], best: true },
@@ -186,9 +198,9 @@ export const EDITIONS: Edition[] = [
     purpose: 'workplace',
     label: 'Workplace',
     badge: 'QR clock-in for workplaces',
-    headline: 'Clock in with a scan.',
-    sub: 'Staff scan when they arrive and when they leave. Hours and lateness are worked out for you.',
-    note: 'No app for staff to install. No card reader to buy.',
+    headline: 'No machine. No app. | Just scan.',
+    sub: 'Staff clock in and out with the phone they already have. Show the QR on any screen you already own: a tablet, a laptop or a TV.',
+    note: 'No machine to buy. No app for staff to install.',
     featuresTitle: 'A time clock without the hardware',
     features: [
       [ICON.screen, 'A door screen that runs itself', 'Leave a tablet at the entrance. It opens each day on time and shows a fresh QR. Staff scan in and out in seconds.'],
@@ -234,6 +246,12 @@ export const EDITIONS: Edition[] = [
     },
     preview: { title: 'MORNING SHIFT', time: '9:00 AM – 6:00 PM', counted: 'IN', rows: [['E003', 'Kumar', '9:07'], ['E002', 'Siti', '8:58'], ['E001', 'Ahmad', '8:55']] },
     orgPlaceholder: 'e.g. Kedai Kopi Maju',
+    without: {
+      title: 'Nothing to buy. Nothing to install.',
+      skip: ['A fingerprint or face-scan machine', 'An app on every staff phone', 'Accounts and passwords for staff', 'Anyone’s face or fingerprint on file'],
+      need: 'Just a screen at the door, and your staff’s own phones.',
+      saving: 'A basic attendance machine costs around RM500 to RM1,000 or more, plus setup and repairs. Attend needs none.',
+    },
     plans: [
       { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['Up to 5 staff', 'Unlimited shifts', 'Every feature included'] },
       { name: 'Pro 20', price: { myr: 'RM49', usd: '$12' }, per: 'a month', items: ['Up to 20 staff', 'Unlimited shifts', 'Every feature included'], best: true },

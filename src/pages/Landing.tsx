@@ -12,6 +12,7 @@ import { PAYMENTS_OPEN } from '../lib/plan'
 import { setPurpose } from '../lib/purpose'
 
 const FAQ = [
+  ['Do we need to buy a machine or a tablet?', 'No. Show the QR on any screen you already have: a laptop, a tablet, a TV or the projector. People scan it with their own phone camera, with no app to install.'],
   ['Do people need to install an app or make an account?', 'No. They scan the QR with their phone camera and type their ID. That is all.'],
   ['Can someone send the QR to a friend who is not there?', 'With the rotating QR, a photo or a shared link stops working within a minute. Turn on the location check as well to flag or refuse anyone who is somewhere else.'],
   ['What if someone has no phone or no internet?', 'You can mark them present by hand in two taps, during the session or after it.'],
@@ -83,7 +84,7 @@ export function Landing({ show }: { show?: EditionId }) {
   setPurpose('education')
   useEffect(() => {
     rememberEdition(edition.id)
-    document.title = `Attend · ${t(edition.headline)}`
+    document.title = `Attend · ${t(edition.headline).replace(/\s*\|\s*/g, ' ')}`
   }, [edition])
   return (
     <div className="min-h-dvh bg-white">
@@ -128,8 +129,11 @@ export function Landing({ show }: { show?: EditionId }) {
           ))}
         </nav>
         <p className="mt-8 text-sm font-semibold text-accent">{t(edition.badge)}</p>
-        <h1 className="mx-auto mt-3 max-w-3xl text-5xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">
-          {t(edition.headline)}
+        <h1 className="mx-auto mt-3 max-w-4xl text-5xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">
+          {/* A headline may choose its own line break with "|". */}
+          {t(edition.headline).split('|').map((line, i) => (
+            <span key={i} className="block">{line.trim()}</span>
+          ))}
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-lg text-slate-600 sm:text-xl">
           {t(edition.sub)}
@@ -153,6 +157,24 @@ export function Landing({ show }: { show?: EditionId }) {
           ))}
         </ul>
         <ProductPreview edition={edition} />
+      </section>
+
+      <section aria-labelledby="without" className="border-t border-line bg-canvas py-14">
+        <div className="mx-auto grid max-w-5xl items-center gap-8 px-5 md:grid-cols-[1fr_1.1fr]">
+          <div>
+            <h2 id="without" className="text-3xl font-semibold tracking-tight text-balance">{t(edition.without.title)}</h2>
+            <p className="mt-3 text-slate-600">{t(edition.without.need)}</p>
+            {edition.without.saving && <p className="mt-4 rounded-lg bg-good-soft px-4 py-3 text-sm font-medium text-good">{t(edition.without.saving)}</p>}
+          </div>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {edition.without.skip.map((item) => (
+              <li key={item} className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-medium shadow-card">
+                <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-bad-soft text-xs font-bold text-bad">✕</span>
+                <span><span className="sr-only">{t('Not needed')}: </span>{t(item)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       <TrustSection edition={edition} />
