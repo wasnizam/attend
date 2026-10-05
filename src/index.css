@@ -46,6 +46,13 @@ textarea {
   font-size: 16px;
 }
 
+/* Page titles inside the app wear the website's display face, so every screen is clearly Attend. */
+main h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
 .tabular {
   font-variant-numeric: tabular-nums;
 }

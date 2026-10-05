@@ -87,18 +87,19 @@ export function AppShell() {
 
   return (
     <div className="min-h-dvh md:pl-60 print:!pl-0">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-white md:flex print:!hidden">
+      {/* Night blue, as on the website, so the app is clearly the same brand; the work area stays light. */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-night text-white md:flex print:!hidden">
         <NavLink to="/app" aria-label={t('Attend home')} className="flex h-16 items-center px-5">
           <Logo />
         </NavLink>
         <div className="px-3">
           {/* A workplace sets its hours once; what it does every day is open the door screen. */}
           {has('clock') ? (
-            <Link to="/app/door" className={buttonClass({ block: true })}>
+            <Link to="/app/door" className={buttonClass({ block: true, variant: 'sun' })}>
               {t('Open door screen')}
             </Link>
           ) : (
-            <Link to="/app/new" className={buttonClass({ block: true })}>
+            <Link to="/app/new" className={buttonClass({ block: true, variant: 'sun' })}>
               <Icon d={icons.plus} className="size-4" />
               {t('New session')}
             </Link>
@@ -112,13 +113,13 @@ export function AppShell() {
               end={tab.end}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive ? 'bg-slate-100 text-ink' : 'text-slate-600 hover:bg-slate-50 hover:text-ink'
+                  isActive ? 'bg-white/12 text-white' : 'text-indigo-100/70 hover:bg-white/6 hover:text-white'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <Icon d={tab.icon} className={`size-5 ${isActive ? 'text-accent' : 'text-slate-400'}`} />
+                  <Icon d={tab.icon} className={`size-5 ${isActive ? 'text-sun' : 'text-indigo-200/50'}`} />
                   {tab.label}
                 </>
               )}
@@ -128,13 +129,13 @@ export function AppShell() {
         <NavLink
           to="/app/account"
           className={({ isActive }) =>
-            `m-3 flex items-center gap-3 rounded-lg p-2 text-left transition-colors ${isActive ? 'bg-slate-100' : 'hover:bg-slate-50'}`
+            `m-3 flex items-center gap-3 rounded-lg p-2 text-left transition-colors ${isActive ? 'bg-white/12' : 'hover:bg-white/6'}`
           }
         >
           <Avatar name={profile.name} />
           <span className="min-w-0">
             <span className="block truncate text-sm font-medium">{profile.name}</span>
-            <span className="block truncate text-xs text-muted">{profile.email}</span>
+            <span className="block truncate text-xs text-indigo-100/60">{profile.email}</span>
           </span>
         </NavLink>
       </aside>
