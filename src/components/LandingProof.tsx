@@ -15,13 +15,31 @@ function Mark({ ok, className = 'size-6' }: { ok: boolean; className?: string })
   )
 }
 
-/** A small phone frame. */
-function Phone({ children, dim }: { children: React.ReactNode; dim?: boolean }) {
+/**
+ * An iPhone drawn to the real proportions (71.6 × 147.6 mm, about 1 : 2.06), with the Dynamic
+ * Island, status bar, home bar and side buttons. Every part scales with `width`.
+ * `tone` is the frame colour, e.g. to show two different people's phones.
+ */
+export function IPhone({ width, tone = 'night', children }: { width: string; tone?: 'night' | 'titanium'; children: React.ReactNode }) {
+  const frame = tone === 'night' ? 'bg-night ring-white/25' : 'bg-gradient-to-b from-stone-300 to-stone-400 ring-white/40'
+  const button = tone === 'night' ? 'bg-night' : 'bg-stone-400'
   return (
-    <div className={`w-24 rounded-[1.1rem] bg-night p-1 shadow-[0_14px_30px_-10px_rgb(0_0_0/0.6)] ring-1 ring-white/20 ${dim ? 'opacity-90' : ''}`}>
-      <div className="flex h-[8.5rem] flex-col items-center rounded-[0.85rem] bg-white px-1.5 pt-2 text-ink">
-        <span className="mb-2 h-1 w-6 rounded-full bg-slate-200" />
-        {children}
+    // 1em = a sixteenth of the phone's width, so the frame keeps its look at any size.
+    <div className="relative" style={{ width, fontSize: `calc(${width} / 16)` }}>
+      <span className={`absolute top-[18%] left-[-0.35em] h-[5%] w-[0.4em] rounded-l-sm ${button}`} />
+      <span className={`absolute top-[27%] left-[-0.35em] h-[9%] w-[0.4em] rounded-l-sm ${button}`} />
+      <span className={`absolute top-[38%] left-[-0.35em] h-[9%] w-[0.4em] rounded-l-sm ${button}`} />
+      <span className={`absolute top-[30%] right-[-0.35em] h-[13%] w-[0.4em] rounded-r-sm ${button}`} />
+      <div className={`aspect-[71.6/147.6] w-full rounded-[2.9em] p-[0.55em] shadow-[0_16px_34px_-10px_rgb(0_0_0/0.65)] ring-1 ${frame}`}>
+        <div className="relative flex h-full flex-col items-center overflow-hidden rounded-[2.4em] bg-white text-ink">
+          <div className="flex w-full items-center justify-between px-[1.6em] pt-[0.9em] text-[1.05em] leading-none font-semibold">
+            <span className="tabular">9:41</span>
+            <span className="h-[0.75em] w-[1.15em] rounded-[0.2em] bg-ink" />
+          </div>
+          <span className="absolute top-[0.7em] left-1/2 h-[1.6em] w-[30%] -translate-x-1/2 rounded-full bg-black" />
+          <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center px-[1em] text-center">{children}</div>
+          <span className="mb-[0.6em] h-[0.45em] w-[35%] rounded-full bg-ink/80" />
+        </div>
       </div>
     </div>
   )
@@ -57,19 +75,19 @@ function Visual({ kind }: { kind: TrustVisual }) {
   }
   if (kind === 'phone') {
     return (
-      <div className="flex items-end gap-4">
-        <Phone>
+      <div className="flex items-center gap-5">
+        <IPhone width="5.6rem">
           <Mark ok className="size-8" />
           <p className="mt-2 text-[10px] font-bold">{t('Clocked in')}</p>
-          <p className="text-[9px] text-slate-500">Sarah Lee</p>
-          <span className="mt-auto mb-2 rounded-full bg-emerald-50 px-2 py-0.5 text-[8px] font-semibold whitespace-nowrap text-emerald-700">{t('Own phone')}</span>
-        </Phone>
-        <Phone dim>
+          <p className="text-[8px] text-slate-500">Sarah Lee · 8:58</p>
+          <span className="mt-3 rounded-full bg-emerald-50 px-2 py-0.5 text-[7px] font-semibold whitespace-nowrap text-emerald-700">{t('Own phone')}</span>
+        </IPhone>
+        <IPhone width="5.6rem" tone="titanium">
           <Mark ok={false} className="size-8" />
           <p className="mt-2 text-[10px] font-bold">{t('Flagged')}</p>
-          <p className="text-[9px] text-slate-500">Sarah Lee?</p>
-          <span className="mt-auto mb-2 rounded-full bg-rose-50 px-2 py-0.5 text-[8px] font-semibold whitespace-nowrap text-rose-700">{t('Not their phone')}</span>
-        </Phone>
+          <p className="text-[8px] text-slate-500">Sarah Lee?</p>
+          <span className="mt-3 rounded-full bg-rose-50 px-2 py-0.5 text-[7px] font-semibold whitespace-nowrap text-rose-700">{t('Not their phone')}</span>
+        </IPhone>
       </div>
     )
   }
@@ -219,17 +237,19 @@ export function Snapshots({ edition }: { edition: Edition }) {
         </div>
         <div className="mt-12 grid items-center gap-10 rounded-3xl bg-gradient-to-b from-indigo-50 to-canvas px-5 py-10 sm:px-10 lg:grid-cols-[17rem_1fr] lg:gap-12 lg:py-14">
           <figure>
-            <div aria-hidden className="mx-auto w-60 rounded-[2.2rem] bg-ink p-2.5 shadow-pop">
-              <div className="rounded-[1.7rem] bg-white px-5 pt-10 pb-8 text-center">
-                <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-good text-2xl text-white">✓</span>
+            <div aria-hidden className="mx-auto w-fit">
+              <IPhone width="13.5rem">
+                <span className="flex size-14 items-center justify-center rounded-full bg-good text-white">
+                  <svg viewBox="0 0 20 20" className="size-7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 10.5 3.2 3L15 7" /></svg>
+                </span>
                 <p className="mt-4 font-semibold tracking-tight">{t(phone.heading)}</p>
                 <p className="mt-3 text-sm">{phone.session}</p>
-                <p className="tabular text-2xl font-semibold">{phone.time}</p>
+                <p className="tabular font-display text-3xl font-bold">{phone.time}</p>
                 <p className="mt-2 text-xs text-muted">AHMAD ALI</p>
                 {phone.out && (
-                  <p className="mt-5 rounded-lg border border-line py-2 text-sm font-semibold">{t('Clock out')}</p>
+                  <p className="mt-6 w-full rounded-xl border border-line py-2 text-sm font-semibold">{t('Clock out')}</p>
                 )}
-              </div>
+              </IPhone>
             </div>
             <figcaption className="mt-5 text-center text-sm text-slate-600">{t(phone.caption)}</figcaption>
           </figure>

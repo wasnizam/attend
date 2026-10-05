@@ -2,7 +2,7 @@ import { useLaunch, usePlans } from '../lib/pricing'
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Snapshots, TrustSection } from '../components/LandingProof'
+import { IPhone, Snapshots, TrustSection } from '../components/LandingProof'
 import { LanguageSwitch } from '../components/LanguageSwitch'
 import { Logo, buttonClass } from '../components/ui'
 import { inMalaysia, setCurrency, useCurrency } from '../lib/currency'
@@ -105,16 +105,15 @@ function LiveDemo({ edition }: { edition: Edition }) {
         </div>
       </div>
       {/* The staff member's own phone, just after scanning. */}
-      <div className="animate-bob absolute -right-3 -bottom-28 hidden w-36 rounded-[1.6rem] bg-night p-1.5 shadow-[0_24px_50px_-12px_rgb(0_0_0/0.6)] ring-1 ring-white/25 sm:block lg:-right-8">
-        <div className="rounded-[1.25rem] bg-white px-3 pt-4 pb-5 text-center text-ink">
-          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-200" />
-          <span key={newest.key} className="animate-pop mx-auto flex size-11 items-center justify-center rounded-full bg-good text-white">
+      <div className="animate-bob absolute -right-2 -bottom-[11.5rem] hidden sm:block lg:-right-6">
+        <IPhone width="6.75rem">
+          <span key={newest.key} className="animate-pop flex size-10 items-center justify-center rounded-full bg-good text-white">
             <svg viewBox="0 0 20 20" className="size-6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 10.5 3.2 3L15 7" /></svg>
           </span>
-          <p className="mt-2 text-sm font-semibold">{t('Clocked in')}</p>
-          <p className="tabular text-xs text-muted">{newest.time} AM</p>
-          <p className="mt-2 truncate text-[11px] font-semibold tracking-wide text-slate-500 uppercase">{newest.name}</p>
-        </div>
+          <p className="mt-2 text-xs font-semibold">{t('Clocked in')}</p>
+          <p className="tabular text-[10px] text-muted">{newest.time} AM</p>
+          <p className="mt-2 w-full truncate text-[9px] font-semibold tracking-wide text-slate-500 uppercase">{newest.name}</p>
+        </IPhone>
       </div>
     </div>
   )
@@ -166,7 +165,7 @@ export function Landing({ show }: { show?: EditionId }) {
         {/* Glow and a faint dot grid: depth without a picture. */}
         <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(60rem_30rem_at_85%_10%,rgb(255_200_61/0.18),transparent_60%),radial-gradient(50rem_30rem_at_0%_100%,rgb(99_102_241/0.45),transparent_60%)]" />
         <div aria-hidden className="absolute inset-0 -z-10 [background-image:radial-gradient(rgb(255_255_255/0.07)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-12 pb-24 sm:pb-36 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pb-32">
+        <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-12 pb-24 sm:pb-52 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pb-40">
           <div className="text-center lg:text-left">
             <nav aria-label={t('Attend for')} className="inline-flex max-w-full items-center gap-1 rounded-full bg-white/10 p-1 text-sm font-medium ring-1 ring-white/15">
               <span className="hidden pr-1 pl-3 text-white/60 sm:inline">{t('Attend for')}</span>
