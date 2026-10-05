@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { STATUS_LABEL } from '../components/AttendanceList'
 import { AttendanceTrend, LevelBar, LevelTag } from '../components/charts'
+import { LettersPanel, UniExportPanel } from '../components/ClassTools'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat } from '../components/ui'
 import { setThresholds } from '../data/classes'
 import { useClassReport } from '../hooks/useClassReport'
@@ -58,6 +59,8 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
   const { report, loading, failed } = useClassReport(cls)
   const [view, setView] = useState<View>('students')
   const [open, setOpen] = useState<string | null>(null)
+  // The two semester tools open in place, one at a time.
+  const [tool, setTool] = useState<'uni' | 'letters' | null>(null)
 
   if (loading) return <PageLoader />
   if (failed || !report) return <ErrorNote>{t('The report could not be loaded. Check your connection and reload.')}</ErrorNote>
@@ -176,6 +179,20 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
               </div>
             </Card>}
           </div>
+
+          <div className="flex flex-wrap gap-2 print:hidden">
+            <Button variant={tool === 'uni' ? 'primary' : 'secondary'} onClick={() => setTool(tool === 'uni' ? null : 'uni')} aria-expanded={tool === 'uni'}>
+              {t('Export for university system')}
+            </Button>
+            {rule && (
+              <Button variant={tool === 'letters' ? 'primary' : 'secondary'} onClick={() => setTool(tool === 'letters' ? null : 'letters')} aria-expanded={tool === 'letters'}>
+                {t('Letters and barring list')}
+                {due('warning') + due('barring') > 0 && <span className="tabular rounded-full bg-bad px-1.5 text-xs font-semibold text-white">{due('warning') + due('barring')}</span>}
+              </Button>
+            )}
+          </div>
+          {tool === 'uni' && <UniExportPanel cls={cls} report={report} />}
+          {tool === 'letters' && rule && <LettersPanel cls={cls} report={report} />}
 
           <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
             <div className="flex gap-1 rounded-md bg-white p-1 shadow-card">
