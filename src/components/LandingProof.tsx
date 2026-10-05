@@ -35,6 +35,46 @@ function Visual({ kind }: { kind: TrustVisual }) {
       </svg>
     )
   }
+  if (kind === 'phone') {
+    // Their own phone goes through; someone else's phone is stopped.
+    const phone = (ok: boolean) => (
+      <div className="flex flex-col items-center gap-1">
+        <div className={`flex h-14 w-8 items-center justify-center rounded-md border-2 bg-white ${ok ? 'border-ink' : 'border-slate-300'}`}>
+          <span className={`flex size-5 items-center justify-center rounded-full text-xs font-bold text-white ${ok ? 'bg-[#0ca30c]' : 'bg-[#d03b3b]'}`}>{ok ? '✓' : '✕'}</span>
+        </div>
+        <span className="text-[10px] font-medium text-slate-600">{ok ? t('Own phone') : t('Not their phone')}</span>
+      </div>
+    )
+    return (
+      <div className="flex items-end gap-6">
+        {phone(true)}
+        {phone(false)}
+      </div>
+    )
+  }
+  if (kind === 'door') {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="flex h-16 w-24 flex-col items-center justify-center rounded-lg border-2 border-ink bg-white">
+          <QRCodeSVG value="https://attend.example.com/door" level="L" marginSize={0} style={{ width: '2.25rem', height: '2.25rem' }} />
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <svg viewBox="0 0 24 24" className="size-6 text-ink" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 11V8a6 6 0 1 1 12 0v3M5 11h14v10H5z" />
+          </svg>
+          <span className="tabular text-sm font-semibold tracking-[0.3em] text-ink">••••</span>
+        </div>
+      </div>
+    )
+  }
+  if (kind === 'lock') {
+    return (
+      <div className="w-44 space-y-1.5 text-left text-xs">
+        <div className="flex items-center justify-between rounded-md bg-white px-2 py-1.5 shadow-card"><span className="font-medium">Ahmad</span><span className="tabular text-slate-500">8:55</span></div>
+        <div className="flex items-center justify-between rounded-md bg-white px-2 py-1.5 shadow-card"><span className="font-medium">Siti</span><span className="rounded bg-[#fff4d6] px-1.5 text-[10px] font-semibold text-[#8a5a00]">{t('Added by hand')}</span></div>
+      </div>
+    )
+  }
   if (kind === 'presence') {
     return (
       <div className="flex items-center gap-3">

@@ -195,6 +195,8 @@ export interface AttendanceRecord {
   timestamp: Timestamp | null
   status: AttendanceStatus
   method?: 'qr' | 'manual'
+  /** Who added a record by hand (method 'manual'). */
+  markedBy?: string
   /** A random label for the phone that checked in. The same label on two people is worth a look. */
   device?: string
   /** A manager looked at a phone flag on this record and cleared it. */

@@ -17,9 +17,13 @@ const ICON = {
   clock: 'M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
   pin: 'M12 21s7-6.100 7-11.500A7 7 0 0 0 5 9.500C5 14.900 12 21 12 21Zm0-9a2.500 2.500 0 1 0 0-5 2.500 2.500 0 0 0 0 5Z',
   screen: 'M3 5h18v11H3zM8 20h8M12 16v4',
+  building: 'M3 21h18M5 21V5l7-2v18M12 21V9l7 2v10M8 9h1M8 13h1M8 17h1M15 13h1M15 17h1',
+  leave: 'M8 2v3M16 2v3M3.5 9h17M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v13A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5ZM9 14l2 2 4-4',
+  live: 'M12 12m-3 0a3 3 0 1 0 6 0 3 3 0 1 0-6 0M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8',
+  file: 'M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5Zm0 0v5h5M9 13h6M9 17h6',
 }
 
-export type TrustVisual = 'qr' | 'geo' | 'presence' | 'clock'
+export type TrustVisual = 'qr' | 'geo' | 'presence' | 'clock' | 'phone' | 'door' | 'lock'
 
 interface ShotRow {
   cells: string[]
@@ -187,12 +191,15 @@ export const EDITIONS: Edition[] = [
     note: 'No app for staff to install. No card reader to buy.',
     featuresTitle: 'A time clock without the hardware',
     features: [
-      [ICON.clock, 'Clock in and out', 'Staff scan the QR when they arrive and again when they leave. It takes seconds.'],
-      [ICON.bolt, 'Hours worked out for you', 'Time in, time out and total hours for each person, every day.'],
-      [ICON.pencil, 'Lateness without arguments', 'Anyone who clocks in late is flagged by itself, with the minutes. You choose the grace period.'],
-      [ICON.upload, 'Upload your staff list', 'Excel, CSV or PDF. Staff type only their ID, and you see who has not come in by name.'],
-      [ICON.calendar, 'Office hours or shifts', 'Fixed hours, two or three shifts, night shifts, rotating shifts or flexible hours. One QR at the door for all of them.'],
-      [ICON.chart, 'Monthly report for payroll', 'Days, hours, overtime, lateness, MC and leave for each person, by department. Export to Excel.'],
+      [ICON.screen, 'A door screen that runs itself', 'Leave a tablet at the entrance. It opens each day on time and shows a fresh QR. Staff scan in and out in seconds.'],
+      [ICON.live, 'Who is in, right now', 'The Today screen shows who came, who is late, who has left and who is not in yet, as it happens.'],
+      [ICON.pencil, 'Lateness and early leave', 'Late arrivals are flagged with the minutes. You set the grace period, and can allow an early leave with a reason.'],
+      [ICON.calendar, 'Office hours or shifts', 'Fixed hours, two or three shifts, night shifts or flexible hours, with a weekly shift plan for people who rotate.'],
+      [ICON.building, 'Many offices, one company', 'Each branch has its own hours and staff list. Branch managers see only their office; you see them all.'],
+      [ICON.leave, 'Leave, MC and half days', 'Record annual, emergency or unpaid leave, MC with the clinic, and half days. Leave never counts as absent.'],
+      [ICON.bolt, 'Overtime the Employment Act way', 'Overtime after a full day, with rest days and public holidays counted apart for their own rates.'],
+      [ICON.file, 'Reports HR can hand over', 'Monthly report with charts as a PDF, Excel for payroll, attendance rate, and a timesheet per person to sign.'],
+      [ICON.upload, 'Upload your staff list', 'Excel, CSV or PDF, with departments. Staff type only their ID, and you see who has not come in by name.'],
     ],
     steps: [
       ['1. Create', 'Add your shift and your staff list.'],
@@ -202,11 +209,14 @@ export const EDITIONS: Edition[] = [
     cta: 'Start clocking in tomorrow morning.',
     trust: {
       title: 'No more clocking in for a friend',
-      sub: 'Punch cards and plain QR codes are easy to cheat. Attend closes the gaps.',
+      sub: 'Punch cards and plain QR codes are easy to cheat. Attend closes the gaps, one by one.',
       cards: [
         ['qr', 'A QR that changes every 45 seconds', 'A photo of the QR is useless a moment later. Only staff standing at your screen can clock in or out.'],
+        ['phone', 'One phone per person', 'Each person’s first clock-in registers their phone. A clock-in from someone else’s phone is flagged, or refused until you approve it.'],
         ['geo', 'Location check (geofence)', 'Set a distance around your workplace. A clock-in from outside it is flagged for you, or refused.'],
         ['clock', 'A time nobody can change', 'The time is recorded by our server, not by the phone. Changing the clock on a phone does nothing.'],
+        ['door', 'A door screen locked with a PIN', 'Leaving the door screen needs your PIN, so nobody at the door can get into your account or your records.'],
+        ['lock', 'Records kept honest', 'Staff cannot change their own times, and anyone added by hand is labelled “added by hand”. Each company’s records are kept apart, and branch managers see only their own office.'],
       ],
     },
     shots: {

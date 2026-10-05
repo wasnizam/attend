@@ -54,6 +54,8 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
   const notes = new Map<string, string>()
   const dayControls = new Map<string, React.ReactNode>()
   const note = (id: string, text: string) => notes.set(id, [notes.get(id), text].filter(Boolean).join(' · '))
+  // Anyone added by hand says so, so a record made at the desk is never mistaken for a scan.
+  for (const r of records) if (r.method === 'manual' && !isAway(r.status)) note(r.id, r.markedBy === viewer.id ? t('Added by hand by you') : t('Added by hand'))
   if (clocking) {
     for (const r of records) {
       if (isAway(r.status)) continue

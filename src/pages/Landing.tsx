@@ -17,6 +17,7 @@ const FAQ = [
   ['What if someone has no phone or no internet?', 'You can mark them present by hand in two taps, during the session or after it.'],
   ['Is it really free?', 'Yes. The free plan stays free, and you can do real work on it. You only pay if you need more than it includes.'],
   ['Can I get my data out?', 'Yes. Every list and report can be exported to Excel.'],
+  ['Is our data safe?', 'Each organisation’s records are kept apart and protected by access rules on Google Cloud (Firebase): people see only what their role allows, attendance times cannot be changed by the person who clocked in, and anyone added by hand is labelled as such.'],
 ]
 
 /** An illustration of the live screen, built from the same pieces the product uses. */
