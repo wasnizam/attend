@@ -97,22 +97,25 @@ export function Kiosk() {
   const clock = new Date(now)
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white">
-      <header className="flex items-center justify-between gap-4 border-b border-line px-5 py-3">
+    // Night blue, as on the website: the QR is the brightest thing in the room, and the screen
+    // looks the same at the door as it did on the page that sold it.
+    <div className="fixed inset-0 z-50 isolate flex flex-col overflow-hidden bg-night text-white">
+      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(50rem_30rem_at_85%_0%,rgb(255_200_61/0.14),transparent_60%),radial-gradient(50rem_35rem_at_0%_100%,rgb(99_102_241/0.45),transparent_60%)]" />
+      <header className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-3">
         <Logo />
         <p className="tabular text-right leading-tight">
           <span className="block text-2xl font-semibold tracking-tight">{formatClock(clock)}</span>
-          <span className="block text-xs text-muted capitalize">{clock.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+          <span className="block text-xs text-indigo-100/70 capitalize">{clock.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' })}</span>
         </p>
       </header>
 
       <main className="flex min-h-0 flex-1 flex-col items-center justify-center gap-[2vh] p-5 text-center">
         {here === null ? (
           <>
-            <h1 className="text-[clamp(1.5rem,4vw,3rem)] font-semibold tracking-tight">{t('Which office is this screen in?')}</h1>
+            <h1 className="font-display text-[clamp(1.5rem,4vw,3rem)] font-bold tracking-tight">{t('Which office is this screen in?')}</h1>
             <div className="flex flex-wrap justify-center gap-3">
               {officeNames.map((name) => (
-                <button key={name} onClick={() => setOffice(name)} className="rounded-xl bg-canvas px-6 py-4 text-lg font-semibold hover:bg-accent-soft">
+                <button key={name} onClick={() => setOffice(name)} className="rounded-xl bg-white/10 px-6 py-4 text-lg font-semibold ring-1 ring-white/15 hover:bg-white/15">
                   {name}
                 </button>
               ))}
@@ -122,8 +125,8 @@ export function Kiosk() {
           <Door sessions={open} />
         ) : (
           <>
-            <h1 className="text-[clamp(1.5rem,4vw,3rem)] font-semibold tracking-tight">{t('Nothing is open right now')}</h1>
-            <p className="max-w-xl text-[clamp(1rem,2vw,1.5rem)] text-muted">
+            <h1 className="font-display text-[clamp(1.5rem,4vw,3rem)] font-bold tracking-tight">{t('Nothing is open right now')}</h1>
+            <p className="max-w-xl text-[clamp(1rem,2vw,1.5rem)] text-indigo-100/75">
               {failed
                 ? t('We could not open it by ourselves. Check the internet connection, or open it from the Today page.')
                 : next
@@ -134,9 +137,9 @@ export function Kiosk() {
         )}
       </main>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-3 text-sm">
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-3 text-sm">
         {here ? (
-          <button onClick={() => setOffice('')} className="font-medium text-muted hover:text-ink">{here} · {t('Change')}</button>
+          <button onClick={() => setOffice('')} className="font-medium text-indigo-100/70 hover:text-white">{here} · {t('Change')}</button>
         ) : (
           <span />
         )}
@@ -166,7 +169,7 @@ function ExitControl() {
   const [mode, setMode] = useState<'idle' | 'ask' | 'set'>('idle')
   const [typed, setTyped] = useState('')
   const [wrong, setWrong] = useState(false)
-  const button = 'rounded-md bg-canvas px-4 py-2 font-medium'
+  const button = 'rounded-md bg-white/10 px-4 py-2 font-medium text-white hover:bg-white/15'
 
   const submit = () => {
     if (mode === 'set') {
@@ -191,7 +194,7 @@ function ExitControl() {
   if (mode === 'idle') {
     return (
       <div className="flex flex-wrap items-center gap-2">
-        {!pin && <button onClick={() => setMode('set')} className="px-2 py-2 font-medium text-accent">{t('Lock with a PIN')}</button>}
+        {!pin && <button onClick={() => setMode('set')} className="px-2 py-2 font-medium text-sun">{t('Lock with a PIN')}</button>}
         <button onClick={() => (pin ? setMode('ask') : navigate('/app'))} className={button}>{t('Exit door screen')}</button>
       </div>
     )
@@ -205,7 +208,7 @@ function ExitControl() {
       }}
     >
       <label className="flex items-center gap-2">
-        <span className={wrong ? 'text-bad' : 'text-muted'}>
+        <span className={wrong ? 'text-rose-300' : 'text-indigo-100/70'}>
           {mode === 'set' ? (wrong ? t('Use 4 to 6 digits') : t('Choose a PIN')) : wrong ? t('Wrong PIN') : t('PIN')}
         </span>
         <input
@@ -216,12 +219,12 @@ function ExitControl() {
           maxLength={6}
           value={typed}
           onChange={(e) => setTyped(e.target.value.replace(/\D/g, ''))}
-          className="tabular h-10 w-28 rounded-md border border-line px-3 text-center tracking-[0.3em]"
+          className="tabular h-10 w-28 rounded-md border border-white/20 bg-white/10 px-3 text-center tracking-[0.3em] text-white"
         />
       </label>
-      <button type="submit" className="rounded-md bg-ink px-4 py-2 font-medium text-white">{mode === 'set' ? t('Save') : t('Exit')}</button>
+      <button type="submit" className="rounded-md bg-sun px-4 py-2 font-semibold text-night">{mode === 'set' ? t('Save') : t('Exit')}</button>
       <button type="button" onClick={() => { setMode('idle'); setTyped(''); setWrong(false) }} className={button}>{t('Cancel')}</button>
-      {mode === 'ask' && <button type="button" onClick={() => signOut()} className="px-2 py-2 font-medium text-accent">{t('Forgot the PIN? Log out')}</button>}
+      {mode === 'ask' && <button type="button" onClick={() => signOut()} className="px-2 py-2 font-medium text-sun">{t('Forgot the PIN? Log out')}</button>}
     </form>
   )
 }
@@ -236,11 +239,21 @@ function Door({ sessions }: { sessions: Session[] }) {
   const ids = sessions.map((x) => x.id).join(',')
   const code = sessions[0].qrCode
   const inStep = sessions.every((x) => x.qrCode === code)
+  // A countdown to the next code, so people can see the QR is alive.
+  const [turnedAt, setTurnedAt] = useState(() => Date.now())
+  const [tick, setTick] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setTick(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const left = Math.max(0, Math.ceil((ROTATE_EVERY_MS - (tick - turnedAt)) / 1000))
+  const ring = 2 * Math.PI * 18
 
   // This screen issues one new code every 45 seconds and gives it to every open shift,
   // straight away when the set of open shifts changes.
   useEffect(() => {
     const turn = () => {
+      setTurnedAt(Date.now())
       const next = freshCode()
       current.current.forEach((x) => rotateCodeTo(x, next).catch(() => {}))
     }
@@ -268,18 +281,30 @@ function Door({ sessions }: { sessions: Session[] }) {
     <>
       {one && (
         <div>
-          <h1 className="text-[clamp(1.5rem,4vw,3rem)] font-semibold tracking-tight">{sessions[0].name}</h1>
-          <p className="tabular text-[clamp(0.9rem,1.6vw,1.25rem)] text-muted">{formatRange(sessions[0])}</p>
+          <h1 className="font-display text-[clamp(1.5rem,4vw,3rem)] font-bold tracking-tight">{sessions[0].name}</h1>
+          <p className="tabular text-[clamp(0.9rem,1.6vw,1.25rem)] text-indigo-100/70">{formatRange(sessions[0])}</p>
         </div>
       )}
-      <QRCodeSVG value={url} level="M" marginSize={2} style={{ width: 'min(50vh, 86vw)', height: 'min(50vh, 86vw)' }} />
-      <p className="text-[clamp(1rem,2vw,1.6rem)]">{t('Scan this QR to mark attendance')}</p>
-      {code && (
-        <p className="text-[clamp(0.9rem,1.6vw,1.25rem)]">
-          <span className="text-muted">{t('Code')}: </span>
-          <span className="font-mono font-semibold tracking-[0.3em]">{code}</span>
-        </p>
-      )}
+      {/* The glow stays outside the code: nothing may cross the QR, or a camera can miss it. */}
+      <div className="relative rounded-3xl bg-white p-[1.5vh] shadow-[0_30px_80px_-20px_rgb(0_0_0/0.6)]">
+        <span aria-hidden className="absolute -inset-2 -z-10 animate-pulse rounded-[1.9rem] bg-sun/35 blur-md" />
+        <QRCodeSVG value={url} level="M" marginSize={1} style={{ width: 'min(48vh, 82vw)', height: 'min(48vh, 82vw)', display: 'block' }} />
+      </div>
+      <p className="font-display text-[clamp(1.1rem,2.4vw,2rem)] font-bold text-sun">{t('Scan this QR to mark attendance')}</p>
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[clamp(0.9rem,1.6vw,1.25rem)] text-indigo-100/80">
+        <span className="flex items-center gap-2">
+          <svg viewBox="0 0 40 40" className="size-[1.5em] -rotate-90" aria-hidden>
+            <circle cx="20" cy="20" r="18" fill="none" stroke="rgb(255 255 255 / 0.15)" strokeWidth="4" />
+            <circle cx="20" cy="20" r="18" fill="none" stroke="var(--color-sun)" strokeWidth="4" strokeLinecap="round" strokeDasharray={ring} strokeDashoffset={ring * (1 - left / 45)} className="transition-[stroke-dashoffset] duration-1000 ease-linear" />
+          </svg>
+          <span className="tabular">{t('New code in {s}s', { s: left })}</span>
+        </span>
+        {code && (
+          <span>
+            {t('Code')}: <span className="font-mono font-semibold tracking-[0.3em] text-white">{code}</span>
+          </span>
+        )}
+      </div>
       <ul className="flex flex-wrap justify-center gap-x-8 gap-y-1">
         {sessions.map((x) => (
           <Tally key={x.id} session={x} named={!one} />
@@ -296,10 +321,14 @@ function Tally({ session, named }: { session: Session; named: boolean }) {
   const latest = records[records.length - 1]
   return (
     <li className="tabular text-[clamp(1rem,2vw,1.5rem)] font-semibold">
-      {named && <span className="font-normal text-muted">{session.name} · </span>}
+      {named && <span className="font-normal text-indigo-100/70">{session.name} · </span>}
       {countPresent(records)}
-      {session.expected ? ` / ${session.expected}` : ''} <span className="font-normal text-muted">{t('PRESENT')}</span>
-      {latest && <span className="ml-3 font-normal text-good">✓ {latest.studentName}</span>}
+      {session.expected ? ` / ${session.expected}` : ''} <span className="font-normal text-indigo-100/70">{t('PRESENT')}</span>
+      {latest && (
+        <span key={latest.id} className="animate-pop ml-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/15 px-3 py-0.5 font-medium text-emerald-300 ring-1 ring-emerald-300/30">
+          ✓ {latest.studentName}
+        </span>
+      )}
     </li>
   )
 }

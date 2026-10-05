@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { LanguageSwitch } from '../components/LanguageSwitch'
+import { AuthShell } from '../components/AuthShell'
 import { Button, ErrorNote, Field, PageLoader, friendlyError } from '../components/ui'
 import { getCheckIn, getClockOut } from '../data/attendance'
 import { lookupStudent } from '../data/roster'
@@ -106,8 +106,8 @@ export default function DoorEntry() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-10">
-      <h1 className="text-center text-2xl font-semibold tracking-tight">{t('Clock in or out')}</h1>
+    <AuthShell>
+      <h1 className="text-center font-display text-2xl font-bold tracking-tight">{t('Clock in or out')}</h1>
       <p className="mt-1 text-center text-sm text-muted">{links.map((l) => l.name).join(' · ')}</p>
       {choices ? (
         <div className="mt-6 space-y-2">
@@ -123,10 +123,9 @@ export default function DoorEntry() {
         <form onSubmit={submit} className="mt-6 space-y-4">
           <Field label={t('Student ID')} required autoCapitalize="characters" autoComplete="off" maxLength={40} value={staffId} onChange={(e) => setStaffId(e.target.value)} />
           <ErrorNote>{error}</ErrorNote>
-          <Button type="submit" size="lg" block busy={busy}>{t('Continue')}</Button>
+          <Button type="submit" variant="sun" size="lg" block busy={busy}>{t('Continue')}</Button>
         </form>
       )}
-      <LanguageSwitch className="mx-auto mt-8 !bg-white" />
-    </div>
+    </AuthShell>
   )
 }

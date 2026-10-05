@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { LanguageSwitch } from '../components/LanguageSwitch'
+import { AuthShell } from '../components/AuthShell'
 import { Button, Card, ErrorNote, Field, PageLoader, friendlyError } from '../components/ui'
 import { type SubmitResult, clockOut, confirmPresence, getClockOut, submitAttendance } from '../data/attendance'
 import { lookupStudent } from '../data/roster'
@@ -23,14 +23,9 @@ function remembered(): { studentId: string; name: string } {
 
 function Shell({ children, below }: { children: React.ReactNode; below?: React.ReactNode }) {
   return (
-    <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-10">
-      <Card className="p-7">{children}</Card>
-      {below}
-      <div className="mt-6 flex flex-col items-center gap-3">
-        <LanguageSwitch className="!bg-white" />
-        <p className="text-center text-xs text-muted">Attend · {t('Attendance, without the hassle')}</p>
-      </div>
-    </div>
+    <AuthShell below={below} footer={<span className="text-xs">Attend · {t('Attendance, without the hassle')}</span>}>
+      <div className="p-1">{children}</div>
+    </AuthShell>
   )
 }
 
@@ -38,7 +33,7 @@ function Message({ title, text }: { title: string; text: string }) {
   return (
     <Shell>
       <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">{title}</h1>
         <p className="mt-2 text-muted">{text}</p>
       </div>
     </Shell>
@@ -240,7 +235,7 @@ export default function Attend() {
       >
         <div className="text-center">
           <div className="animate-pop mx-auto flex size-20 items-center justify-center rounded-full bg-good text-4xl text-white">✓</div>
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight">{t('Attendance Confirmed')}</h1>
+          <h1 className="mt-5 font-display text-3xl font-bold tracking-tight">{t('Attendance Confirmed')}</h1>
           <p className="mt-4 text-lg font-medium">{link.name}</p>
           <p className="tabular text-3xl font-semibold tracking-tight">{formatClock(result.time)}</p>
           <p className="mt-4 text-muted">{t('Your attendance has been recorded.')}</p>
@@ -261,7 +256,7 @@ export default function Attend() {
         }
       >
         <div className="text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">{workplace ? t('You are clocked in') : t('Already Recorded')}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">{workplace ? t('You are clocked in') : t('Already Recorded')}</h1>
           <p className="mt-2 text-muted">{workplace ? t('To leave, use the Clock out button below.') : t('Your attendance for this session has already been recorded.')}</p>
           <dl className="mt-6 space-y-2 rounded-lg bg-canvas p-4 text-left text-sm">
             <div className="flex justify-between gap-4">
@@ -361,7 +356,7 @@ export default function Attend() {
 
   return (
     <Shell>
-      <h1 className="text-2xl font-semibold tracking-tight">{link.name}</h1>
+      <h1 className="font-display text-2xl font-bold tracking-tight">{link.name}</h1>
       <p className="mt-0.5 text-muted">
         {t('Attendance')} · {formatRange(link)}
         {link.venue ? ` · ${link.venue}` : ''}
@@ -408,7 +403,7 @@ export default function Attend() {
           </p>
         )}
         <ErrorNote>{error}</ErrorNote>
-        <Button type="submit" size="lg" block busy={busy}>
+        <Button type="submit" variant="sun" size="lg" block busy={busy}>
           {t('Confirm Attendance')}
         </Button>
       </form>
