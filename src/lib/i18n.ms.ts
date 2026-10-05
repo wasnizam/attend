@@ -1361,4 +1361,11 @@ export const ms: Record<string, string> = {
   "See who is in, right now": "Lihat siapa ada, sekarang juga",
   "Welcome back": "Selamat kembali",
   "Log in to see who is in today.": "Log masuk untuk lihat siapa ada hari ini.",
+  "Expired": "Tamat",
+  "Flagged": "Ditanda",
+  "Outside": "Di luar",
+  "Recorded by server": "Direkod oleh pelayan",
+  "Phone clock": "Jam telefon",
+  "Yes, I’m here": "Ya, saya ada",
+  "Confirmed": "Disahkan",
 }

@@ -2,95 +2,172 @@ import { QRCodeSVG } from 'qrcode.react'
 import type { Edition, TrustVisual } from '../lib/editions'
 import { t } from '../lib/i18n'
 
-/** Small drawings for the "why you can trust it" cards. Decorative: the text beside them says it all. */
+const ring = 2 * Math.PI * 15
+
+/** A tick or a cross in a coloured disc. */
+function Mark({ ok, className = 'size-6' }: { ok: boolean; className?: string }) {
+  return (
+    <span className={`flex shrink-0 items-center justify-center rounded-full text-white ${ok ? 'bg-emerald-500' : 'bg-rose-500'} ${className}`}>
+      <svg viewBox="0 0 20 20" className="size-[60%]" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d={ok ? 'm5 10.5 3.2 3L15 7' : 'm6 6 8 8m0-8-8 8'} />
+      </svg>
+    </span>
+  )
+}
+
+/** A small phone frame. */
+function Phone({ children, dim }: { children: React.ReactNode; dim?: boolean }) {
+  return (
+    <div className={`w-24 rounded-[1.1rem] bg-night p-1 shadow-[0_14px_30px_-10px_rgb(0_0_0/0.6)] ring-1 ring-white/20 ${dim ? 'opacity-90' : ''}`}>
+      <div className="flex h-[8.5rem] flex-col items-center rounded-[0.85rem] bg-white px-1.5 pt-2 text-ink">
+        <span className="mb-2 h-1 w-6 rounded-full bg-slate-200" />
+        {children}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Illustrations for the "why you can trust it" cards: small, accurate pictures of the product.
+ * Decorative: the text beside each one says it all.
+ */
 function Visual({ kind }: { kind: TrustVisual }) {
   if (kind === 'qr') {
+    // The live code next to a photo of an old one, which no longer works.
     return (
-      <div className="flex items-center gap-3">
-        <QRCodeSVG value="https://attend.example.com/session/8K72QF?c=YAXE2" level="L" marginSize={0} style={{ width: '4rem', height: '4rem' }} />
-        <div>
-          <p className="tabular inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-white">
-            <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 4v6h6M20 20v-6h-6M20 9A8 8 0 0 0 6.3 5.3L4 10m16 4-2.3 4.7A8 8 0 0 1 4 15" />
+      <div className="flex items-center gap-5">
+        <div className="relative rounded-xl bg-white p-2.5 shadow-[0_14px_30px_-10px_rgb(0_0_0/0.6)]">
+          <QRCodeSVG value="https://attend.example.com/session/8K72QF?c=YAXE2" level="L" marginSize={0} style={{ width: '5rem', height: '5rem', display: 'block' }} />
+          <div className="mt-2 flex items-center justify-between gap-2 text-ink">
+            <svg viewBox="0 0 36 36" className="size-5 -rotate-90">
+              <circle cx="18" cy="18" r="15" fill="none" stroke="#e2e8f0" strokeWidth="5" />
+              <circle cx="18" cy="18" r="15" fill="none" stroke="var(--color-sun-strong)" strokeWidth="5" strokeLinecap="round" strokeDasharray={ring} strokeDashoffset={ring * 0.3} />
             </svg>
-            0:45
-          </p>
-          <p className="tabular mt-1.5 text-sm font-semibold tracking-[0.25em] text-ink">YAXE2</p>
+            <span className="tabular text-[11px] font-bold tracking-[0.2em]">YAXE2</span>
+          </div>
         </div>
+        <div className="relative rotate-6">
+          <div className="rounded-lg bg-white p-2 pb-5 opacity-70 shadow-[0_14px_30px_-10px_rgb(0_0_0/0.6)] grayscale">
+            <QRCodeSVG value="https://attend.example.com/session/8K72QF?c=OLD42" level="L" marginSize={0} style={{ width: '3.5rem', height: '3.5rem', display: 'block' }} />
+          </div>
+          <span className="absolute -right-3 -bottom-2 rotate-[-6deg] rounded-md bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white uppercase shadow">{t('Expired')}</span>
+        </div>
+      </div>
+    )
+  }
+  if (kind === 'phone') {
+    return (
+      <div className="flex items-end gap-4">
+        <Phone>
+          <Mark ok className="size-8" />
+          <p className="mt-2 text-[10px] font-bold">{t('Clocked in')}</p>
+          <p className="text-[9px] text-slate-500">Sarah Lee</p>
+          <span className="mt-auto mb-2 rounded-full bg-emerald-50 px-2 py-0.5 text-[8px] font-semibold whitespace-nowrap text-emerald-700">{t('Own phone')}</span>
+        </Phone>
+        <Phone dim>
+          <Mark ok={false} className="size-8" />
+          <p className="mt-2 text-[10px] font-bold">{t('Flagged')}</p>
+          <p className="text-[9px] text-slate-500">Sarah Lee?</p>
+          <span className="mt-auto mb-2 rounded-full bg-rose-50 px-2 py-0.5 text-[8px] font-semibold whitespace-nowrap text-rose-700">{t('Not their phone')}</span>
+        </Phone>
       </div>
     )
   }
   if (kind === 'geo') {
+    // A small map: inside the circle is fine, outside is flagged.
     return (
-      <svg viewBox="0 0 160 64" className="h-16 w-40" fill="none">
-        <circle cx="56" cy="32" r="28" className="fill-accent-soft stroke-accent" strokeWidth="1.5" strokeDasharray="4 3" />
-        <circle cx="56" cy="32" r="4" className="fill-accent" />
-        <circle cx="44" cy="22" r="7" fill="#0ca30c" />
-        <path d="m41 22 2.2 2.2L47.200 20" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="70" cy="42" r="7" fill="#0ca30c" />
-        <path d="m67 42 2.2 2.2L73.200 40" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="132" cy="30" r="7" fill="#d03b3b" />
-        <path d="m129.500 27.500 5 5m0-5-5 5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M88 31h30" className="stroke-slate-300" strokeWidth="1.5" strokeDasharray="3 3" />
+      <svg viewBox="0 0 240 130" className="h-32 w-full max-w-[15rem]" fill="none">
+        <rect x="0" y="0" width="240" height="130" rx="14" fill="#f1f5f9" />
+        <path d="M0 40h240M0 92h240M62 0v130M150 0v130M200 0v130" stroke="#fff" strokeWidth="9" />
+        <path d="M0 40h240M0 92h240M62 0v130M150 0v130M200 0v130" stroke="#e2e8f0" strokeWidth="1" />
+        <circle cx="96" cy="66" r="46" fill="rgb(99 102 241 / 0.14)" stroke="#6366f1" strokeWidth="1.5" strokeDasharray="5 4" />
+        <rect x="84" y="54" width="24" height="24" rx="5" fill="#4f46e5" />
+        <path d="M90 72v-9l6-4 6 4v9" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round" />
+        <text x="96" y="124" textAnchor="middle" fontSize="10" fontWeight="600" fill="#6366f1">100 m</text>
+        <g><circle cx="70" cy="48" r="9" fill="#10b981" stroke="#fff" strokeWidth="2" /><path d="m66 48 3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></g>
+        <g><circle cx="122" cy="86" r="9" fill="#10b981" stroke="#fff" strokeWidth="2" /><path d="m118 86 3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></g>
+        <g><circle cx="200" cy="40" r="9" fill="#f43f5e" stroke="#fff" strokeWidth="2" /><path d="m196.5 36.5 7 7m0-7-7 7" stroke="#fff" strokeWidth="2" strokeLinecap="round" /></g>
+        <rect x="160" y="54" width="70" height="20" rx="10" fill="#fff" />
+        <text x="195" y="68" textAnchor="middle" fontSize="10" fontWeight="700" fill="#e11d48">{t('Outside')}</text>
       </svg>
     )
   }
-  if (kind === 'phone') {
-    // Their own phone goes through; someone else's phone is stopped.
-    const phone = (ok: boolean) => (
-      <div className="flex flex-col items-center gap-1">
-        <div className={`flex h-14 w-8 items-center justify-center rounded-md border-2 bg-white ${ok ? 'border-ink' : 'border-slate-300'}`}>
-          <span className={`flex size-5 items-center justify-center rounded-full text-xs font-bold text-white ${ok ? 'bg-[#0ca30c]' : 'bg-[#d03b3b]'}`}>{ok ? '✓' : '✕'}</span>
-        </div>
-        <span className="text-[10px] font-medium text-slate-600">{ok ? t('Own phone') : t('Not their phone')}</span>
-      </div>
-    )
+  if (kind === 'clock') {
     return (
-      <div className="flex items-end gap-6">
-        {phone(true)}
-        {phone(false)}
+      <div className="w-56 space-y-2">
+        <div className="rounded-xl bg-white p-3 text-ink shadow-[0_14px_30px_-10px_rgb(0_0_0/0.6)]">
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider text-emerald-700 uppercase">
+            <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z" /><path d="m9 12 2 2 4-4" /></svg>
+            {t('Recorded by server')}
+          </p>
+          <p className="tabular mt-1 font-display text-3xl font-bold tracking-tight">09:07:12</p>
+        </div>
+        <div className="flex items-center justify-between rounded-lg bg-white/10 px-3 py-2 text-xs text-indigo-100/70 ring-1 ring-white/10">
+          <span>{t('Phone clock')}</span>
+          <span className="tabular line-through decoration-rose-400 decoration-2">08:45:00</span>
+        </div>
       </div>
     )
   }
   if (kind === 'door') {
+    // A tablet at the entrance, and the PIN needed to leave it.
     return (
-      <div className="flex items-center gap-3">
-        <div className="flex h-16 w-24 flex-col items-center justify-center rounded-lg border-2 border-ink bg-white">
-          <QRCodeSVG value="https://attend.example.com/door" level="L" marginSize={0} style={{ width: '2.25rem', height: '2.25rem' }} />
+      <div className="relative">
+        <div className="rounded-2xl bg-slate-800 p-1.5 shadow-[0_14px_30px_-10px_rgb(0_0_0/0.6)] ring-1 ring-white/15">
+          <div className="flex h-24 w-40 items-center justify-center gap-3 rounded-xl bg-night">
+            <div className="rounded-md bg-white p-1">
+              <QRCodeSVG value="https://attend.example.com/door" level="L" marginSize={0} style={{ width: '3.25rem', height: '3.25rem', display: 'block' }} />
+            </div>
+            <div className="text-left text-white">
+              <p className="text-[9px] font-semibold text-sun">{t('SCAN TO CLOCK IN')}</p>
+              <p className="tabular text-[9px] text-white/60">0:32</p>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col items-center gap-1">
-          <svg viewBox="0 0 24 24" className="size-6 text-ink" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 11V8a6 6 0 1 1 12 0v3M5 11h14v10H5z" />
-          </svg>
-          <span className="tabular text-sm font-semibold tracking-[0.3em] text-ink">••••</span>
+        <div className="absolute -right-6 -bottom-4 flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-ink shadow-[0_14px_30px_-10px_rgb(0_0_0/0.6)]">
+          <span className="flex size-6 items-center justify-center rounded-lg bg-sun text-night">
+            <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z" /></svg>
+          </span>
+          <span className="flex gap-1">{[0, 1, 2, 3].map((i) => <span key={i} className="size-2 rounded-full bg-night" />)}</span>
         </div>
       </div>
     )
   }
   if (kind === 'lock') {
+    const row = (name: string, colour: string, time: string, tag?: React.ReactNode) => (
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${colour}`}>{name.split(' ').map((w) => w[0]).join('')}</span>
+        <span className="flex-1 truncate text-xs font-medium">{name}</span>
+        {tag}
+        <span className="tabular text-xs text-slate-500">{time}</span>
+      </div>
+    )
     return (
-      <div className="w-44 space-y-1.5 text-left text-xs">
-        <div className="flex items-center justify-between rounded-md bg-white px-2 py-1.5 shadow-card"><span className="font-medium">Ahmad</span><span className="tabular text-slate-500">8:55</span></div>
-        <div className="flex items-center justify-between rounded-md bg-white px-2 py-1.5 shadow-card"><span className="font-medium">Sarah</span><span className="rounded bg-[#fff4d6] px-1.5 text-[10px] font-semibold text-[#8a5a00]">{t('Added by hand')}</span></div>
+      <div className="w-60 divide-y divide-slate-100 overflow-hidden rounded-xl bg-white text-ink shadow-[0_14px_30px_-10px_rgb(0_0_0/0.6)]">
+        <div className="flex items-center justify-between bg-slate-50 px-3 py-1.5 text-[10px] font-semibold tracking-wider text-slate-500 uppercase">
+          <span>{t('Today')}</span>
+          <svg viewBox="0 0 24 24" className="size-3.5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z" /></svg>
+        </div>
+        {row('Ahmad Ali', 'bg-sky-200 text-sky-900', '8:55')}
+        {row('Sarah Lee', 'bg-amber-200 text-amber-900', '8:58', <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-800">{t('Added by hand')}</span>)}
+        {row('Kumar Raj', 'bg-emerald-200 text-emerald-900', '9:02')}
       </div>
     )
   }
   if (kind === 'presence') {
     return (
-      <div className="flex items-center gap-3">
-        <span className="rounded-lg bg-ink px-3 py-2 text-sm font-semibold text-white">{t('Still here?')}</span>
-        <span className="tabular text-sm font-semibold text-good">36 / 38 ✓</span>
+      <div className="w-56 rounded-xl bg-white p-3 text-ink shadow-[0_14px_30px_-10px_rgb(0_0_0/0.6)]">
+        <p className="font-display text-base font-bold">{t('Still here?')}</p>
+        <span className="mt-2 block rounded-lg bg-accent py-1.5 text-center text-xs font-semibold text-white">{t('Yes, I’m here')}</span>
+        <div className="mt-3 flex items-center justify-between text-[11px]">
+          <span className="text-slate-500">{t('Confirmed')}</span>
+          <span className="tabular font-semibold text-emerald-700">36 / 38</span>
+        </div>
+        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full w-[94%] rounded-full bg-emerald-500" /></div>
       </div>
     )
   }
-  return (
-    <div className="flex items-center gap-3">
-      <span className="tabular rounded-lg bg-ink px-3 py-2 text-lg font-semibold text-white">09:07:12</span>
-      <svg viewBox="0 0 24 24" className="size-6 text-good" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 11V8a6 6 0 1 1 12 0v3M5 11h14v10H5z" />
-      </svg>
-    </div>
-  )
+  return null
 }
 
 /** What sets Attend apart: the checks that make the record hard to cheat. */
@@ -104,14 +181,19 @@ export function TrustSection({ edition }: { edition: Edition }) {
           <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">{t(edition.trust.title)}</h2>
           <p className="mt-3 text-indigo-100/80">{t(edition.trust.sub)}</p>
         </div>
-        <div className="mt-12 grid gap-4 lg:grid-cols-3">
+        <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {edition.trust.cards.map(([visual, title, text], i) => (
-            <div key={title} className="rounded-2xl bg-white p-5 text-ink transition hover:-translate-y-1">
-              <div aria-hidden className={`flex h-28 items-center justify-center rounded-xl ${['bg-indigo-50', 'bg-amber-50', 'bg-emerald-50', 'bg-rose-50', 'bg-sky-50', 'bg-violet-50'][i % 6]}`}>
-                <Visual kind={visual} />
+            <div key={title} className="group rounded-3xl bg-white/[0.04] p-2 ring-1 ring-white/10 transition hover:bg-white/[0.07] hover:ring-white/20">
+              <div aria-hidden className={`relative flex h-52 items-center justify-center overflow-hidden rounded-[1.25rem] bg-gradient-to-br ${GLOW[i % GLOW.length]} px-4`}>
+                <div aria-hidden className="absolute inset-0 [background-image:radial-gradient(rgb(255_255_255/0.08)_1px,transparent_1px)] [background-size:16px_16px]" />
+                <div className="relative transition duration-300 group-hover:scale-[1.04]">
+                  <Visual kind={visual} />
+                </div>
               </div>
-              <h3 className="mt-5 px-1 text-lg font-semibold tracking-tight">{t(title)}</h3>
-              <p className="mt-1.5 px-1 pb-1 text-sm leading-relaxed text-slate-600">{t(text)}</p>
+              <div className="px-4 pt-5 pb-5">
+                <h3 className="font-display text-xl font-bold tracking-tight text-white">{t(title)}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-indigo-100/70">{t(text)}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -119,6 +201,9 @@ export function TrustSection({ edition }: { edition: Edition }) {
     </section>
   )
 }
+
+/** The lit panel behind each illustration: one hue each, all on the night blue. */
+const GLOW = ['from-indigo-500/40 to-indigo-500/5', 'from-amber-400/35 to-amber-400/5', 'from-emerald-400/35 to-emerald-400/5', 'from-sky-400/35 to-sky-400/5', 'from-violet-500/40 to-violet-500/5', 'from-rose-400/35 to-rose-400/5']
 
 const TONE = { good: 'text-good', warn: 'text-[#b25e00]', bad: 'text-bad' }
 
