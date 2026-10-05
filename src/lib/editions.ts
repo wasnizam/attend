@@ -48,12 +48,12 @@ export interface PlanCard {
 }
 
 /** Workplace: in every plan, free included. */
-const WORK_BASICS = ['QR clock in and out', 'Today screen: who is in, late or gone', 'Daily list of times and hours', 'Door screen with a PIN']
+const WORK_BASICS = ['QR clock in and out', 'Today screen: who is in, late or gone', 'Daily list of times and hours', 'Door screen with a PIN', 'Reports on screen: week, month and year', 'Full history']
 /** Workplace: paid plans only. */
 const WORK_PRO = [
   'Many offices and branch managers',
   'Night, rotating and planned shifts',
-  'Reports: week, month, year and PDF',
+  'Download reports as PDF',
   'Export to Excel for payroll',
   'Overtime, rest day and holiday hours',
   'Leave and sick leave tracking',
@@ -276,13 +276,13 @@ export const EDITIONS: Edition[] = [
     faq: [
       ['Do you do payroll?', 'No, on purpose. Attend does attendance only, and does it properly. It exports clean reports for your payroll, your HR system or your accountant.'],
       ['Does it follow our country’s labour rules?', 'You set your working hours, grace period, breaks, public holidays and when overtime starts, so the hours match your local rules.'],
-      ['What does the free plan leave out?', 'The free plan covers daily attendance for up to 5 staff: clock in and out, the Today screen, the daily list and the door screen, with the last 7 days of history. Reports, Excel export, overtime, leave, many offices, shift plans, the location check and one phone per person come with a paid plan.'],
+      ['What does the free plan leave out?', 'The free plan covers daily attendance for up to 5 staff: clock in and out, the Today screen, the daily list and the door screen, with all your history and reports to view on screen. Downloading reports as PDF, Excel export, overtime, leave, many offices, shift plans, the location check and one phone per person come with a paid plan.'],
     ],
     plans: [
-      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['Up to 5 staff', ...WORK_BASICS, 'Last 7 days of history', ...WORK_PRO.map((x) => `✕ ${x}`)] },
-      { name: 'Pro 20', price: { myr: 'RM49', usd: '$12' }, per: 'a month', items: ['Up to 20 staff', ...WORK_BASICS, 'Full history', ...WORK_PRO], best: true },
-      { name: 'Pro 50', price: { myr: 'RM99', usd: '$24' }, per: 'a month', items: ['Up to 50 staff', ...WORK_BASICS, 'Full history', ...WORK_PRO] },
-      { name: 'Pro 100', price: { myr: 'RM179', usd: '$45' }, per: 'a month', items: ['Up to 100 staff', ...WORK_BASICS, 'Full history', ...WORK_PRO] },
+      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['Up to 5 staff', ...WORK_BASICS, ...WORK_PRO.map((x) => `✕ ${x}`)] },
+      { name: 'Pro 20', price: { myr: 'RM49', usd: '$12' }, per: 'a month', items: ['Up to 20 staff', ...WORK_BASICS, ...WORK_PRO], best: true },
+      { name: 'Pro 50', price: { myr: 'RM99', usd: '$24' }, per: 'a month', items: ['Up to 50 staff', ...WORK_BASICS, ...WORK_PRO] },
+      { name: 'Pro 100', price: { myr: 'RM179', usd: '$45' }, per: 'a month', items: ['Up to 100 staff', ...WORK_BASICS, ...WORK_PRO] },
     ],
   },
 ]
