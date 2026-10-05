@@ -210,7 +210,7 @@ export function Account() {
               }}
               className={inputClass}
             >
-              <option value="fullDay">{t('After a full day’s hours (Employment Act)')}</option>
+              <option value="fullDay">{t('After a full day’s normal hours')}</option>
               <option value="end">{t('Any time after the end time')}</option>
             </select>
             <span className="mt-1.5 block text-xs text-muted">{t('With a full day, someone who comes in 45 minutes late and stays 30 minutes late has no overtime. Rest days and public holidays are always counted apart.')}</span>

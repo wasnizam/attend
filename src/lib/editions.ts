@@ -73,7 +73,9 @@ export interface Edition {
   preview: { title: string; time: string; counted: string; rows: [string, string, string][] }
   orgPlaceholder: string
   /** What a customer does not need to buy or set up: the case for no machine and no app. */
-  without: { title: string; skip: string[]; need: string; saving?: string }
+  without: { title: string; skip: string[]; need: string; focus?: string; saving?: string | Record<Currency, string> }
+  /** Questions only this group asks, added to the shared FAQ. */
+  faq?: [string, string][]
   /** What is on offer, cheapest first. The first one is the free plan. */
   plans: PlanCard[]
 }
@@ -209,7 +211,7 @@ export const EDITIONS: Edition[] = [
       [ICON.calendar, 'Office hours or shifts', 'Fixed hours, two or three shifts, night shifts or flexible hours, with a weekly shift plan for people who rotate.'],
       [ICON.building, 'Many offices, one company', 'Each branch has its own hours and staff list. Branch managers see only their office; you see them all.'],
       [ICON.leave, 'Leave, MC and half days', 'Record annual, emergency or unpaid leave, MC with the clinic, and half days. Leave never counts as absent.'],
-      [ICON.bolt, 'Overtime the Employment Act way', 'Overtime after a full day, with rest days and public holidays counted apart for their own rates.'],
+      [ICON.bolt, 'Overtime that fits your local law', 'Choose when overtime starts: after a full day or after the end time. Rest days and public holidays are counted apart for their own rates.'],
       [ICON.file, 'Reports HR can hand over', 'Monthly report with charts as a PDF, Excel for payroll, attendance rate, and a timesheet per person to sign.'],
       [ICON.upload, 'Upload your staff list', 'Excel, CSV or PDF, with departments. Staff type only their ID, and you see who has not come in by name.'],
     ],
@@ -245,13 +247,21 @@ export const EDITIONS: Edition[] = [
       },
     },
     preview: { title: 'MORNING SHIFT', time: '9:00 AM – 6:00 PM', counted: 'IN', rows: [['E003', 'Kumar', '9:07'], ['E002', 'Siti', '8:58'], ['E001', 'Ahmad', '8:55']] },
-    orgPlaceholder: 'e.g. Kedai Kopi Maju',
+    orgPlaceholder: 'e.g. Sunrise Café',
     without: {
       title: 'Nothing to buy. Nothing to install.',
       skip: ['A fingerprint or face-scan machine', 'An app on every staff phone', 'Accounts and passwords for staff', 'Anyone’s face or fingerprint on file'],
       need: 'Just a screen at the door, and your staff’s own phones.',
-      saving: 'A basic attendance machine costs around RM500 to RM1,000 or more, plus setup and repairs. Attend needs none.',
+      focus: 'Just attendance, done properly. Keep your payroll or HR system; Attend gives it clean data.',
+      saving: {
+        myr: 'A basic attendance machine costs around RM500 to RM1,000 or more, plus setup and repairs. Attend needs none.',
+        usd: 'A basic attendance machine costs around $100 to $1,000 or more, plus setup and repairs. Attend needs none.',
+      },
     },
+    faq: [
+      ['Do you do payroll?', 'No, on purpose. Attend does attendance only, and does it properly. It exports clean reports for your payroll, your HR system or your accountant.'],
+      ['Does it follow our country’s labour rules?', 'You set your working hours, grace period, breaks, public holidays and when overtime starts, so the hours match your local rules. Malaysia’s Employment Act rates are shown for Malaysian companies.'],
+    ],
     plans: [
       { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['Up to 5 staff', 'Unlimited shifts', 'Every feature included'] },
       { name: 'Pro 20', price: { myr: 'RM49', usd: '$12' }, per: 'a month', items: ['Up to 20 staff', 'Unlimited shifts', 'Every feature included'], best: true },

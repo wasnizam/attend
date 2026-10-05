@@ -334,6 +334,12 @@ export function Payroll() {
   const remindHolidays = !holidayMarked && (parseDate(to < today ? to : today).getTime() - parseDate(from).getTime()) / 86_400_000 >= 27
   const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone
   const otherZone = org?.timezone && org.timezone !== browserZone ? org.timezone : ''
+  // Overtime pay rates are set by each country's law. For a Malaysian company the Employment Act's
+  // rates are spelled out; elsewhere the report says they follow local law.
+  const malaysian = /^Asia\/(Kuala_Lumpur|Kuching)$/.test(org?.timezone ?? browserZone)
+  const rateNote = malaysian
+    ? t('Under Malaysia’s Employment Act 1955 overtime is paid at least 1.5 times the hourly rate on a normal day, 2 times on a rest day and 3 times on a public holiday.')
+    : t('Overtime rates follow your local labour law.')
   const periodName =
     period === 'week' ? t('Week of {date}', { date: formatDate(from) })
     : period === 'year' ? year
@@ -466,8 +472,9 @@ export function Payroll() {
         heading: t('How the figures are worked out'),
         items: [
           t('Hours are from clock-in to clock-out, less the unpaid break on a day of more than five hours. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.'),
-          t('Attendance is the days worked out of the days each person was due; MC and leave are left out. Work on a rest day or a public holiday is shown apart. Under the Employment Act 1955 overtime is paid at least 1.5 times the hourly rate on a normal day, 2 times on a rest day and 3 times on a public holiday. Click a name for that person’s timesheet.').replace(/ Click a name.*$/, '').replace(/ Klik nama.*$/, ''),
-          t(org?.otRule === 'end' ? 'Overtime on a normal day is any time after the end time (company setting).' : 'Overtime on a normal day is the time past a full day’s normal hours, as in the Employment Act (company setting). A half day off counts as half a day of leave.'),
+          t('Attendance is the days worked out of the days each person was due; MC and leave are left out. Work on a rest day or a public holiday is shown apart, for its own overtime rate.'),
+          rateNote,
+          t(org?.otRule === 'end' ? 'Overtime on a normal day is any time after the end time (company setting).' : 'Overtime on a normal day is the time past a full day’s normal hours (company setting). A half day off counts as half a day of leave.'),
           ...(otherZone ? [t('Made on a computer set to {here}; the company works in {zone}.', { here: browserZone, zone: otherZone })] : []),
           ...(toDate_ ? [t('Figures are as at {time}. A day still in progress counts nobody as absent yet, and hours for people still at work are added when they clock out.', { time: `${formatDate(today)}, ${formatClock(new Date())}` })] : []),
         ],
@@ -741,8 +748,8 @@ export function Payroll() {
 
           <div className="space-y-2 text-sm text-muted">
             <p>{t('Hours are from clock-in to clock-out, less the unpaid break on a day of more than five hours. A day without a clock-out counts as a day worked, but adds no hours until the clock-out is filled in.')}</p>
-            <p>{t(org?.otRule === 'end' ? 'Overtime on a normal day is any time after the end time (company setting).' : 'Overtime on a normal day is the time past a full day’s normal hours, as in the Employment Act (company setting). A half day off counts as half a day of leave.')}</p>
-            <p>{t('Attendance is the days worked out of the days each person was due; MC and leave are left out. Work on a rest day or a public holiday is shown apart. Under the Employment Act 1955 overtime is paid at least 1.5 times the hourly rate on a normal day, 2 times on a rest day and 3 times on a public holiday. Click a name for that person’s timesheet.')}</p>
+            <p>{t(org?.otRule === 'end' ? 'Overtime on a normal day is any time after the end time (company setting).' : 'Overtime on a normal day is the time past a full day’s normal hours (company setting). A half day off counts as half a day of leave.')}</p>
+            <p>{t('Attendance is the days worked out of the days each person was due; MC and leave are left out. Work on a rest day or a public holiday is shown apart, for its own overtime rate.')} {rateNote} {t('Click a name for that person’s timesheet.')}</p>
             <p className="hidden print:block">{t('Printed {date}', { date: formatDate(today) })}</p>
           </div>
         </>

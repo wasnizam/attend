@@ -164,7 +164,12 @@ export function Landing({ show }: { show?: EditionId }) {
           <div>
             <h2 id="without" className="text-3xl font-semibold tracking-tight text-balance">{t(edition.without.title)}</h2>
             <p className="mt-3 text-slate-600">{t(edition.without.need)}</p>
-            {edition.without.saving && <p className="mt-4 rounded-lg bg-good-soft px-4 py-3 text-sm font-medium text-good">{t(edition.without.saving)}</p>}
+            {edition.without.focus && <p className="mt-2 font-medium text-ink">{t(edition.without.focus)}</p>}
+            {edition.without.saving && (
+              <p className="mt-4 rounded-lg bg-good-soft px-4 py-3 text-sm font-medium text-good">
+                {t(typeof edition.without.saving === 'string' ? edition.without.saving : edition.without.saving[currency])}
+              </p>
+            )}
           </div>
           <ul className="grid gap-2 sm:grid-cols-2">
             {edition.without.skip.map((item) => (
@@ -287,7 +292,7 @@ export function Landing({ show }: { show?: EditionId }) {
             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t('Good to know before you start')}</h2>
           </div>
           <div className="mt-10 divide-y divide-line border-y border-line">
-            {FAQ.map(([q, a]) => (
+            {[...FAQ, ...(edition.faq ?? [])].map(([q, a]) => (
               <details key={q} className="group py-5">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
                   {t(q)}
