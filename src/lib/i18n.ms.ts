@@ -1342,4 +1342,11 @@ export const ms: Record<string, string> = {
   "What does the free plan leave out?": "Apa yang tiada dalam pelan percuma?",
   "The free plan covers daily attendance for up to 5 staff: clock in and out, the Today screen, the daily list and the door screen, with the last 7 days of history. Reports, Excel export, overtime, leave, many offices, shift plans, the location check and one phone per person come with a paid plan.": "Pelan percuma meliputi kehadiran harian untuk sehingga 5 kakitangan: daftar masuk dan keluar, skrin Hari Ini, senarai harian dan skrin pintu, dengan rekod 7 hari terakhir. Laporan, eksport Excel, lebih masa, cuti, banyak pejabat, pelan syif, semakan lokasi dan satu telefon seorang datang dengan pelan berbayar.",
   "What is included (one per line; start a line with ✕ for not included)": "Apa yang termasuk (satu setiap baris; mula baris dengan ✕ jika tidak termasuk)",
+  "Watch": "Perlu amaran",
+  "At risk": "Perlu dihalang",
+  "Leave and sick leave tracking": "Rekod cuti dan MC",
+  "Leave, sick days and half days": "Cuti, MC dan separuh hari",
+  "Record annual, emergency, unpaid and sick leave, with the doctor’s note, and half days. Leave never counts as absent.": "Rekod cuti tahunan, kecemasan, tanpa gaji dan MC bersama nama klinik, dan separuh hari. Cuti tidak pernah dikira tidak hadir.",
+  "Mark someone present by hand, or set late, excused or sick, during or after the session.": "Tanda hadir secara manual, atau tetapkan lewat, dikecualikan atau MC, semasa atau selepas sesi.",
+  "You set your working hours, grace period, breaks, public holidays and when overtime starts, so the hours match your local rules.": "Anda tetapkan waktu bekerja, tempoh kelonggaran, rehat, cuti umum dan bila lebih masa bermula, jadi jamnya sepadan dengan peraturan tempatan anda. Kadar Akta Kerja 1955 (1.5, 2 dan 3 kali ganda) ditunjukkan untuk syarikat Malaysia.",
 }

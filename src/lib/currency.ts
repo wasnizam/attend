@@ -6,16 +6,25 @@ export type Currency = 'myr' | 'usd'
 const KEY = 'attend.currency'
 const MALAYSIA = ['Asia/Kuala_Lumpur', 'Asia/Kuching']
 
-/** A guess from the device's time zone: free, instant, and good enough for showing a price. */
-function guess(): Currency {
+/**
+ * Whether the device is set to Malaysian time: free, instant, and good enough for choosing
+ * what to show. Visitors elsewhere see US dollars and English only, with no switch for either.
+ */
+export function inMalaysia(): boolean {
   try {
-    return MALAYSIA.includes(Intl.DateTimeFormat().resolvedOptions().timeZone) ? 'myr' : 'usd'
+    return MALAYSIA.includes(Intl.DateTimeFormat().resolvedOptions().timeZone)
   } catch {
-    return 'myr'
+    return false
   }
 }
 
+function guess(): Currency {
+  return inMalaysia() ? 'myr' : 'usd'
+}
+
 function initial(): Currency {
+  // Outside Malaysia there is no switch, so an old saved choice must not leave someone on ringgit.
+  if (!inMalaysia()) return 'usd'
   try {
     const stored = localStorage.getItem(KEY)
     if (stored === 'myr' || stored === 'usd') return stored

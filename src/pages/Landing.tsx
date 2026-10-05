@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { Snapshots, TrustSection } from '../components/LandingProof'
 import { LanguageSwitch } from '../components/LanguageSwitch'
 import { Logo, buttonClass } from '../components/ui'
-import { setCurrency, useCurrency } from '../lib/currency'
+import { inMalaysia, setCurrency, useCurrency } from '../lib/currency'
 import { EDITIONS, type Edition, type EditionId, editionById, rememberEdition } from '../lib/editions'
 import { t } from '../lib/i18n'
 import { PAYMENTS_OPEN } from '../lib/plan'
@@ -230,7 +230,8 @@ export function Landing({ show }: { show?: EditionId }) {
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold text-accent">{t('Pricing')} · {t(edition.label)}</p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t('Start free. Pay only when you need more.')}</h2>
-            <div className="mt-5">
+            {/* Ringgit is offered only in Malaysia; everyone else simply sees US dollars. */}
+            {inMalaysia() && <div className="mt-5">
               <div role="group" aria-label={t('Currency')} className="inline-flex rounded-full bg-slate-100 p-0.5 text-xs font-semibold">
                 {(['myr', 'usd'] as const).map((c) => (
                   <button
@@ -244,7 +245,7 @@ export function Landing({ show }: { show?: EditionId }) {
                   </button>
                 ))}
               </div>
-            </div>
+            </div>}
           </div>
           <div className={`mt-12 grid gap-4 sm:grid-cols-2 ${plans.length > 2 ? 'lg:grid-cols-4' : 'mx-auto max-w-4xl'}`}>
             {plans.map((plan) => (

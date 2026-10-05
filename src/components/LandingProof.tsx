@@ -71,7 +71,7 @@ function Visual({ kind }: { kind: TrustVisual }) {
     return (
       <div className="w-44 space-y-1.5 text-left text-xs">
         <div className="flex items-center justify-between rounded-md bg-white px-2 py-1.5 shadow-card"><span className="font-medium">Ahmad</span><span className="tabular text-slate-500">8:55</span></div>
-        <div className="flex items-center justify-between rounded-md bg-white px-2 py-1.5 shadow-card"><span className="font-medium">Siti</span><span className="rounded bg-[#fff4d6] px-1.5 text-[10px] font-semibold text-[#8a5a00]">{t('Added by hand')}</span></div>
+        <div className="flex items-center justify-between rounded-md bg-white px-2 py-1.5 shadow-card"><span className="font-medium">Sarah</span><span className="rounded bg-[#fff4d6] px-1.5 text-[10px] font-semibold text-[#8a5a00]">{t('Added by hand')}</span></div>
       </div>
     )
   }
@@ -139,7 +139,7 @@ export function Snapshots({ edition }: { edition: Edition }) {
                 <p className="mt-4 font-semibold tracking-tight">{t(phone.heading)}</p>
                 <p className="mt-3 text-sm">{phone.session}</p>
                 <p className="tabular text-2xl font-semibold">{phone.time}</p>
-                <p className="mt-2 text-xs text-muted">AHMAD BIN ALI</p>
+                <p className="mt-2 text-xs text-muted">AHMAD ALI</p>
                 {phone.out && (
                   <p className="mt-5 rounded-lg border border-line py-2 text-sm font-semibold">{t('Clock out')}</p>
                 )}

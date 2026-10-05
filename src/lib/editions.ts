@@ -56,7 +56,7 @@ const WORK_PRO = [
   'Reports: week, month, year and PDF',
   'Export to Excel for payroll',
   'Overtime, rest day and holiday hours',
-  'Leave and MC tracking',
+  'Leave and sick leave tracking',
   'Location check (geofence)',
   'One phone per person',
 ]
@@ -110,7 +110,7 @@ export const EDITIONS: Edition[] = [
       [ICON.upload, 'Upload your class list', 'Excel, CSV or PDF. Students type only their ID, and you see who is absent by name.'],
       [ICON.bolt, 'Live attendance', 'Names appear on your screen the moment students check in. No refreshing.'],
       [ICON.screen, 'Lecture, tutorial and lab', 'Keep each type of class apart, and see a student’s attendance for all three side by side.'],
-      [ICON.pencil, 'Corrections made easy', 'Mark someone present by hand, or set late, excused or MC, during or after the session.'],
+      [ICON.pencil, 'Corrections made easy', 'Mark someone present by hand, or set late, excused or sick, during or after the session.'],
       [ICON.chart, 'Semester reports', 'Every student’s percentage across the semester, with low attendance flagged. Export to Excel.'],
     ],
     steps: [
@@ -134,14 +134,14 @@ export const EDITIONS: Edition[] = [
       report: {
         name: 'DATABASE SYSTEMS', kind: 'Semester report', head: ['Student', 'Absent', '%', 'Status'],
         rows: [
-          { cells: ['Ahmad bin Ali', '0', '100%', 'On track'], tone: 'good' },
-          { cells: ['Siti Aminah', '2', '85.7%', 'Warning due'], tone: 'warn' },
-          { cells: ['Kumar Raj', '3', '78.6%', 'Barring due'], tone: 'bad' },
+          { cells: ['Ahmad Ali', '0', '100%', 'On track'], tone: 'good' },
+          { cells: ['Sarah Lee', '2', '85.7%', 'Watch'], tone: 'warn' },
+          { cells: ['Kumar Raj', '3', '78.6%', 'At risk'], tone: 'bad' },
         ],
         caption: 'Your semester report: who is getting close to the 80% rule.',
       },
     },
-    preview: { title: 'DATABASE SYSTEMS', time: '10:00 AM – 12:00 PM', counted: 'PRESENT', rows: [['ST003', 'Kumar', '10:07'], ['ST002', 'Siti', '10:05'], ['ST001', 'Ahmad', '10:03']] },
+    preview: { title: 'DATABASE SYSTEMS', time: '10:00 AM – 12:00 PM', counted: 'PRESENT', rows: [['ST003', 'Kumar', '10:07'], ['ST002', 'Sarah', '10:05'], ['ST001', 'Ahmad', '10:03']] },
     orgPlaceholder: 'e.g. Faculty of Computing',
     without: {
       title: 'Nothing to buy. Nothing to install.',
@@ -191,14 +191,14 @@ export const EDITIONS: Edition[] = [
       report: {
         name: 'EXCEL FOR MANAGERS', kind: 'Course report', head: ['Participant', 'Attended', '%'],
         rows: [
-          { cells: ['Ahmad bin Ali', '5 / 5', '100%'] },
-          { cells: ['Siti Aminah', '4 / 5', '80%'] },
+          { cells: ['Ahmad Ali', '5 / 5', '100%'] },
+          { cells: ['Sarah Lee', '4 / 5', '80%'] },
           { cells: ['Kumar Raj', '3 / 5', '60%'] },
         ],
         caption: 'Your course report: attendance for every participant.',
       },
     },
-    preview: { title: 'EXCEL FOR MANAGERS', time: '9:00 AM – 5:00 PM', counted: 'PRESENT', rows: [['P003', 'Kumar', '9:07'], ['P002', 'Siti', '9:05'], ['P001', 'Ahmad', '9:03']] },
+    preview: { title: 'EXCEL FOR MANAGERS', time: '9:00 AM – 5:00 PM', counted: 'PRESENT', rows: [['P003', 'Kumar', '9:07'], ['P002', 'Sarah', '9:05'], ['P001', 'Ahmad', '9:03']] },
     orgPlaceholder: 'e.g. Bright Training Sdn Bhd',
     without: {
       title: 'Nothing to buy. Nothing to install.',
@@ -225,7 +225,7 @@ export const EDITIONS: Edition[] = [
       [ICON.pencil, 'Lateness and early leave', 'Late arrivals are flagged with the minutes. You set the grace period, and can allow an early leave with a reason.'],
       [ICON.calendar, 'Office hours or shifts', 'Fixed hours, two or three shifts, night shifts or flexible hours, with a weekly shift plan for people who rotate.'],
       [ICON.building, 'Many offices, one company', 'Each branch has its own hours and staff list. Branch managers see only their office; you see them all.'],
-      [ICON.leave, 'Leave, MC and half days', 'Record annual, emergency or unpaid leave, MC with the clinic, and half days. Leave never counts as absent.'],
+      [ICON.leave, 'Leave, sick days and half days', 'Record annual, emergency, unpaid and sick leave, with the doctor’s note, and half days. Leave never counts as absent.'],
       [ICON.bolt, 'Overtime that fits your local law', 'Choose when overtime starts: after a full day or after the end time. Rest days and public holidays are counted apart for their own rates.'],
       [ICON.file, 'Reports HR can hand over', 'Monthly report with charts as a PDF, Excel for payroll, attendance rate, and a timesheet per person to sign.'],
       [ICON.upload, 'Upload your staff list', 'Excel, CSV or PDF, with departments. Staff type only their ID, and you see who has not come in by name.'],
@@ -254,14 +254,14 @@ export const EDITIONS: Edition[] = [
       report: {
         name: 'MORNING SHIFT', kind: 'Today', head: ['Staff', 'In', 'Out', 'Hours'],
         rows: [
-          { cells: ['Ahmad bin Ali', '8:55', '18:02', '9 h 07 min'] },
-          { cells: ['Siti Aminah', '8:58', '18:00', '9 h 02 min'] },
+          { cells: ['Ahmad Ali', '8:55', '18:02', '9 h 07 min'] },
+          { cells: ['Sarah Lee', '8:58', '18:00', '9 h 02 min'] },
           { cells: ['Kumar Raj', '9:22', '18:05', '8 h 43 min'], late: 22 },
         ],
         caption: 'Your daily record: time in, time out, hours and lateness.',
       },
     },
-    preview: { title: 'MORNING SHIFT', time: '9:00 AM – 6:00 PM', counted: 'IN', rows: [['E003', 'Kumar', '9:07'], ['E002', 'Siti', '8:58'], ['E001', 'Ahmad', '8:55']] },
+    preview: { title: 'MORNING SHIFT', time: '9:00 AM – 6:00 PM', counted: 'IN', rows: [['E003', 'Kumar', '9:07'], ['E002', 'Sarah', '8:58'], ['E001', 'Ahmad', '8:55']] },
     orgPlaceholder: 'e.g. Sunrise Café',
     without: {
       title: 'Nothing to buy. Nothing to install.',
@@ -275,7 +275,7 @@ export const EDITIONS: Edition[] = [
     },
     faq: [
       ['Do you do payroll?', 'No, on purpose. Attend does attendance only, and does it properly. It exports clean reports for your payroll, your HR system or your accountant.'],
-      ['Does it follow our country’s labour rules?', 'You set your working hours, grace period, breaks, public holidays and when overtime starts, so the hours match your local rules. Malaysia’s Employment Act rates are shown for Malaysian companies.'],
+      ['Does it follow our country’s labour rules?', 'You set your working hours, grace period, breaks, public holidays and when overtime starts, so the hours match your local rules.'],
       ['What does the free plan leave out?', 'The free plan covers daily attendance for up to 5 staff: clock in and out, the Today screen, the daily list and the door screen, with the last 7 days of history. Reports, Excel export, overtime, leave, many offices, shift plans, the location check and one phone per person come with a paid plan.'],
     ],
     plans: [
