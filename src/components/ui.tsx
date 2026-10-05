@@ -5,7 +5,7 @@ import type { SessionStatus } from '../lib/types'
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ')
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'sun'
   size?: 'md' | 'lg'
   block?: boolean
   busy?: boolean
@@ -16,6 +16,8 @@ const variants = {
   secondary: 'bg-white text-ink shadow-card hover:bg-canvas',
   ghost: 'text-accent hover:bg-accent-soft',
   danger: 'bg-bad text-white hover:bg-red-700 shadow-[inset_0_1px_0_rgb(255_255_255/0.16),0_1px_2px_rgb(15_23_42/0.25)]',
+  /** The brand's call to action, as on the website: sun yellow with night-blue text. */
+  sun: 'bg-sun text-night hover:bg-sun-strong shadow-[0_8px_24px_-8px_rgb(255_200_61/0.7)]',
 }
 
 export function buttonClass({ variant = 'primary', size = 'md', block = false }: Pick<ButtonProps, 'variant' | 'size' | 'block'> = {}) {

@@ -1,8 +1,8 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { GoogleButton } from '../components/GoogleButton'
-import { LanguageSwitch } from '../components/LanguageSwitch'
-import { Button, Card, ErrorNote, Field, Logo, PageLoader, friendlyError } from '../components/ui'
+import { AuthShell } from '../components/AuthShell'
+import { Button, ErrorNote, Field, PageLoader, friendlyError } from '../components/ui'
 import { createAccount, createOrganisationProfile, joinOrganisationProfile, lookupInvite, signOut } from '../data/account'
 import { useAuth } from '../hooks/useAuth'
 import { t } from '../lib/i18n'
@@ -74,12 +74,18 @@ export function Signup() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-10">
-      <Link to="/" className="mx-auto mb-8">
-        <Logo className="text-xl" />
-      </Link>
-      <Card className="p-6">
-        <h1 className="text-2xl font-semibold tracking-tight">{finishing ? t('Finish setting up') : t('Create your account')}</h1>
+    <AuthShell
+      footer={
+        finishing ? (
+          <button onClick={() => signOut()}>{t('Use a different account')}</button>
+        ) : (
+          <>
+            {t('Already have an account?')} <Link to="/login">{t('Log in')}</Link>
+          </>
+        )
+      }
+    >
+        <h1 className="font-display text-3xl font-bold tracking-tight">{finishing ? t('Finish setting up') : t('Create your account')}</h1>
         <p className="mt-1 text-sm text-muted">
           {joining ? t('Join your organisation as a lecturer.') : t('Free to start. Ready in under a minute.')}
         </p>
@@ -125,29 +131,13 @@ export function Signup() {
             </>
           )}
           <ErrorNote>{error}</ErrorNote>
-          <Button type="submit" size="lg" block busy={busy}>
+          <Button type="submit" variant="sun" size="lg" block busy={busy}>
             {finishing ? t('Continue') : joining ? t('Join') : t('Start Free')}
           </Button>
         </form>
         <button onClick={() => setJoining(!joining)} className="mt-4 w-full text-center text-sm font-medium text-accent">
           {joining ? t('Set up a new organisation instead') : t('Have an invite code from your organisation?')}
         </button>
-      </Card>
-      <p className="mt-6 text-center text-sm text-muted">
-        {finishing ? (
-          <button onClick={() => signOut()} className="font-medium text-accent">
-            {t('Use a different account')}
-          </button>
-        ) : (
-          <>
-            {t('Already have an account?')}{' '}
-            <Link to="/login" className="font-medium text-accent">
-              {t('Log in')}
-            </Link>
-          </>
-        )}
-      </p>
-      <LanguageSwitch className="mx-auto mt-5 !bg-white" />
-    </div>
+    </AuthShell>
   )
 }

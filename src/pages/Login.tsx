@@ -1,8 +1,8 @@
 import { type FormEvent, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { GoogleButton } from '../components/GoogleButton'
-import { LanguageSwitch } from '../components/LanguageSwitch'
-import { Button, Card, ErrorNote, Field, Logo, PageLoader, friendlyError } from '../components/ui'
+import { AuthShell } from '../components/AuthShell'
+import { Button, ErrorNote, Field, PageLoader, friendlyError } from '../components/ui'
 import { resetPassword, signIn } from '../data/account'
 import { useAuth } from '../hooks/useAuth'
 import { t } from '../lib/i18n'
@@ -45,35 +45,30 @@ export function Login() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-10">
-      <Link to="/" className="mx-auto mb-8">
-        <Logo className="text-xl" />
-      </Link>
-      <Card className="p-6">
-        <h1 className="text-2xl font-semibold tracking-tight">{t('Log in')}</h1>
-        <div className="mt-6">
-          <GoogleButton onError={setError} />
-        </div>
-        <form onSubmit={submit} className="mt-4 space-y-4">
-          <Field label={t('Email')} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Field label={t('Password')} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-          <ErrorNote>{error}</ErrorNote>
-          {notice && <p className="rounded-lg bg-good-soft px-4 py-3 text-sm text-good">{notice}</p>}
-          <Button type="submit" size="lg" block busy={busy}>
-            {t('Log in')}
-          </Button>
-        </form>
-        <button onClick={forgot} className="mt-4 w-full text-center text-sm font-medium text-accent">
-          {t('Forgot password?')}
-        </button>
-      </Card>
-      <p className="mt-6 text-center text-sm text-muted">
-        {t('New here?')}{' '}
-        <Link to="/signup" className="font-medium text-accent">
-          {t('Create an account')}
-        </Link>
-      </p>
-      <LanguageSwitch className="mx-auto mt-5 !bg-white" />
-    </div>
+    <AuthShell
+      footer={
+        <>
+          {t('New here?')} <Link to="/signup">{t('Create an account')}</Link>
+        </>
+      }
+    >
+      <h1 className="font-display text-3xl font-bold tracking-tight">{t('Welcome back')}</h1>
+      <p className="mt-1 text-sm text-muted">{t('Log in to see who is in today.')}</p>
+      <div className="mt-6">
+        <GoogleButton onError={setError} />
+      </div>
+      <form onSubmit={submit} className="mt-4 space-y-4">
+        <Field label={t('Email')} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Field label={t('Password')} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+        <ErrorNote>{error}</ErrorNote>
+        {notice && <p className="rounded-lg bg-good-soft px-4 py-3 text-sm text-good">{notice}</p>}
+        <Button type="submit" variant="sun" size="lg" block busy={busy}>
+          {t('Log in')}
+        </Button>
+      </form>
+      <button onClick={forgot} className="mt-4 w-full text-center text-sm font-medium text-accent">
+        {t('Forgot password?')}
+      </button>
+    </AuthShell>
   )
 }

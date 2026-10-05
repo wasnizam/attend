@@ -1359,4 +1359,6 @@ export const ms: Record<string, string> = {
   "Apps for anyone to install": "Aplikasi perlu dipasang",
   "Live": "Langsung",
   "See who is in, right now": "Lihat siapa ada, sekarang juga",
+  "Welcome back": "Selamat kembali",
+  "Log in to see who is in today.": "Log masuk untuk lihat siapa ada hari ini.",
 }
