@@ -13,6 +13,12 @@
   --color-good-soft: #dcfce7;
   --color-bad: #dc2626;
   --color-bad-soft: #fef2f2;
+  /* Landing page only: a deep night blue for the hero and a warm sun yellow for highlights. */
+  --font-display: 'Bricolage Grotesque Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --color-night: #16123f;
+  --color-night-soft: #241e63;
+  --color-sun: #ffc83d;
+  --color-sun-strong: #ffb703;
   /* A hairline ring plus a whisper of depth: surfaces read as bordered, not floating. */
   --shadow-card: 0 0 0 1px rgb(15 23 42 / 0.08), 0 1px 2px rgb(15 23 42 / 0.05);
   --shadow-pop: 0 0 0 1px rgb(15 23 42 / 0.06), 0 12px 32px -8px rgb(15 23 42 / 0.18);
@@ -57,8 +63,30 @@ textarea {
 }
 .animate-rowin { animation: rowin 2.5s ease-out both; }
 
+/* Landing: a new row slides in at the top of the live list. */
+@keyframes slidein {
+  from { transform: translateY(-100%); opacity: 0; background: rgb(255 200 61 / 0.35); }
+  60% { opacity: 1; }
+  to { transform: none; background: transparent; }
+}
+.animate-slidein { animation: slidein 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Landing: the phone bobs gently, as if held. */
+@keyframes bob {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-10px) rotate(-3deg); }
+}
+.animate-bob { animation: bob 5s ease-in-out infinite; }
+
+/* Landing: the scan line moving over the QR. */
+@keyframes scan {
+  0%, 100% { top: 6%; }
+  50% { top: 88%; }
+}
+.animate-scan { animation: scan 2.4s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-pop, .animate-rowin, .animate-spin, .animate-pulse { animation: none; }
+  .animate-pop, .animate-rowin, .animate-spin, .animate-pulse, .animate-slidein, .animate-bob, .animate-scan { animation: none; }
 }
 
 /* Report tables scroll sideways on screen; on paper (and in a PDF) they fit the page. */

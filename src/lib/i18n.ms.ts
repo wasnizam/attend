@@ -1351,4 +1351,12 @@ export const ms: Record<string, string> = {
   "Reports on screen: week, month and year": "Laporan di skrin: minggu, bulan dan tahun",
   "Download reports as PDF": "Muat turun laporan sebagai PDF",
   "The free plan covers daily attendance for up to 5 staff: clock in and out, the Today screen, the daily list and the door screen, with all your history and reports to view on screen. Downloading reports as PDF, Excel export, overtime, leave, many offices, shift plans, the location check and one phone per person come with a paid plan.": "Pelan percuma meliputi kehadiran harian untuk sehingga 5 kakitangan: daftar masuk dan keluar, skrin Hari Ini, senarai harian dan skrin pintu, dengan semua rekod dan laporan untuk dilihat di skrin. Muat turun laporan PDF, eksport Excel, lebih masa, cuti, banyak pejabat, pelan syif, semakan lokasi dan satu telefon seorang datang dengan pelan berbayar.",
+  "SCAN TO CLOCK IN": "IMBAS UNTUK MASUK",
+  "New code in {s}s": "Kod baharu dalam {s}s",
+  "Attend in numbers": "Attend dalam angka",
+  "A new QR code, every 45 seconds": "Kod QR baharu setiap 45 saat",
+  "Machines to buy": "Mesin perlu dibeli",
+  "Apps for anyone to install": "Aplikasi perlu dipasang",
+  "Live": "Langsung",
+  "See who is in, right now": "Lihat siapa ada, sekarang juga",
 }

@@ -1,6 +1,6 @@
 import { useLaunch, usePlans } from '../lib/pricing'
 import { QRCodeSVG } from 'qrcode.react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Snapshots, TrustSection } from '../components/LandingProof'
 import { LanguageSwitch } from '../components/LanguageSwitch'
@@ -21,50 +21,99 @@ const FAQ = [
   ['Is our data safe?', 'Each organisation’s records are kept apart and protected by access rules on Google Cloud (Firebase): people see only what their role allows, attendance times cannot be changed by the person who clocked in, and anyone added by hand is labelled as such.'],
 ]
 
-/** An illustration of the live screen, built from the same pieces the product uses. */
-function ProductPreview({ edition }: { edition: Edition }) {
-  const { rows, title, time, counted } = edition.preview
+/** Icon tiles on the feature cards, in turn: one bright colour each. */
+const TILE = ['bg-indigo-100 text-indigo-600', 'bg-amber-100 text-amber-600', 'bg-emerald-100 text-emerald-600', 'bg-rose-100 text-rose-600', 'bg-sky-100 text-sky-600', 'bg-violet-100 text-violet-600']
+
+/** People arriving in the live demo, in turn. */
+const ARRIVALS = ['Sarah Lee', 'Kumar Raj', 'Mei Ling', 'Daniel Cruz', 'Aisha Bello', 'Ravi Shah', 'Grace Kim', 'Omar Haddad', 'Lucas Silva', 'Nadia Rahman']
+const AVATAR = ['bg-sun text-night', 'bg-emerald-300 text-emerald-950', 'bg-sky-300 text-sky-950', 'bg-rose-300 text-rose-950', 'bg-violet-300 text-violet-950']
+const initials = (name: string) => name.split(' ').map((w) => w[0]).join('').slice(0, 2)
+
+/**
+ * An animated illustration of Attend at work: the door screen with its changing QR, a phone that
+ * has just scanned it, and the live list filling up. Every few seconds someone new arrives.
+ */
+function LiveDemo({ edition }: { edition: Edition }) {
+  const { title, time, counted } = edition.preview
+  // Arrival number: starts at 3 so the first frame already shows a full list.
+  const [n, setN] = useState(3)
+  const [left, setLeft] = useState(45)
+  useEffect(() => {
+    // Still frame for anyone who prefers less motion.
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const arrive = setInterval(() => setN((x) => (x >= 40 ? 3 : x + 1)), 2600)
+    const tick = setInterval(() => setLeft((x) => (x <= 1 ? 45 : x - 1)), 1000)
+    return () => {
+      clearInterval(arrive)
+      clearInterval(tick)
+    }
+  }, [])
+  const total = 42
+  const inNow = 30 + Math.round(((n - 3) * 12) / 37)
+  // The newest four arrivals, newest first; times step on a minute each.
+  const list = [0, 1, 2, 3].map((k) => {
+    const i = n - k
+    // One arrival a minute from 8:20, so the newest is always latest.
+    const at = 8 * 60 + 17 + i
+    return { key: i, name: ARRIVALS[i % ARRIVALS.length], time: `${Math.floor(at / 60)}:${String(at % 60).padStart(2, '0')}`, colour: AVATAR[i % AVATAR.length] }
+  })
+  const newest = list[0]
+  const ring = 2 * Math.PI * 18
   return (
-    <div aria-hidden className="relative mx-auto mt-16 max-w-4xl">
-      <div className="absolute -inset-x-10 -top-10 bottom-0 -z-10 rounded-[2.5rem] bg-gradient-to-b from-indigo-100/70 to-transparent blur-2xl" />
-      <div className="overflow-hidden rounded-xl bg-white text-left shadow-pop">
+    <div aria-hidden className="relative mx-auto w-full max-w-xl lg:max-w-none">
+      <div className="overflow-hidden rounded-2xl bg-white text-left text-ink shadow-[0_30px_80px_-20px_rgb(0_0_0/0.55)] ring-1 ring-white/20">
         <div className="flex items-center gap-1.5 border-b border-line bg-slate-50 px-4 py-2.5">
-          <span className="size-2.5 rounded-full bg-slate-300" />
-          <span className="size-2.5 rounded-full bg-slate-300" />
-          <span className="size-2.5 rounded-full bg-slate-300" />
+          <span className="size-2.5 rounded-full bg-rose-300" />
+          <span className="size-2.5 rounded-full bg-sun" />
+          <span className="size-2.5 rounded-full bg-emerald-300" />
+          <span className="ml-3 truncate text-xs text-muted">{title} · {time}</span>
         </div>
-        <div className="grid gap-5 p-5 sm:grid-cols-[15rem_1fr] sm:p-6">
-          <div className="rounded-lg p-4 text-center shadow-card">
-            <p className="text-sm font-semibold tracking-tight">{title}</p>
-            <p className="text-xs text-muted">{time}</p>
-            <p className="tabular mt-2 text-xl font-semibold">38 / 42 <span className="text-muted">{t(counted)}</span></p>
-            <QRCodeSVG value="https://attend.example.com/session/8K72QF" level="M" marginSize={1} className="mx-auto mt-3" style={{ width: '9rem', height: '9rem' }} />
-            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-good-soft px-2 py-0.5 text-xs font-medium text-good">
-              <span className="size-1.5 rounded-full bg-good" />
-              {t('Session Active')}
-            </p>
-          </div>
-          <div>
-            <p className="text-[11px] font-semibold tracking-wider text-muted">{t('LIVE ATTENDANCE')}</p>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {[[t('Present'), '38'], [t('Absent'), '4'], [t('Attendance'), '90.5%']].map(([label, value]) => (
-                <div key={label} className="rounded-lg px-3 py-2 shadow-card">
-                  <p className="text-[11px] text-muted">{label}</p>
-                  <p className="tabular text-lg font-semibold">{value}</p>
-                </div>
-              ))}
+        <div className="grid gap-4 p-4 sm:grid-cols-[11.5rem_1fr] sm:p-5">
+          <div className="rounded-xl bg-night p-4 text-center text-white">
+            <p className="text-[11px] font-semibold tracking-wider text-white/60">{t('SCAN TO CLOCK IN')}</p>
+            <div className="relative mx-auto mt-3 w-fit rounded-lg bg-white p-2">
+              <QRCodeSVG value={`https://attend.example.com/door?t=${left}`} level="M" marginSize={0} style={{ width: '7.5rem', height: '7.5rem' }} />
+              <span className="animate-scan absolute inset-x-1 h-0.5 rounded-full bg-sun shadow-[0_0_12px_2px_rgb(255_200_61/0.8)]" />
             </div>
-            <div className="mt-3 overflow-hidden rounded-lg text-sm shadow-card">
-              {rows.map(([id, name, time], i) => (
-                <div key={id} className={`flex items-center gap-3 px-3 py-2 ${i ? 'border-t border-line' : ''}`}>
-                  <span className="tabular w-14 font-medium">{id}</span>
-                  <span className="flex-1">{name}</span>
-                  <span className="tabular text-muted">{time}</span>
-                  <span className="text-xs font-medium text-good">{t('Present')}</span>
-                </div>
-              ))}
+            <div className="mt-3 flex items-center justify-center gap-2 text-xs text-white/70">
+              <svg viewBox="0 0 40 40" className="size-6 -rotate-90">
+                <circle cx="20" cy="20" r="18" fill="none" stroke="rgb(255 255 255 / 0.15)" strokeWidth="4" />
+                <circle cx="20" cy="20" r="18" fill="none" stroke="var(--color-sun)" strokeWidth="4" strokeLinecap="round" strokeDasharray={ring} strokeDashoffset={ring * (1 - left / 45)} className="transition-[stroke-dashoffset] duration-1000 ease-linear" />
+              </svg>
+              <span className="tabular">{t('New code in {s}s', { s: left })}</span>
             </div>
           </div>
+          <div className="min-w-0">
+            <div className="flex items-baseline justify-between">
+              <p className="text-[11px] font-semibold tracking-wider text-muted">{t('LIVE ATTENDANCE')}</p>
+              <p className="tabular text-sm font-semibold">{inNow} / {total} <span className="font-medium text-muted">{t(counted)}</span></p>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-[width] duration-700" style={{ width: `${(inNow / total) * 100}%` }} />
+            </div>
+            <ul className="mt-3 overflow-hidden rounded-lg text-sm shadow-card">
+              {list.map((r, i) => (
+                <li key={r.key} className={`flex items-center gap-3 px-3 py-2 ${i ? 'border-t border-line' : 'animate-slidein'}`}>
+                  <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${r.colour}`}>{initials(r.name)}</span>
+                  <span className="min-w-0 flex-1 truncate font-medium">{r.name}</span>
+                  <span className="tabular text-muted">{r.time}</span>
+                  <span className="rounded-full bg-good-soft px-2 py-0.5 text-[11px] font-semibold text-good">{t('In')}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+      {/* The staff member's own phone, just after scanning. */}
+      <div className="animate-bob absolute -right-3 -bottom-28 hidden w-36 rounded-[1.6rem] bg-night p-1.5 shadow-[0_24px_50px_-12px_rgb(0_0_0/0.6)] ring-1 ring-white/25 sm:block lg:-right-8">
+        <div className="rounded-[1.25rem] bg-white px-3 pt-4 pb-5 text-center text-ink">
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-200" />
+          <span key={newest.key} className="animate-pop mx-auto flex size-11 items-center justify-center rounded-full bg-good text-white">
+            <svg viewBox="0 0 20 20" className="size-6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 10.5 3.2 3L15 7" /></svg>
+          </span>
+          <p className="mt-2 text-sm font-semibold">{t('Clocked in')}</p>
+          <p className="tabular text-xs text-muted">{newest.time} AM</p>
+          <p className="mt-2 truncate text-[11px] font-semibold tracking-wide text-slate-500 uppercase">{newest.name}</p>
         </div>
       </div>
     </div>
@@ -113,56 +162,92 @@ export function Landing({ show }: { show?: EditionId }) {
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-5 pt-16 pb-20 text-center sm:pt-24">
-        <nav aria-label={t('Attend for')} className="mx-auto inline-flex max-w-full items-center gap-1 rounded-full bg-slate-100 p-1 text-sm font-medium">
-          <span className="hidden pr-1 pl-3 text-muted sm:inline">{t('Attend for')}</span>
-          {EDITIONS.map((e) => (
-            <Link
-              key={e.id}
-              to={`/${e.id}`}
-              replace
-              aria-current={e.id === edition.id ? 'page' : undefined}
-              className={`rounded-full px-3.5 py-1.5 whitespace-nowrap transition ${e.id === edition.id ? 'bg-white text-ink shadow-card' : 'text-slate-600 hover:text-ink'}`}
-            >
-              {t(e.label)}
-            </Link>
-          ))}
-        </nav>
-        <p className="mt-8 text-sm font-semibold text-accent">{t(edition.badge)}</p>
-        <h1 className="mx-auto mt-3 max-w-4xl text-5xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">
-          {/* A headline may choose its own line break with "|". */}
-          {t(edition.headline).split('|').map((line, i) => (
-            <span key={i} className="block">{line.trim()}</span>
-          ))}
-        </h1>
-        <p className="mx-auto mt-6 max-w-xl text-lg text-slate-600 sm:text-xl">
-          {t(edition.sub)}
-        </p>
-        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link to={signup} className={buttonClass({ size: 'lg' })}>
-            {t('Start Free')}
-          </Link>
-          <a href="#how" className={buttonClass({ size: 'lg', variant: 'secondary' })}>
-            {t('See How It Works')}
-          </a>
+      <section className="relative isolate overflow-hidden bg-night text-white">
+        {/* Glow and a faint dot grid: depth without a picture. */}
+        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(60rem_30rem_at_85%_10%,rgb(255_200_61/0.18),transparent_60%),radial-gradient(50rem_30rem_at_0%_100%,rgb(99_102_241/0.45),transparent_60%)]" />
+        <div aria-hidden className="absolute inset-0 -z-10 [background-image:radial-gradient(rgb(255_255_255/0.07)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+        <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-12 pb-24 sm:pb-36 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pb-32">
+          <div className="text-center lg:text-left">
+            <nav aria-label={t('Attend for')} className="inline-flex max-w-full items-center gap-1 rounded-full bg-white/10 p-1 text-sm font-medium ring-1 ring-white/15">
+              <span className="hidden pr-1 pl-3 text-white/60 sm:inline">{t('Attend for')}</span>
+              {EDITIONS.map((e) => (
+                <Link
+                  key={e.id}
+                  to={`/${e.id}`}
+                  replace
+                  aria-current={e.id === edition.id ? 'page' : undefined}
+                  className={`rounded-full px-3.5 py-1.5 whitespace-nowrap transition ${e.id === edition.id ? 'bg-white text-night shadow-card' : 'text-white/75 hover:text-white'}`}
+                >
+                  {t(e.label)}
+                </Link>
+              ))}
+            </nav>
+            <p className="mt-8 inline-flex items-center gap-2 rounded-full bg-sun/15 px-3 py-1 text-sm font-semibold text-sun ring-1 ring-sun/30">
+              <span className="size-1.5 animate-pulse rounded-full bg-sun" />
+              {t(edition.badge)}
+            </p>
+            <h1 className="mt-5 font-display text-5xl leading-[1.02] font-bold tracking-tight text-balance sm:text-6xl lg:text-7xl">
+              {/* A headline may choose its own line break with "|"; the last line is the punchline. */}
+              {t(edition.headline).split('|').map((line, i, all) => (
+                <span key={i} className={`block ${i === all.length - 1 && all.length > 1 ? 'relative w-fit text-sun max-lg:mx-auto' : ''}`}>
+                  {line.trim()}
+                  {i === all.length - 1 && all.length > 1 && (
+                    <svg aria-hidden viewBox="0 0 300 20" preserveAspectRatio="none" className="absolute -bottom-3 left-0 h-3 w-full text-sun/70">
+                      <path d="M3 14 C 70 4, 150 4, 297 10" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
+                    </svg>
+                  )}
+                </span>
+              ))}
+            </h1>
+            <p className="mx-auto mt-8 max-w-xl text-lg text-indigo-100/85 sm:text-xl lg:mx-0">
+              {t(edition.sub)}
+            </p>
+            <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
+              <Link to={signup} className={`${buttonClass({ size: 'lg' })} !bg-sun !text-night shadow-[0_10px_30px_-8px_rgb(255_200_61/0.7)] hover:!bg-sun-strong`}>
+                {t('Start Free')}
+                <span aria-hidden>→</span>
+              </Link>
+              <a href="#how" className={`${buttonClass({ size: 'lg', variant: 'secondary' })} !bg-white/10 !text-white ring-1 ring-white/25 hover:!bg-white/15`}>
+                {t('See How It Works')}
+              </a>
+            </div>
+            <ul className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-indigo-100/80 lg:justify-start">
+              {[edition.note, 'Free to start. No card needed.', 'Works on any phone.'].map((line) => (
+                <li key={line} className="flex items-center gap-1.5">
+                  <svg viewBox="0 0 20 20" className="size-4 text-emerald-300" fill="currentColor" aria-hidden>
+                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.700-9.300a1 1 0 0 0-1.400-1.400L9 10.600 7.700 9.300a1 1 0 0 0-1.400 1.400l2 2a1 1 0 0 0 1.400 0l4-4Z" clipRule="evenodd" />
+                  </svg>
+                  {t(line)}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <LiveDemo edition={edition} />
         </div>
-        <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-600">
-          {[edition.note, 'Free to start. No card needed.', 'Works on any phone.'].map((line) => (
-            <li key={line} className="flex items-center gap-1.5">
-              <svg viewBox="0 0 20 20" className="size-4 text-good" fill="currentColor" aria-hidden>
-                <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.700-9.300a1 1 0 0 0-1.400-1.400L9 10.600 7.700 9.300a1 1 0 0 0-1.400 1.400l2 2a1 1 0 0 0 1.400 0l4-4Z" clipRule="evenodd" />
-              </svg>
-              {t(line)}
-            </li>
-          ))}
-        </ul>
-        <ProductPreview edition={edition} />
       </section>
 
-      <section aria-labelledby="without" className="border-t border-line bg-canvas py-14">
+      {/* Four plain facts, big and bright. */}
+      <section aria-label={t('Attend in numbers')} className="border-b border-line bg-white">
+        <dl className="mx-auto grid max-w-6xl grid-cols-2 gap-px bg-line sm:grid-cols-4">
+          {[
+            ['45s', 'A new QR code, every 45 seconds', 'text-accent'],
+            ['0', 'Machines to buy', 'text-amber-500'],
+            ['0', 'Apps for anyone to install', 'text-emerald-600'],
+            ['Live', 'See who is in, right now', 'text-rose-500'],
+          ].map(([big, label, colour]) => (
+            <div key={label} className="bg-white px-5 py-7 text-center">
+              <dt className="sr-only">{t(label)}</dt>
+              <dd className={`tabular font-display text-4xl font-bold tracking-tight ${colour}`}>{big}</dd>
+              <dd className="mt-1 text-sm text-slate-600">{t(label)}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <section aria-labelledby="without" className="bg-amber-50/70 py-16">
         <div className="mx-auto grid max-w-5xl items-center gap-8 px-5 md:grid-cols-[1fr_1.1fr]">
           <div>
-            <h2 id="without" className="text-3xl font-semibold tracking-tight text-balance">{t(edition.without.title)}</h2>
+            <h2 id="without" className="font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">{t(edition.without.title)}</h2>
             <p className="mt-3 text-slate-600">{t(edition.without.need)}</p>
             {edition.without.focus && <p className="mt-2 font-medium text-ink">{t(edition.without.focus)}</p>}
             {edition.without.saving && (
@@ -189,12 +274,12 @@ export function Landing({ show }: { show?: EditionId }) {
         <div className="mx-auto max-w-6xl px-5">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold text-accent">{t('Features')}</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t(edition.featuresTitle)}</h2>
+            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">{t(edition.featuresTitle)}</h2>
           </div>
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {edition.features.map(([icon, title, text]) => (
-              <div key={title} className="rounded-xl bg-white p-6 shadow-card">
-                <span className="flex size-10 items-center justify-center rounded-lg bg-accent-soft text-accent">
+            {edition.features.map(([icon, title, text], i) => (
+              <div key={title} className="group rounded-2xl bg-white p-6 shadow-card transition hover:-translate-y-1 hover:shadow-pop">
+                <span className={`flex size-11 items-center justify-center rounded-xl transition group-hover:scale-110 ${TILE[i % TILE.length]}`}>
                   <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d={icon} />
                   </svg>
@@ -207,16 +292,17 @@ export function Landing({ show }: { show?: EditionId }) {
         </div>
       </section>
 
-      <section id="how" className="scroll-mt-16 py-20">
+      <section id="how" className="scroll-mt-16 bg-gradient-to-b from-indigo-50 to-white py-20">
         <div className="mx-auto max-w-6xl px-5">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold text-accent">{t('How it works')}</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t('Three steps. About a minute.')}</h2>
+            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">{t('Three steps. About a minute.')}</h2>
           </div>
-          <ol className="mt-12 grid gap-4 sm:grid-cols-3">
+          <ol className="relative mt-12 grid gap-4 sm:grid-cols-3">
+            <span aria-hidden className="absolute top-12 right-[16%] left-[16%] hidden border-t-2 border-dashed border-indigo-200 sm:block" />
             {edition.steps.map(([title, text], i) => (
-              <li key={title} className="rounded-xl bg-canvas p-6">
-                <span className="tabular flex size-9 items-center justify-center rounded-full bg-accent text-sm font-semibold text-white">{i + 1}</span>
+              <li key={title} className="relative rounded-2xl bg-white p-6 shadow-card">
+                <span className={`tabular flex size-12 items-center justify-center rounded-2xl font-display text-xl font-bold ${['bg-accent text-white', 'bg-sun text-night', 'bg-emerald-500 text-white'][i % 3]}`}>{i + 1}</span>
                 <h3 className="mt-4 text-lg font-semibold tracking-tight">{t(title).replace(/^\d+\.\s*/, '')}</h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{t(text)}</p>
               </li>
@@ -229,7 +315,7 @@ export function Landing({ show }: { show?: EditionId }) {
         <div className="mx-auto max-w-6xl px-5">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold text-accent">{t('Pricing')} · {t(edition.label)}</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t('Start free. Pay only when you need more.')}</h2>
+            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">{t('Start free. Pay only when you need more.')}</h2>
             {/* Ringgit is offered only in Malaysia; everyone else simply sees US dollars. */}
             {inMalaysia() && <div className="mt-5">
               <div role="group" aria-label={t('Currency')} className="inline-flex rounded-full bg-slate-100 p-0.5 text-xs font-semibold">
@@ -294,7 +380,7 @@ export function Landing({ show }: { show?: EditionId }) {
         <div className="mx-auto max-w-3xl px-5">
           <div className="text-center">
             <p className="text-sm font-semibold text-accent">{t('Questions')}</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t('Good to know before you start')}</h2>
+            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">{t('Good to know before you start')}</h2>
           </div>
           <div className="mt-10 divide-y divide-line border-y border-line">
             {[...FAQ, ...(edition.faq ?? [])].map(([q, a]) => (
@@ -311,13 +397,15 @@ export function Landing({ show }: { show?: EditionId }) {
       </section>
 
       <section className="px-5 pb-20">
-        <div className="mx-auto max-w-6xl rounded-2xl bg-ink px-6 py-14 text-center text-white sm:py-16">
-          <h2 className="mx-auto max-w-2xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+        <div className="relative isolate mx-auto max-w-6xl overflow-hidden rounded-3xl bg-night px-6 py-14 text-center text-white sm:py-20">
+          <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(40rem_20rem_at_50%_0%,rgb(255_200_61/0.22),transparent_70%),radial-gradient(40rem_20rem_at_50%_120%,rgb(99_102_241/0.5),transparent_70%)]" />
+          <h2 className="mx-auto max-w-2xl font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">
             {t(edition.cta)}
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-slate-300">{t('Free to start. Ready in under a minute.')}</p>
-          <Link to={signup} className={`${buttonClass({ size: 'lg' })} mt-8 !bg-white !text-ink hover:!bg-slate-100`}>
+          <Link to={signup} className={`${buttonClass({ size: 'lg' })} mt-8 !bg-sun !text-night shadow-[0_10px_30px_-8px_rgb(255_200_61/0.7)] hover:!bg-sun-strong`}>
             {t('Start Free')}
+            <span aria-hidden>→</span>
           </Link>
         </div>
       </section>

@@ -96,17 +96,18 @@ function Visual({ kind }: { kind: TrustVisual }) {
 /** What sets Attend apart: the checks that make the record hard to cheat. */
 export function TrustSection({ edition }: { edition: Edition }) {
   return (
-    <section id="trust" className="scroll-mt-16 bg-ink py-20 text-white">
+    <section id="trust" className="relative isolate scroll-mt-16 overflow-hidden bg-night py-20 text-white">
+      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(50rem_25rem_at_100%_0%,rgb(99_102_241/0.35),transparent_60%)]" />
       <div className="mx-auto max-w-6xl px-5">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold text-indigo-300">{t('Why Attend')}</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t(edition.trust.title)}</h2>
-          <p className="mt-3 text-slate-300">{t(edition.trust.sub)}</p>
+          <p className="text-sm font-semibold text-sun">{t('Why Attend')}</p>
+          <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">{t(edition.trust.title)}</h2>
+          <p className="mt-3 text-indigo-100/80">{t(edition.trust.sub)}</p>
         </div>
         <div className="mt-12 grid gap-4 lg:grid-cols-3">
-          {edition.trust.cards.map(([visual, title, text]) => (
-            <div key={title} className="rounded-2xl bg-white p-5 text-ink">
-              <div aria-hidden className="flex h-28 items-center justify-center rounded-lg bg-canvas">
+          {edition.trust.cards.map(([visual, title, text], i) => (
+            <div key={title} className="rounded-2xl bg-white p-5 text-ink transition hover:-translate-y-1">
+              <div aria-hidden className={`flex h-28 items-center justify-center rounded-xl ${['bg-indigo-50', 'bg-amber-50', 'bg-emerald-50', 'bg-rose-50', 'bg-sky-50', 'bg-violet-50'][i % 6]}`}>
                 <Visual kind={visual} />
               </div>
               <h3 className="mt-5 px-1 text-lg font-semibold tracking-tight">{t(title)}</h3>
@@ -129,7 +130,7 @@ export function Snapshots({ edition }: { edition: Edition }) {
       <div className="mx-auto max-w-6xl px-5">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold text-accent">{t('The product')}</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t(title)}</h2>
+          <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">{t(title)}</h2>
         </div>
         <div className="mt-12 grid items-center gap-10 rounded-3xl bg-gradient-to-b from-indigo-50 to-canvas px-5 py-10 sm:px-10 lg:grid-cols-[17rem_1fr] lg:gap-12 lg:py-14">
           <figure>

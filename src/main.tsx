@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { App } from './App'
 import '@fontsource-variable/inter'
+import '@fontsource-variable/bricolage-grotesque'
 import './index.css'
 import { keepUpToDate } from './lib/updates'
 
