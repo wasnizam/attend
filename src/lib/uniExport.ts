@@ -1,4 +1,4 @@
-import type { ClassReport } from './report'
+import { type ClassReport, counts } from './report'
 import type { AttendanceStatus, WeeklyClass } from './types'
 
 /**
@@ -76,15 +76,16 @@ function cell(value: string, separator: string): string {
 export function uniRows(report: ClassReport, cls: Pick<WeeklyClass, 'code' | 'section'>, format: UniFormat): string[][] {
   const extra = [...(format.course ? ['Course code'] : []), ...(format.section ? ['Section'] : [])]
   const extraValues = [...(format.course ? [cls.code ?? ''] : []), ...(format.section ? [cls.section ?? ''] : [])]
-  const mark = (status: Mark | undefined) => format.codes[status ?? 'absent']
+  // A class before a student joined, or after they dropped, is left blank rather than marked absent.
+  const mark = (r: ClassReport['rows'][number], s: ClassReport['held'][number]) => (counts(r, s) ? format.codes[r.marks.get(s.id) ?? 'absent'] : '')
   const rows: string[][] = []
   if (format.layout === 'sheet') {
     if (format.header) rows.push(['Student ID', 'Student Name', ...extra, ...report.held.map((s) => formatDay(s.date, format.date) + (format.time ? ` ${s.startTime}` : ''))])
-    for (const r of report.rows) rows.push([r.studentId, r.studentName, ...extraValues, ...report.held.map((s) => mark(r.marks.get(s.id)))])
+    for (const r of report.rows) rows.push([r.studentId, r.studentName, ...extraValues, ...report.held.map((s) => mark(r, s))])
   } else {
     if (format.header) rows.push(['Student ID', 'Student Name', ...extra, 'Date', ...(format.time ? ['Time'] : []), 'Status'])
     for (const s of report.held) {
-      for (const r of report.rows) rows.push([r.studentId, r.studentName, ...extraValues, formatDay(s.date, format.date), ...(format.time ? [s.startTime] : []), mark(r.marks.get(s.id))])
+      for (const r of report.rows) rows.push([r.studentId, r.studentName, ...extraValues, formatDay(s.date, format.date), ...(format.time ? [s.startTime] : []), mark(r, s)])
     }
   }
   return rows

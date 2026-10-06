@@ -14,7 +14,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import { classSessionId, meetingKey } from '../lib/format'
+import { addDays, classSessionId, classSlots, inSemester, meetingKey, parseDate } from '../lib/format'
 import type { ClassKind, Delivery, GeoMode, Session, Slot, UserProfile, WeeklyClass } from '../lib/types'
 import { newSessionData, startSession } from './sessions'
 
@@ -87,6 +87,44 @@ export const updateClass = (id: string, input: ClassInput) => updateDoc(doc(clas
 /** The report's warning and barring levels, as percentages of the semester's classes. */
 export const setThresholds = (id: string, warnPct: number, barPct: number) =>
   updateDoc(doc(classes, id), { warnPct, barPct })
+
+/** Classes: how many minutes after the start a scan counts as late (null = only when marked by hand). */
+export const setLateAfter = (id: string, minutes: number | null) => updateDoc(doc(classes, id), { lateAfter: minutes })
+
+/** When a student joined the class late, or dropped it. Empty dates clear the entry. */
+export const setEnrolment = (id: string, studentKey: string, dates: { from?: string; to?: string }) =>
+  updateDoc(doc(classes, id), { [`enrol.${studentKey}`]: dates.from || dates.to ? { ...(dates.from ? { from: dates.from } : {}), ...(dates.to ? { to: dates.to } : {}) } : deleteField() })
+
+/**
+ * A public holiday or a semester break: calls off every meeting of these classes between two
+ * dates, so they do not count towards the semester total. Meetings that were already held
+ * (`held` has their session IDs) are left alone. Returns how many meetings were called off.
+ */
+export async function cancelRange(list: WeeklyClass[], from: string, to: string, reason: string, held: Set<string>): Promise<number> {
+  let total = 0
+  for (const cls of list) {
+    const patch: Record<string, string> = {}
+    for (let date = from; date <= to && Object.keys(patch).length < 400; date = addDays(date, 1)) {
+      if (!inSemester(cls, date)) continue
+      const day = parseDate(date).getDay()
+      for (const slot of classSlots(cls)) {
+        const key = meetingKey(date, slot)
+        if (slot.day === day && !cls.cancelled?.[key] && !held.has(classSessionId(cls.id, date, slot))) patch[`cancelled.${key}`] = reason.trim() || '-'
+      }
+    }
+    if (Object.keys(patch).length) await updateDoc(doc(classes, cls.id), patch)
+    total += Object.keys(patch).length
+  }
+  return total
+}
+
+/** Puts back every meeting that was called off for this reason. */
+export async function restoreReason(list: WeeklyClass[], reason: string) {
+  for (const cls of list) {
+    const keys = Object.entries(cls.cancelled ?? {}).filter(([, r]) => r === reason).map(([k]) => k)
+    if (keys.length) await updateDoc(doc(classes, cls.id), Object.fromEntries(keys.map((k) => [`cancelled.${k}`, deleteField()])))
+  }
+}
 
 /** Calls off one meeting of a class (it will not count towards the semester total), or puts it back. */
 export const cancelMeeting = (cls: WeeklyClass, date: string, slot: Slot, reason: string) =>

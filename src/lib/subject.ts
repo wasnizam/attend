@@ -1,5 +1,5 @@
-import { KINDS, percent } from './format'
-import { type ClassReport, DEFAULT_BAR } from './report'
+import { KINDS, endOf, parseDate, percent } from './format'
+import { type ClassReport, DEFAULT_BAR, counts } from './report'
 import type { ClassKind, WeeklyClass } from './types'
 
 /** Classes that share a course code are one subject: its lecture, tutorial and lab. */
@@ -44,6 +44,11 @@ export interface SubjectRow {
   byKind: Partial<Record<ClassKind, KindFigure>>
   /** The student's lowest figure across the types they are enrolled in. */
   lowest: number | null
+  /**
+   * The whole course as one figure, counted by class hours (a two-hour lecture weighs twice a
+   * one-hour tutorial): what universities that apply the rule to the course as a whole look at.
+   */
+  overall: { attendedHours: number; countedHours: number; rate: number | null }
 }
 
 /**
@@ -58,17 +63,26 @@ export function buildSubjectRows(subject: Subject, reports: Map<string, ClassRep
     if (!report) continue
     const kind = cls.kind ?? 'lecture'
     for (const r of report.rows) {
-      const row = people.get(r.key) ?? { key: r.key, studentId: r.studentId, studentName: r.studentName, byKind: {}, lowest: null }
+      const row = people.get(r.key) ?? { key: r.key, studentId: r.studentId, studentName: r.studentName, byKind: {}, lowest: null, overall: { attendedHours: 0, countedHours: 0, rate: null } }
       const before = row.byKind[kind] ?? { attended: 0, counted: 0, rate: null }
       const attended = before.attended + r.present + r.late
       const counted = before.counted + r.present + r.late + r.absent
       row.byKind[kind] = { attended, counted, rate: percent(attended, counted) }
+      for (const s of report.held) {
+        const mark = r.marks.get(s.id)
+        // Excused and MC classes are left out, as everywhere else; so are classes outside the student's dates.
+        if (mark === 'excused' || mark === 'mc' || !counts(r, s)) continue
+        const hours = Math.max(0, endOf(s).getTime() - parseDate(s.date, s.startTime).getTime()) / 3_600_000
+        row.overall.countedHours += hours
+        if (mark) row.overall.attendedHours += hours
+      }
       people.set(r.key, row)
     }
   }
   for (const row of people.values()) {
     const rates = Object.values(row.byKind).map((f) => f.rate).filter((x): x is number => x !== null)
     row.lowest = rates.length ? Math.min(...rates) : null
+    row.overall.rate = percent(row.overall.attendedHours, row.overall.countedHours)
   }
   // The strictest requirement among the subject's classes (normally all 80%).
   const required = Math.max(...subject.classes.map((c) => 100 - (c.barPct ?? DEFAULT_BAR)))

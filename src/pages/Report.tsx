@@ -4,14 +4,16 @@ import { STATUS_LABEL } from '../components/AttendanceList'
 import { AttendanceTrend, LevelBar, LevelTag } from '../components/charts'
 import { LettersPanel, UniExportPanel } from '../components/ClassTools'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat } from '../components/ui'
-import { setThresholds } from '../data/classes'
+import { setEnrolment, setLateAfter, setThresholds } from '../data/classes'
+import { useProfile } from '../hooks/useAuth'
 import { useClassReport } from '../hooks/useClassReport'
 import { useMyClasses } from '../hooks/useClasses'
 import { downloadCsv, slug } from '../lib/csv'
-import { courseLine, effectiveStatus, formatDate, formatDuration, formatPercent } from '../lib/format'
+import { courseLine, effectiveStatus, formatDate, formatDuration, formatPercent, isoDate } from '../lib/format'
 import { locale, t } from '../lib/i18n'
 import { has } from '../lib/purpose'
-import { type ClassReport, DEFAULT_BAR, DEFAULT_WARN, type StudentRow } from '../lib/report'
+import { type ClassReport, DEFAULT_BAR, DEFAULT_WARN, STREAK_FLAG, type StudentRow, counts } from '../lib/report'
+import type { PdfSection } from '../lib/reportPdf'
 import type { AttendanceStatus, WeeklyClass } from '../lib/types'
 
 const VIEWS = ['students', 'monthly', 'sheet', 'sessions'] as const
@@ -61,6 +63,9 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
   const [open, setOpen] = useState<string | null>(null)
   // The two semester tools open in place, one at a time.
   const [tool, setTool] = useState<'uni' | 'letters' | null>(null)
+  const [search, setSearch] = useState('')
+  const [making, setMaking] = useState(false)
+  const profile = useProfile()
 
   if (loading) return <PageLoader />
   if (failed || !report) return <ErrorNote>{t('The report could not be loaded. Check your connection and reload.')}</ErrorNote>
@@ -72,6 +77,83 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
   const barPct = cls.barPct ?? DEFAULT_BAR
   const due = (level: StudentRow['level']) => rows.filter((r) => r.level === level).length
   const file = `${slug(cls.name)}${cls.section ? `-sec-${slug(cls.section)}` : ''}`
+
+  // The search box narrows every view; the figures at the top stay for the whole class.
+  const q = search.trim().toLowerCase()
+  const shown: ClassReport = q ? { ...report, rows: rows.filter((r) => r.studentId.toLowerCase().includes(q) || r.studentName.toLowerCase().includes(q)) } : report
+  const inARow = rows.filter((r) => !r.to && r.streak >= STREAK_FLAG)
+
+  const downloadPdf = async () => {
+    setMaking(true)
+    try {
+      const { downloadReportPdf } = await import('../lib/reportPdf')
+      const pct = (v: number | null) => (v === null ? '-' : `${v.toFixed(1)}%`)
+      const letter = { present: 'P', late: 'L', excused: 'E', mc: 'MC', absent: 'A' } as const
+      // The sheet, a page-width of dates at a time.
+      const sheets: PdfSection[] = []
+      for (let i = 0; i < held.length; i += 22) {
+        const part = held.slice(i, i + 22)
+        sheets.push({
+          heading: held.length > 22 ? `${t('Attendance sheet')} (${i / 22 + 1})` : t('Attendance sheet'),
+          note: i === 0 ? `P = ${t('Present')}, L = ${t('Late')}, E = ${t('Excused')}, MC = ${t('MC')}, A = ${t('Absent')}, - = ${t('Not enrolled')}` : undefined,
+          newPage: true,
+          table: {
+            compact: true,
+            head: [t('Student ID'), t('Name'), ...part.map((x) => formatDate(x.date).replace(/ \d{4}$/, '')), t('Absent'), '%'],
+            groups: [{ name: '', rows: rows.map((r) => [r.studentId, r.studentName, ...part.map((x) => (counts(r, x) ? letter[r.marks.get(x.id) ?? 'absent'] : '-')), String(r.absent), pct(r.rate)]) }],
+          },
+        })
+      }
+      const names = (list: StudentRow[]) => list.slice(0, 12).map((r) => r.studentName).join(', ') + (list.length > 12 ? ` (+${list.length - 12})` : '')
+      const barred = rows.filter((r) => r.level === 'barring')
+      const warned = rows.filter((r) => r.level === 'warning')
+      await downloadReportPdf({
+        fileName: `${file}-semester-report`,
+        // A short title: the course goes on the line under it, clear of the details on the right.
+        title: t('Semester report'),
+        period: [[cls.code, cls.name].filter(Boolean).join(' '), held.length ? `${formatDate(held[0].date)} – ${formatDate(held[held.length - 1].date)}` : ''].filter(Boolean).join('  ·  '),
+        meta: [
+          [t('Class'), courseLine(cls) || cls.name],
+          [t('Lecturer'), profile.name],
+          [t('Generated'), formatDate(isoDate())],
+        ],
+        kpis: [
+          { label: t('Classes held'), value: planned > held.length ? `${held.length} / ${planned}` : String(held.length) },
+          { label: t('Average attendance'), value: pct(average) },
+          ...(rule ? [{ label: t('Warning due'), value: String(warned.length), warn: warned.length > 0 }, { label: t('Barring due'), value: String(barred.length), warn: barred.length > 0 }] : []),
+        ],
+        findings: rule && barred.length + warned.length + inARow.length > 0
+          ? {
+              heading: t('Needs attention'),
+              items: [
+                ...(barred.length ? [`${t('Barring due')}: ${names(barred)}`] : []),
+                ...(warned.length ? [`${t('Warning due')}: ${names(warned)}`] : []),
+                ...(inARow.length ? [`${t('{n} or more absences in a row', { n: STREAK_FLAG })}: ${names(inARow)}`] : []),
+              ],
+            }
+          : undefined,
+        sections: [
+          {
+            heading: t('Students'),
+            table: {
+              left: rule ? 3 : 2,
+              head: [t('Student ID'), t('Name'), ...(rule ? [t('Status')] : []), t('Absent'), t('Late'), t('Excused'), t('MC'), '%', ...(rule ? [t('Can still miss')] : [])],
+              groups: [{
+                name: '',
+                rows: rows.map((r) => [r.studentId, r.studentName, ...(rule ? [r.to ? t('Dropped') : t(levelText(r.level))] : []), String(r.absent), String(r.late), String(r.excused), String(r.mc), pct(r.rate), ...(rule ? [r.to || r.level === 'barring' ? '-' : String(r.canMiss)] : [])]),
+              }],
+            },
+          },
+          ...sheets,
+        ],
+        notes: { heading: t('How this is counted'), items: [t(COUNTED_NOTE)] },
+        signatures: [t('Lecturer'), t('Head of department')],
+        footer: t('Made with Attend on {date}', { date: formatDate(isoDate()) }),
+      })
+    } finally {
+      setMaking(false)
+    }
+  }
 
   const exportSummary = (excel: boolean) =>
     downloadCsv(
@@ -109,7 +191,7 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
         ...rows.map((r) => [
           r.studentId,
           r.studentName,
-          ...held.map((s) => t(r.marks.get(s.id) ? STATUS_LABEL[r.marks.get(s.id)!] : 'Absent')),
+          ...held.map((s) => (counts(r, s) ? t(r.marks.get(s.id) ? STATUS_LABEL[r.marks.get(s.id)!] : 'Absent') : '')),
           r.absent,
           r.rate === null ? '' : r.rate.toFixed(1),
         ]),
@@ -125,9 +207,10 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
           <p className="mt-2 text-sm text-muted">{courseLine(cls) || t('Semester report')}</p>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{cls.name}</h1>
         </div>
-        <Button variant="secondary" className="print:hidden" onClick={() => window.print()}>
-          {t('Print')}
-        </Button>
+        <div className="flex gap-2 print:hidden">
+          <Button variant="secondary" onClick={() => window.print()}>{t('Print')}</Button>
+          {held.length > 0 && <Button busy={making} onClick={downloadPdf}>{t('Download PDF')}</Button>}
+        </div>
       </div>
 
       {held.length === 0 ? (
@@ -153,7 +236,7 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
               <h2 className="font-semibold">{t('Where students stand')}</h2>
               <p className="text-sm text-muted">{t('Against the 80% rule, going by absences without a reason.')}</p>
               <div className="mt-5">
-                <LevelBar rows={rows} />
+                <LevelBar rows={rows.filter((r) => !r.to)} />
               </div>
               <div className="mt-5 space-y-2 border-t border-line pt-4 text-sm print:hidden">
                 {([['warnPct', 'Warning after missing', warnPct, warnAfter], ['barPct', 'Barring after missing', barPct, barAfter]] as const).map(([field, label, value, classes]) => (
@@ -176,6 +259,22 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
                     </span>
                   </label>
                 ))}
+                <label className="flex items-center justify-between gap-2">
+                  <span className="text-muted">{t('Count as late after')}</span>
+                  <span className="flex items-center gap-2">
+                    <select
+                      value={cls.lateAfter ?? ''}
+                      onChange={(e) => setLateAfter(cls.id, e.target.value === '' ? null : Number(e.target.value)).catch(() => {})}
+                      className="h-8 rounded-md border border-line bg-white px-2 !text-sm font-medium"
+                    >
+                      <option value="">{t('Only by hand')}</option>
+                      {[5, 10, 15, 20, 30].map((n) => (
+                        <option key={n} value={n}>{t('{n} min', { n })}</option>
+                      ))}
+                    </select>
+                    <span className="w-20" />
+                  </span>
+                </label>
               </div>
             </Card>}
           </div>
@@ -207,6 +306,16 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
               ))}
             </div>
             {view !== 'sessions' && (
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('Find a student')}
+                aria-label={t('Find a student')}
+                className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-white px-3 !text-sm sm:max-w-56"
+              />
+            )}
+            {view !== 'sessions' && (
               <div className="flex gap-2">
                 <Button variant="secondary" onClick={() => (view === 'sheet' ? exportSheet : view === 'monthly' ? exportMonthly : exportSummary)(false)}>{t('Export CSV')}</Button>
                 <Button variant="secondary" onClick={() => (view === 'sheet' ? exportSheet : view === 'monthly' ? exportMonthly : exportSummary)(true)}>{t('Export for Excel')}</Button>
@@ -214,9 +323,9 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
             )}
           </div>
 
-          {view === 'students' && <StudentsTable report={report} open={open} setOpen={setOpen} />}
-          {view === 'monthly' && <Monthly report={report} />}
-          {view === 'sheet' && <Sheet report={report} />}
+          {view === 'students' && <StudentsTable cls={cls} report={shown} open={open} setOpen={setOpen} />}
+          {view === 'monthly' && <Monthly report={shown} />}
+          {view === 'sheet' && <Sheet report={shown} />}
           {view === 'sessions' && (
             <Card className="overflow-hidden">
               <ul className="divide-y divide-line">
@@ -239,7 +348,7 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
           )}
 
           <p className="text-xs text-muted">
-            {t('Late counts as attended. Excused and MC absences are not counted against a student. Class totals come from the timetable and do not allow for holidays.')}
+            {t(COUNTED_NOTE)}
           </p>
         </>
       )}
@@ -247,10 +356,13 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
   )
 }
 
+/** How the figures are worked out, under the report on screen and in the PDF. */
+const COUNTED_NOTE = 'Late counts as attended. Excused and MC absences are not counted against a student. Classes marked as no class (holidays, breaks, cancelled) are left out, and so are classes before a student joined or after they dropped.'
+
 const levelText = (level: StudentRow['level']) => (level === 'barring' ? 'Barring due' : level === 'warning' ? 'Warning due' : 'On track')
 
 /** The working list: worst first, with what to tell each student. Tap a row for their full record. */
-function StudentsTable({ report, open, setOpen }: { report: ClassReport; open: string | null; setOpen: (key: string | null) => void }) {
+function StudentsTable({ cls, report, open, setOpen }: { cls: WeeklyClass; report: ClassReport; open: string | null; setOpen: (key: string | null) => void }) {
   const { rows, held } = report
   const rule = has('barring')
   const mc = has('mc')
@@ -277,22 +389,26 @@ function StudentsTable({ report, open, setOpen }: { report: ClassReport; open: s
             <Fragment key={r.key}>
               <tr onClick={() => setOpen(open === r.key ? null : r.key)} className="cursor-pointer hover:bg-slate-50" aria-expanded={open === r.key}>
                 <td className="py-2.5 pr-2 pl-5 font-medium whitespace-nowrap">{r.studentId}</td>
-                <td className="px-2 py-2.5 break-words">{r.studentName}</td>
-                {rule && <td className="px-2 py-2.5"><LevelTag level={r.level} /></td>}
+                <td className={`px-2 py-2.5 break-words ${r.to ? 'text-muted' : ''}`}>
+                  {r.studentName}
+                  {r.from && <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap text-slate-600">{t('Joined {date}', { date: formatDate(r.from).replace(/ \d{4}$/, '') })}</span>}
+                  {!r.to && r.streak >= STREAK_FLAG && <span className="ml-2 rounded bg-bad-soft px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap text-bad">{t('{n} in a row', { n: r.streak })}</span>}
+                </td>
+                {rule && <td className="px-2 py-2.5">{r.to ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{t('Dropped')}</span> : <LevelTag level={r.level} />}</td>}
                 <td className="px-2 py-2.5 text-right font-semibold">{r.absent}</td>
                 <td className="px-2 py-2.5 text-right">{r.late}</td>
                 <td className="px-2 py-2.5 text-right">{r.excused}</td>
                 {mc && <td className="px-2 py-2.5 text-right">{r.mc}</td>}
                 <td className="px-2 py-2.5 text-right font-semibold">{formatPercent(r.rate)}</td>
                 {clock && <td className="py-2.5 pr-5 pl-2 text-right whitespace-nowrap">{formatDuration(r.minutes)}</td>}
-                {rule && <td className="py-2.5 pr-5 pl-2 text-right">{r.level === 'barring' ? '—' : r.canMiss}</td>}
+                {rule && <td className="py-2.5 pr-5 pl-2 text-right">{r.to || r.level === 'barring' ? '—' : r.canMiss}</td>}
               </tr>
               {open === r.key && (
                 <tr className="bg-slate-50/70">
                   <td colSpan={9} className="px-5 py-3">
                     <p className="text-xs font-medium text-muted">{t('Record for every class held')}</p>
                     <ul className="mt-2 flex flex-wrap gap-1.5">
-                      {held.map((s) => {
+                      {held.filter((s) => counts(r, s)).map((s) => {
                         const status = r.marks.get(s.id) ?? 'absent'
                         return (
                           <li key={s.id}>
@@ -305,6 +421,20 @@ function StudentsTable({ report, open, setOpen }: { report: ClassReport; open: s
                         )
                       })}
                     </ul>
+                    <div className="mt-3 flex flex-wrap items-end gap-3 border-t border-line pt-3 text-xs print:hidden" onClick={(e) => e.stopPropagation()}>
+                      {([['from', 'Joined the class on'], ['to', 'Dropped the class on']] as const).map(([field, label]) => (
+                        <label key={field} className="font-medium text-muted">
+                          {t(label)}
+                          <input
+                            type="date"
+                            value={r[field] ?? ''}
+                            onChange={(e) => setEnrolment(cls.id, r.key, { from: r.from, to: r.to, [field]: e.target.value || undefined }).catch(() => {})}
+                            className="mt-1 block h-9 rounded-md border border-line bg-white px-2 !text-sm text-ink"
+                          />
+                        </label>
+                      ))}
+                      <p className="max-w-xs pb-1 text-muted">{t('Classes before they joined or after they dropped are not counted for this student.')}</p>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -411,6 +541,7 @@ function Sheet({ report }: { report: ClassReport }) {
                 </td>
                 {held.map((s) => {
                   const status = r.marks.get(s.id) ?? 'absent'
+                  if (!counts(r, s)) return <td key={s.id} className="border-t border-line px-1.5 py-2 text-center text-slate-300" title={t('Not enrolled')}>–</td>
                   return (
                     <td key={s.id} className={`border-t border-line px-1.5 py-2 text-center font-semibold ${MARK[status][1]}`} title={t(status === 'absent' ? 'Absent' : STATUS_LABEL[status])}>
                       {MARK[status][0]}

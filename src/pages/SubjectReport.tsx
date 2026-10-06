@@ -40,8 +40,8 @@ function SubjectView({ subject }: { subject: Subject }) {
 
   const exportCsv = (excel: boolean) => {
     const lines = [
-      [t('Student ID'), t('Student Name'), ...subject.kinds.map((k) => `${t(KIND_LABEL[k])} %`)],
-      ...rows.map((r) => [r.studentId, r.studentName, ...subject.kinds.map((k) => (r.byKind[k]?.rate ?? null) === null ? '' : r.byKind[k]!.rate!.toFixed(1))]),
+      [t('Student ID'), t('Student Name'), ...subject.kinds.map((k) => `${t(KIND_LABEL[k])} %`), `${t('Whole course')} %`],
+      ...rows.map((r) => [r.studentId, r.studentName, ...subject.kinds.map((k) => (r.byKind[k]?.rate ?? null) === null ? '' : r.byKind[k]!.rate!.toFixed(1)), r.overall.rate === null ? '' : r.overall.rate.toFixed(1)]),
     ]
     downloadCsv(`${slug(subject.code)}-by-class-type${excel ? '-excel' : ''}.csv`, lines.map((l) => l.map(csvCell).join(',')).join('\r\n') + '\r\n', excel)
   }
@@ -89,6 +89,7 @@ function SubjectView({ subject }: { subject: Subject }) {
                   {subject.kinds.map((k) => (
                     <th key={k} className="px-3 py-2.5 text-right font-medium">{t(KIND_LABEL[k])}</th>
                   ))}
+                  <th className="py-2.5 pr-5 pl-3 text-right font-medium">{t('Whole course')}</th>
                 </tr>
               </thead>
               <tbody className="tabular divide-y divide-line">
@@ -110,13 +111,20 @@ function SubjectView({ subject }: { subject: Subject }) {
                         </td>
                       )
                     })}
+                    <td
+                      title={t('{a} of {c} class hours attended', { a: r.overall.attendedHours.toFixed(1), c: r.overall.countedHours.toFixed(1) })}
+                      className={`py-2.5 pr-5 pl-3 text-right font-semibold ${r.overall.rate !== null && r.overall.rate < required ? 'bg-bad-soft text-bad' : ''}`}
+                    >
+                      {formatPercent(r.overall.rate)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </Card>
           <p className="text-xs text-muted">
-            {t('{n} students are below {p}% in at least one class type. Each type is counted on its own; a dot means the student is not in that class. Excused and MC absences are left out.', { n: below, p: required })}
+            {t('{n} students are below {p}% in at least one class type. Each type is counted on its own; a dot means the student is not in that class. Excused and MC absences are left out.', { n: below, p: required })}{' '}
+            {t('“Whole course” adds every class type together by class hours, for universities that apply the rule to the course as a whole.')}
           </p>
         </>
       )}

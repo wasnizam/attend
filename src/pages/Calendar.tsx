@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Breaks } from '../components/Breaks'
 import { DayAgenda, STATE_DOT } from '../components/DayAgenda'
 import { Button, Card, ErrorNote, PageLoader, friendlyError } from '../components/ui'
 import { cancelMeeting } from '../data/classes'
@@ -140,6 +141,9 @@ export function Calendar() {
           </button>
         )}
       </section>
+
+      {/* Lecturers and trainers: holidays and breaks for the whole timetable at once. */}
+      {has('recurring') && !has('clock') && (classes.data ?? []).length > 0 && <Breaks classes={classes.data ?? []} sessions={sessions.data ?? []} start={selected} />}
     </div>
   )
 }

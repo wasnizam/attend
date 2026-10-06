@@ -4,7 +4,7 @@
  * student), because every university words these letters its own way.
  */
 import { formatDate } from './format'
-import type { ClassReport, StudentRow } from './report'
+import { type ClassReport, type StudentRow, counts } from './report'
 import type { WeeklyClass } from './types'
 
 export type LetterKind = 'warning' | 'barring'
@@ -129,7 +129,7 @@ export function fill(text: string, row: StudentRow, ctx: LetterContext, lang: 'e
 }
 
 /** The dates a student was absent without a reason. */
-export const absentDates = (row: StudentRow, report: ClassReport) => report.held.filter((s) => !row.marks.has(s.id)).map((s) => formatDate(s.date))
+export const absentDates = (row: StudentRow, report: ClassReport) => report.held.filter((s) => !row.marks.has(s.id) && counts(row, s)).map((s) => formatDate(s.date))
 
 async function pdf() {
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])

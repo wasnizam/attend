@@ -234,6 +234,10 @@ export interface WeeklyClass extends CourseDetails, Geofence {
   barPct?: number
   /** Meetings that were called off: key is meetingKey(date, slot), value is the reason. */
   cancelled?: Record<string, string>
+  /** Classes: a scan this many minutes after the start counts as late. Missing means lateness is only marked by hand. */
+  lateAfter?: number | null
+  /** Students who joined late or dropped the course, by student key: classes outside these dates are not counted for them. */
+  enrol?: Record<string, { from?: string; to?: string }>
   /** Workplace: minutes after the start before a clock-in counts as late. Missing means 10. */
   graceMin?: number | null
   /** Workplace: flexible hours, so nobody is ever late. */
