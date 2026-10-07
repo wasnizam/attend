@@ -65,6 +65,12 @@ export function defaultCatalog(): Catalog {
 
 const money = (n: number, cur: 'myr' | 'usd') => (cur === 'myr' ? `RM${n % 1 ? n.toFixed(2) : n}` : `$${n % 1 ? n.toFixed(2) : n}`)
 
+/** Whether a plan can be paid by the year: a monthly plan whose note offers it. The payment server uses the same test. */
+export const offersYear = (p: Pick<CatalogPlan, 'cycle' | 'noteMyr' | 'noteUsd'>) => p.cycle === 'month' && /year/i.test(`${p.noteMyr ?? ''} ${p.noteUsd ?? ''}`)
+
+/** A year for the price of ten months, as text. */
+export const yearPrice = (p: CatalogPlan, cur: 'myr' | 'usd') => money((cur === 'myr' ? p.priceMyr : p.priceUsd) * 10, cur)
+
 /** One catalog plan in the shape the website's pricing cards use. */
 export const toPlanCard = (p: CatalogPlan): PlanCard => ({
   name: p.name,

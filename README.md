@@ -59,6 +59,36 @@ npx firebase deploy --only firestore
 Pushing to GitHub does **not** update the rules. If a change touches `firestore.rules`, publish
 the rules as well, or the live site and its rules will disagree.
 
+## Payments (Stripe)
+
+Customers pay through Stripe Checkout; Attend never handles a card. Three small Vercel functions
+in `api/` do the work (they need no Firebase paid plan):
+
+| Function | What it does |
+|---|---|
+| `POST /api/checkout` | A signed-in admin names a plan; the server works out the price from the Console's price list (`platformConfig/pricing`, or the code's defaults) and replies with Stripe's payment page. Someone already paying is moved to the new plan in place. |
+| `POST /api/portal` | Opens Stripe's billing page (card, invoices, cancel). |
+| `POST /api/stripe-webhook` | Stripe's messages, signature-checked. The only thing that sets `plan: 'pro'`, `paidUntil` and `seats` on an organisation; it also writes each paid invoice to `billing` and a line to `platformAudit`. |
+| `GET /api/health` | Which settings are present (never their values). |
+
+Settings, in Vercel → Project → Settings → Environment Variables:
+
+- `STRIPE_SECRET_KEY`: Stripe's secret key (`sk_test_…` while testing).
+- `STRIPE_WEBHOOK_SECRET`: the signing secret of the webhook endpoint (`whsec_…`).
+- `FIREBASE_SERVICE_ACCOUNT`: the whole JSON of a Firebase service-account key (or that JSON in base64).
+- `VITE_PAYMENTS_OPEN=true`: opens payment to every customer (new accounts then start a 14-day trial). Leave it out until ready.
+- `SITE_URL` (optional): where Stripe sends people back to; defaults to the address the request came to.
+
+In Stripe: add a webhook endpoint for `https://<site>/api/stripe-webhook` with the events
+`checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`,
+`customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`; and save the Customer
+portal settings once. No products or prices need making by hand: one product per plan is created
+the first time it is bought, and the amount always comes from the price list.
+
+Before payments are open, an admin can try the whole flow by opening `/app/account?pay=test`
+(that browser only). The pricing logic lives in `api/_lib/billing.ts` and is tested in
+`tests/billing.test.ts`; `npx tsc -p api` type-checks the functions.
+
 ## Sample data for the emulator
 
 ```bash

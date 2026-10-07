@@ -1,11 +1,12 @@
-import { toPlanCard, useCatalog } from '../lib/pricing'
+import { offersYear, toPlanCard, useCatalog, yearPrice } from '../lib/pricing'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, ErrorNote, Field, friendlyError, inputClass } from '../components/ui'
 import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, setPhoneCheckFor, setOrgSetting, setShifts, signOut } from '../data/account'
 import { useCurrency } from '../lib/currency'
 import { editionForPurpose } from '../lib/editions'
-import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, paidUntil, trialDaysLeft } from '../lib/plan'
+import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, canPay, paidUntil, trialDaysLeft } from '../lib/plan'
+import { openBilling, startCheckout } from '../data/billing'
 import { getPurpose } from '../lib/purpose'
 import { useAuth, useProfile } from '../hooks/useAuth'
 import { LANGS, getLang, locale, setLang, t } from '../lib/i18n'
@@ -66,7 +67,37 @@ export function Account() {
   const verifySave = useSave()
   const edition = editionForPurpose(getPurpose())
   const catalog = useCatalog()
-  const plans = edition ? (catalog[edition.id] ?? []).filter((p) => !p.hidden).map(toPlanCard) : []
+  const listed = edition ? (catalog[edition.id] ?? []).filter((p) => !p.hidden) : []
+  const plans = listed.map(toPlanCard)
+  // Paying: only an admin, and only once payments are open (or this browser is trying them out).
+  const paying = profile.role === 'admin' && canPay()
+  const yearOffer = listed.some(offersYear)
+  const [yearly, setYearly] = useState(false)
+  const [busyPlan, setBusyPlan] = useState<string | null>(null)
+  const [payError, setPayError] = useState('')
+  // Back from Stripe's payment page.
+  const [paidNotice] = useState(() => new URLSearchParams(window.location.search).get('paid') === '1')
+  const choose = async (planId: string, byYear: boolean) => {
+    setBusyPlan(planId)
+    setPayError('')
+    try {
+      // 'leaving': the browser is on its way to Stripe, so the button keeps spinning.
+      if ((await startCheckout(planId, currency, byYear)) === 'changed') setBusyPlan(null)
+    } catch (e) {
+      setPayError(e instanceof Error ? e.message : String(e))
+      setBusyPlan(null)
+    }
+  }
+  const manage = async () => {
+    setBusyPlan('portal')
+    setPayError('')
+    try {
+      await openBilling()
+    } catch (e) {
+      setPayError(e instanceof Error ? e.message : String(e))
+      setBusyPlan(null)
+    }
+  }
   const plan = activePlan()
   const currency = useCurrency()
 
@@ -262,23 +293,58 @@ export function Account() {
                     : t('You are on the free plan: {limit}. Paid plans open soon; the prices below are what they will cost. You will be told before anything changes.', { limit: t(plans.find((p) => /^(RM|\$)0$/.test(p.price.myr))?.items[0] ?? edition.plans[0]?.items[0] ?? '').toLowerCase() })
                   : t('You are on Pro until {date}. Thank you.', { date: new Date(paidUntil()?.toMillis() ?? 0).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) ?? '' })}
           </p>
+          {paidNotice && <p className="mt-3 rounded-lg bg-good-soft px-4 py-3 text-sm text-good">{plan === 'pro' ? t('Payment received. You are on Pro. Thank you.') : t('Payment received. Your plan will update in a few seconds.')}</p>}
+          {org?.stripeCancelAtPeriodEnd && plan === 'pro' && <p className="mt-3 rounded-lg bg-[#fff4d6] px-4 py-3 text-sm text-[#8a5a00]">{t('Your plan is cancelled and will not renew. Pro stays on until the date above.')}</p>}
+          {yearOffer && paying && (
+            <label className="mt-4 flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={yearly} onChange={(e) => setYearly(e.target.checked)} className="size-4 accent-accent" />
+              {t('Pay by the year: 12 months for the price of 10')}
+            </label>
+          )}
           <ul className="mt-4 divide-y divide-line rounded-lg border border-line text-sm">
-            {plans.map((p) => (
-              <li key={p.name} className="flex items-center justify-between gap-3 px-3 py-2.5">
-                <span>
-                  <span className="font-semibold">{t(p.name)}</span>
-                  <span className="text-muted"> · {t(p.items[0])}</span>
-                </span>
-                <span className="tabular whitespace-nowrap">
-                  <span className="font-semibold">{p.price[currency]}</span> <span className="text-muted">{t(p.per)}</span>
-                </span>
-              </li>
-            ))}
+            {listed.map((cp) => {
+              const p = toPlanCard(cp)
+              const paid = cp.cycle !== 'free'
+              const mine = plan === 'pro' && org?.stripePlanId === cp.id
+              const byYear = yearly && offersYear(cp)
+              return (
+                <li key={cp.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2.5">
+                  <span>
+                    <span className="font-semibold">{t(p.name)}</span>
+                    <span className="text-muted"> · {t(p.items[0])}</span>
+                  </span>
+                  <span className="flex items-center gap-3">
+                    <span className="tabular whitespace-nowrap">
+                      <span className="font-semibold">{byYear ? yearPrice(cp, currency) : p.price[currency]}</span> <span className="text-muted">{byYear ? t('a year') : t(p.per)}</span>
+                    </span>
+                    {paid && paying && (mine ? (
+                      <span className="rounded-full bg-good-soft px-2.5 py-1 text-xs font-semibold text-good">{t('Your plan')}</span>
+                    ) : (
+                      <Button variant={plan === 'pro' ? 'secondary' : 'primary'} busy={busyPlan === cp.id} disabled={busyPlan !== null} onClick={() => choose(cp.id, byYear)}>
+                        {plan === 'pro' ? t('Switch') : t('Choose')}
+                      </Button>
+                    ))}
+                  </span>
+                </li>
+              )
+            })}
           </ul>
-          {profile.role === 'admin' && plan !== 'pro' && (
+          <ErrorNote>{payError}</ErrorNote>
+          {profile.role === 'admin' && (
             <div className="mt-4">
-              <Button disabled={!PAYMENTS_OPEN}>{t('Upgrade to Pro')}</Button>
-              {!PAYMENTS_OPEN && <p className="mt-2 text-xs text-muted">{plan === 'free' ? t('Paid plans open soon. Need more now? Contact Attend and we will set it up for you.') : t('Payment is not open yet. You do not need to do anything.')}</p>}
+              {paying ? (
+                <>
+                  {org?.stripeCustomerId && (
+                    <Button variant="secondary" busy={busyPlan === 'portal'} disabled={busyPlan !== null} onClick={manage}>{t('Manage billing')}</Button>
+                  )}
+                  <p className="mt-2 text-xs text-muted">{t('Payment is handled by Stripe. Attend never sees your card. You can cancel at any time; your records stay.')}</p>
+                </>
+              ) : plan !== 'pro' ? (
+                <>
+                  <Button disabled>{t('Upgrade to Pro')}</Button>
+                  <p className="mt-2 text-xs text-muted">{plan === 'free' ? t('Paid plans open soon. Need more now? Contact Attend and we will set it up for you.') : t('Payment is not open yet. You do not need to do anything.')}</p>
+                </>
+              ) : null}
             </div>
           )}
         </Card>

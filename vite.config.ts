@@ -36,7 +36,7 @@ export default defineConfig({
         clientsClaim: true,
         navigateFallback: '/index.html',
         // A request for a script or style must never be answered with the app's HTML page.
-        navigateFallbackDenylist: [/^\/assets\//],
+        navigateFallbackDenylist: [/^\/assets\//, /^\/api\//],
         cleanupOutdatedCaches: true,
         // The PDF reader is about 1.2 MB; keep it in the saved copy so every part of an
         // installed version comes from the same release.

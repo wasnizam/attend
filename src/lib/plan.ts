@@ -1,11 +1,28 @@
 import { type Purpose, getPurpose } from './purpose'
 
 /**
- * Payment is not connected yet. While this is false every new organisation is created on
- * `early` (everything open). Turn it on together with the payment gateway: from then on a
- * new organisation starts a 14-day Pro trial and drops to Free when it ends.
+ * Whether customers can pay. Set by VITE_PAYMENTS_OPEN=true when the site is built (in Vercel's
+ * settings), together with the payment keys. While it is off every new organisation is created
+ * on its edition's starting plan and no Upgrade button works; once on, a new organisation
+ * starts a 14-day Pro trial and drops to Free when it ends.
  */
-export const PAYMENTS_OPEN = false
+export const PAYMENTS_OPEN = import.meta.env.VITE_PAYMENTS_OPEN === 'true'
+
+const PAY_TEST = 'attend.payTest'
+
+/**
+ * Whether this browser may start a payment. Before payments open for everyone, opening the
+ * Account page with ?pay=test switches it on for this browser only, to try the whole flow.
+ */
+export function canPay(): boolean {
+  if (PAYMENTS_OPEN) return true
+  try {
+    if (new URLSearchParams(window.location.search).get('pay') === 'test') localStorage.setItem(PAY_TEST, '1')
+    return localStorage.getItem(PAY_TEST) === '1'
+  } catch {
+    return false
+  }
+}
 export const TRIAL_DAYS = 14
 
 /**

@@ -90,6 +90,13 @@ export interface Organisation {
   tags?: string[]
   accountManager?: string
   price?: { amount: number; currency: 'MYR' | 'USD'; cycle: 'month' | 'semester' | 'year' }
+  /** Set by the payment server: the customer and subscription in Stripe, and the plan bought. */
+  stripeCustomerId?: string
+  stripeSubscriptionId?: string
+  stripeStatus?: string
+  stripePlanId?: string
+  /** They have cancelled: Pro runs to the end of what is paid, then stops. */
+  stripeCancelAtPeriodEnd?: boolean
   /** A standing discount on what they pay, until a date (none = for as long as it lasts). */
   discount?: { kind: 'percent' | 'amount'; value: number; label: string; code?: string; until?: string } | null
   createdAt?: Timestamp | null
