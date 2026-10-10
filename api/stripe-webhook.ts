@@ -1,7 +1,7 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import type Stripe from 'stripe'
 import { patchFromSubscription } from './_lib/billing.js'
-import { NotConfigured, failure, firebase, json, stripe } from './_lib/server.js'
+import { NotConfigured, failure, firebase, json, stripe, stripeFor, stripeSettings } from './_lib/server.js'
 
 /**
  * Stripe calls this whenever something happens to a payment or a subscription. It is the only
@@ -10,15 +10,18 @@ import { NotConfigured, failure, firebase, json, stripe } from './_lib/server.js
  */
 export async function POST(request: Request): Promise<Response> {
   try {
-    const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim()
-    if (!secret) throw new NotConfigured('STRIPE_WEBHOOK_SECRET')
-    const s = stripe()
-    let event: Stripe.Event
-    try {
-      event = await s.webhooks.constructEventAsync(await request.text(), request.headers.get('stripe-signature') ?? '', secret)
-    } catch {
-      return json({ error: 'Bad signature.' }, 400)
+    const body = await request.text()
+    const signature = request.headers.get('stripe-signature') ?? ''
+    let event: Stripe.Event | null = null
+    // A key changed a moment ago may not be known here yet: on a bad signature, look once more.
+    for (const fresh of [false, true]) {
+      const { secretKey, webhookSecret } = await stripeSettings(fresh)
+      if (!secretKey || !webhookSecret) throw new NotConfigured('STRIPE_WEBHOOK_SECRET')
+      event = await stripeFor(secretKey).webhooks.constructEventAsync(body, signature, webhookSecret).catch(() => null)
+      if (event) break
     }
+    if (!event) return json({ error: 'Bad signature.' }, 400)
+    const s = await stripe()
 
     switch (event.type) {
       case 'checkout.session.completed': {

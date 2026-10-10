@@ -33,3 +33,18 @@ export async function openBilling(): Promise<void> {
   const reply = await call<{ url?: string }>('/api/portal', {})
   if (reply.url) window.location.assign(reply.url)
 }
+
+/** What the Console is told about the Stripe keys: never the keys themselves. */
+export interface PaymentKeysStatus {
+  keysFrom: 'console' | 'vercel' | null
+  mode: 'live' | 'test' | null
+  secretKeySet: boolean
+  webhookSecretSet: boolean
+  saved: { keyEnd: string | null; webhookEnd: string | null; mode: 'live' | 'test' | null; accountId: string | null; accountName: string | null; updatedBy: string | null; updatedAt: number | null } | null
+  webhookUrl: string
+  events: string[]
+}
+
+/** Reads the state of the Stripe keys, saves new ones, or removes the saved ones. Owners of Attend only. */
+export const paymentKeys = (action: 'status' | 'save' | 'clear', keys: { secretKey?: string; webhookSecret?: string } = {}) =>
+  call<PaymentKeysStatus>('/api/stripe-settings', { action, ...keys })

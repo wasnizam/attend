@@ -73,9 +73,14 @@ in `api/` do the work (they need no Firebase paid plan):
 
 Settings, in Vercel → Project → Settings → Environment Variables:
 
-- `STRIPE_SECRET_KEY`: Stripe's secret key (`sk_test_…` while testing).
-- `STRIPE_WEBHOOK_SECRET`: the signing secret of the webhook endpoint (`whsec_…`).
-- `FIREBASE_SERVICE_ACCOUNT`: the whole JSON of a Firebase service-account key (or that JSON in base64).
+- `FIREBASE_SERVICE_ACCOUNT`: the whole JSON of a Firebase service-account key (or that JSON in base64). Always needed: it is how the functions reach the database.
+- `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (optional): only used when no keys are saved in the Console.
+
+The Stripe keys themselves are entered in **Console → Settings → Payments (Stripe)** by an owner
+(`POST /api/stripe-settings`). They are checked with Stripe, then kept in `platformSecrets/stripe`,
+which no browser can read or write (no rule matches it; `tests/rules.test.ts` proves it). The
+Console is only ever told the account name, test or live, and the keys' last four characters.
+Moving to another Stripe account is saving its two keys there; a change is in use within a minute.
 - `VITE_PAYMENTS_OPEN=true`: opens payment to every customer (new accounts then start a 14-day trial). Leave it out until ready.
 - `SITE_URL` (optional): where Stripe sends people back to; defaults to the address the request came to.
 

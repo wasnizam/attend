@@ -916,3 +916,24 @@ describe('what new accounts start on', () => {
   })
 })
 
+
+describe('the payment keys', () => {
+  const staff = (uid: string) => env.authenticatedContext(uid, { email: `${uid}@attend.my` }).firestore()
+
+  it('cannot be read or written from any browser, whoever is signed in', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore()
+      await setDoc(doc(db, 'platformOwners/boss'), { email: 'boss@attend.my' })
+      await setDoc(doc(db, 'platformSecrets/stripe'), { secretKey: 'sk_test_x', webhookSecret: 'whsec_x' })
+    })
+    for (const db of [staff('boss'), as('adminA'), as('lecA'), anon()]) {
+      await assertFails(getDoc(doc(db, 'platformSecrets/stripe')))
+      await assertFails(getDocs(collection(db, 'platformSecrets')))
+      await assertFails(setDoc(doc(db, 'platformSecrets/stripe'), { secretKey: 'sk_test_mine' }))
+      await assertFails(deleteDoc(doc(db, 'platformSecrets/stripe')))
+    }
+    // Paying is the server's word alone: a customer cannot give themselves a paid plan either.
+    await assertFails(updateDoc(doc(as('adminA'), 'organisations/orgA'), { plan: 'pro' }))
+    await assertFails(updateDoc(doc(as('adminA'), 'organisations/orgA'), { stripeCustomerId: 'cus_x' }))
+  })
+})

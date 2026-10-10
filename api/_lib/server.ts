@@ -40,13 +40,60 @@ export function firebase(): { db: Firestore; auth: ReturnType<typeof getAuth> } 
   return { db: getFirestore(), auth: getAuth() }
 }
 
-let client: Stripe | null = null
-export function stripe(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY?.trim()
-  if (!key) throw new NotConfigured('STRIPE_SECRET_KEY')
-  client ??= new Stripe(key)
-  return client
+/** Where the Stripe keys are kept: a place in the database that no browser can read or write. */
+export const STRIPE_SECRETS = 'platformSecrets/stripe'
+
+export interface StripeSettings {
+  secretKey: string
+  webhookSecret: string
+  /** Entered in the Console, or set in Vercel's settings. */
+  source: 'console' | 'vercel' | null
 }
+
+let settings: { at: number; value: StripeSettings } | null = null
+
+/**
+ * The Stripe keys in use: the ones saved from the Console, or else the ones in Vercel's settings.
+ * Remembered for a minute, so a changed key is picked up everywhere within that time.
+ */
+export async function stripeSettings(fresh = false): Promise<StripeSettings> {
+  if (!fresh && settings && Date.now() - settings.at < 60_000) return settings.value
+  let saved: { secretKey?: string; webhookSecret?: string } = {}
+  try {
+    saved = (await firebase().db.doc(STRIPE_SECRETS).get()).data() ?? {}
+  } catch (e) {
+    // Without the Firebase key there is nowhere to look; the Vercel settings still work.
+    if (!(e instanceof NotConfigured)) throw e
+  }
+  const secretKey = saved.secretKey || process.env.STRIPE_SECRET_KEY?.trim() || ''
+  const value: StripeSettings = {
+    secretKey,
+    webhookSecret: saved.webhookSecret || process.env.STRIPE_WEBHOOK_SECRET?.trim() || '',
+    source: saved.secretKey ? 'console' : secretKey ? 'vercel' : null,
+  }
+  settings = { at: Date.now(), value }
+  return value
+}
+
+/** Forgets the remembered keys, after they are changed. */
+export const forgetStripeSettings = () => {
+  settings = null
+}
+
+const clients = new Map<string, Stripe>()
+export const stripeFor = (key: string): Stripe => {
+  if (!clients.has(key)) clients.set(key, new Stripe(key))
+  return clients.get(key)!
+}
+
+export async function stripe(): Promise<Stripe> {
+  const { secretKey } = await stripeSettings()
+  if (!secretKey) throw new NotConfigured('STRIPE_SECRET_KEY')
+  return stripeFor(secretKey)
+}
+
+/** live or test, going by the key. */
+export const modeOf = (key: string): 'live' | 'test' | null => (/^(sk|rk)_live_/.test(key) ? 'live' : key ? 'test' : null)
 
 export interface Caller {
   uid: string

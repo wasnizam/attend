@@ -22,7 +22,7 @@ export async function POST(request: Request): Promise<Response> {
       if (e instanceof BillingError) throw new HttpError(400, e.message)
       throw e
     }
-    const s = stripe()
+    const s = await stripe()
 
     // One Stripe product per plan, made the first time someone buys it.
     await s.products.retrieve(charge.productId).catch((e) => {
