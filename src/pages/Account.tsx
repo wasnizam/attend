@@ -6,6 +6,7 @@ import { changeName, changePassword, getOrganisation, renameOrganisation, resend
 import { useCurrency } from '../lib/currency'
 import { editionForPurpose } from '../lib/editions'
 import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, allows, canPay, paidUntil, trialDaysLeft } from '../lib/plan'
+import { InstallApp } from '../components/InstallApp'
 import { UpgradeNote } from '../components/Paid'
 import { openBilling, redeemCode, startCheckout } from '../data/billing'
 import { getPurpose } from '../lib/purpose'
@@ -395,6 +396,11 @@ export function Account() {
           )}
         </Card>
       )}
+
+      <Card className="p-5 sm:p-6">
+        <h2 className="mb-1.5 font-semibold">{t('Dobry as an app')}</h2>
+        <InstallApp always />
+      </Card>
 
       <Card className="p-5 sm:p-6">
         <label className="block">
