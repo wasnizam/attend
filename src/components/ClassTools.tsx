@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { getOrganisation } from '../data/account'
+import { saveClassTools } from '../data/classes'
 import { useProfile } from '../hooks/useAuth'
 import { downloadCsv, slug } from '../lib/csv'
 import { formatDate, isoDate } from '../lib/format'
 import { getLang, t } from '../lib/i18n'
 import { DEFAULT_LETTERS, type LetterKind, PLACEHOLDERS, barringListPdf, fill, loadLetters, lettersPdf, saveLetters } from '../lib/lettersPdf'
 import type { ClassReport, StudentRow } from '../lib/report'
-import type { WeeklyClass } from '../lib/types'
+import type { ClassToolSettings, WeeklyClass } from '../lib/types'
 import { CODE_PRESETS, type Mark, type UniFormat, formatDay, loadFormat, saveFormat, uniCsv, uniRows } from '../lib/uniExport'
 import { Button, Card, inputClass } from './ui'
 
@@ -34,12 +35,37 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
  * Attendance in the shape the university's own system accepts: the lecturer sets the format once
  * (layout, codes, date order), sees a preview, and downloads. The format is remembered.
  */
-export function UniExportPanel({ cls, report }: { cls: WeeklyClass; report: ClassReport }) {
-  const [format, setFormatState] = useState<UniFormat>(loadFormat)
+type ToolsPatch = Parameters<typeof saveClassTools>[1]
+
+/**
+ * Saves the set-up to the account a moment after the last change, so typing a letter is one
+ * save, not one per key. A failed save is not an error: this device still remembers it.
+ */
+function useAccountSave(classId: string) {
+  const waiting = useRef<{ patch: ToolsPatch; timer: ReturnType<typeof setTimeout> } | null>(null)
+  const flush = () => {
+    if (!waiting.current) return
+    clearTimeout(waiting.current.timer)
+    saveClassTools(classId, waiting.current.patch).catch(() => {})
+    waiting.current = null
+  }
+  // Leaving the panel saves what is still waiting.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => flush, [classId])
+  return (patch: ToolsPatch) => {
+    if (waiting.current) clearTimeout(waiting.current.timer)
+    waiting.current = { patch: { ...waiting.current?.patch, ...patch }, timer: setTimeout(flush, 800) }
+  }
+}
+
+export function UniExportPanel({ cls, report, saved }: { cls: WeeklyClass; report: ClassReport; saved?: ClassToolSettings }) {
+  const [format, setFormatState] = useState<UniFormat>(() => loadFormat(saved?.uni as Partial<UniFormat> | undefined))
+  const toAccount = useAccountSave(cls.id)
   const setFormat = (patch: Partial<UniFormat>) =>
     setFormatState((f) => {
       const next = { ...f, ...patch }
       saveFormat(next)
+      toAccount({ uni: next })
       return next
     })
   const preset = CODE_PRESETS.find((p) => MARKS.every(([m]) => p.codes[m] === format.codes[m]))?.id ?? 'custom'
@@ -164,14 +190,16 @@ type Tab = LetterKind | 'list'
  * Warning letters, barring letters and the barring list for the faculty, as PDFs. The wording is
  * the lecturer's own: it starts from a standard letter and can be changed, and the change is kept.
  */
-export function LettersPanel({ cls, report }: { cls: WeeklyClass; report: ClassReport }) {
+export function LettersPanel({ cls, report, saved }: { cls: WeeklyClass; report: ClassReport; saved?: ClassToolSettings }) {
+  const toAccount = useAccountSave(cls.id)
   const profile = useProfile()
   const lang = getLang() === 'ms' ? 'ms' : 'en'
   const [tab, setTab] = useState<Tab>(report.rows.some((r) => r.level === 'barring') && !report.rows.some((r) => r.level === 'warning') ? 'barring' : 'warning')
-  const [letters, setLetters] = useState(() => loadLetters(lang))
+  const [letters, setLetters] = useState(() => loadLetters(lang, saved?.letters?.[lang] as Parameters<typeof loadLetters>[1]))
   // The letterhead: remembered once typed; otherwise the organisation's name, unless that is the
   // automatic "Name's sessions" a solo lecturer gets, which does not belong on a letter.
   const [institution, setInstitutionState] = useState(() => {
+    if (saved?.letterhead) return saved.letterhead
     try {
       return localStorage.getItem('attend.letterhead') ?? ''
     } catch {
@@ -180,6 +208,7 @@ export function LettersPanel({ cls, report }: { cls: WeeklyClass; report: ClassR
   })
   const setInstitution = (v: string) => {
     setInstitutionState(v)
+    toAccount({ letterhead: v })
     try {
       localStorage.setItem('attend.letterhead', v)
     } catch {
@@ -203,6 +232,7 @@ export function LettersPanel({ cls, report }: { cls: WeeklyClass; report: ClassR
     const next = { ...letters, [kind]: { ...template, ...patch } }
     setLetters(next)
     saveLetters(lang, next)
+    toAccount({ letters: { lang, value: next } })
   }
   const generated = t('Made with Dobry on {date}', { date: formatDate(isoDate()) })
 

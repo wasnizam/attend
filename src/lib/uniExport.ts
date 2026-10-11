@@ -43,9 +43,10 @@ export const DEFAULT_FORMAT: UniFormat = {
 
 const KEY = 'attend.uniFormat'
 
-export function loadFormat(): UniFormat {
+/** The export format: what is saved with the account, else what this device remembers. */
+export function loadFormat(account?: Partial<UniFormat> | null): UniFormat {
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<UniFormat> | null
+    const saved = account ?? (JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<UniFormat> | null)
     return saved ? { ...DEFAULT_FORMAT, ...saved, codes: { ...DEFAULT_FORMAT.codes, ...(saved.codes ?? {}) } } : DEFAULT_FORMAT
   } catch {
     return DEFAULT_FORMAT

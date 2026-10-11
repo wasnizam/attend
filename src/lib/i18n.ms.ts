@@ -1617,4 +1617,6 @@ export const ms: Record<string, string> = {
   "Show me how": "Tunjukkan caranya",
   "Not now": "Bukan sekarang",
   "Dobry as an app": "Dobry sebagai aplikasi",
+  "You are signed in as {email}. There is no Dobry account for this email yet.": "Anda log masuk sebagai {email}. Belum ada akaun Dobry untuk e-mel ini.",
+  "Already use Dobry with another email? Do not continue here: it would make a second, separate account.": "Sudah guna Dobry dengan e-mel lain? Jangan teruskan di sini: ia akan membuat akaun kedua yang berasingan.",
 }

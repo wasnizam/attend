@@ -232,6 +232,12 @@ export interface WeeklyClass extends CourseDetails, Geofence {
   days: number[]
   /** Every weekly meeting. Older classes only have days + one time; use classSlots(). */
   slots?: Slot[]
+  /**
+   * The lecturer's own set-up for the class tools: the university export format, the letter
+   * wording per language and the letterhead. Kept with the class so it follows them to every
+   * device; a class without any uses the most recent one from their other classes.
+   */
+  tools?: ClassToolSettings
   /** First and last day of the semester (YYYY-MM-DD). The class only runs between them. */
   startDate?: string | null
   endDate?: string | null
@@ -266,4 +272,12 @@ export interface WeeklyClass extends CourseDetails, Geofence {
   /** Workplace: time before the start counts as hours when someone arrives early. Off by default. */
   countEarly?: boolean
   createdAt: Timestamp | null
+}
+
+export interface ClassToolSettings {
+  uni?: Record<string, unknown>
+  letters?: Partial<Record<'en' | 'ms', Record<string, unknown>>>
+  letterhead?: string
+  /** When it was last changed (milliseconds), to pick the newest across classes. */
+  at?: number
 }

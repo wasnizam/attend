@@ -70,9 +70,10 @@ Yang benar,`,
 
 const KEY = 'attend.letters'
 
-export function loadLetters(lang: 'en' | 'ms'): Record<LetterKind, LetterTemplate> {
+/** The letter wording: what is saved with the account, else what this device remembers. */
+export function loadLetters(lang: 'en' | 'ms', account?: Partial<Record<LetterKind, LetterTemplate>> | null): Record<LetterKind, LetterTemplate> {
   try {
-    const saved = JSON.parse(localStorage.getItem(`${KEY}.${lang}`) ?? 'null') as Partial<Record<LetterKind, LetterTemplate>> | null
+    const saved = account ?? (JSON.parse(localStorage.getItem(`${KEY}.${lang}`) ?? 'null') as Partial<Record<LetterKind, LetterTemplate>> | null)
     return { ...DEFAULT_LETTERS[lang], ...(saved ?? {}) }
   } catch {
     return DEFAULT_LETTERS[lang]

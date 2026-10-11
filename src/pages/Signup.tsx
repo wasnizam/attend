@@ -89,6 +89,17 @@ export function Signup() {
         <p className="mt-1 text-sm text-muted">
           {joining ? t('Join your organisation as a lecturer.') : t('Free to start. Ready in under a minute.')}
         </p>
+        {finishing && user?.email && (
+          <div className="mt-3 rounded-lg bg-[#fff4d6] px-3 py-2.5 text-sm text-[#8a5a00]">
+            <p>
+              {t('You are signed in as {email}. There is no Dobry account for this email yet.', { email: user.email })}
+            </p>
+            <p className="mt-1">
+              {t('Already use Dobry with another email? Do not continue here: it would make a second, separate account.')}{' '}
+              <button type="button" onClick={() => signOut()} className="font-semibold underline underline-offset-2">{t('Use a different account')}</button>
+            </p>
+          </div>
+        )}
         {!joining && (
           <p className="mt-3 rounded-lg bg-canvas px-3 py-2 text-sm">
             <span className="font-semibold">Dobry · {t(edition.label)}</span>{' '}

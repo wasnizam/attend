@@ -89,6 +89,18 @@ export const setThresholds = (id: string, warnPct: number, barPct: number) =>
   updateDoc(doc(classes, id), { warnPct, barPct })
 
 /** Classes: how many minutes after the start a scan counts as late (null = only when marked by hand). */
+/**
+ * Saves part of the lecturer's set-up for the class tools (export format, letter wording,
+ * letterhead) on the class, so every device they use shows the same.
+ */
+export const saveClassTools = (id: string, patch: { uni?: object; letters?: { lang: 'en' | 'ms'; value: object }; letterhead?: string }) =>
+  updateDoc(doc(classes, id), {
+    ...(patch.uni ? { 'tools.uni': patch.uni } : {}),
+    ...(patch.letters ? { [`tools.letters.${patch.letters.lang}`]: patch.letters.value } : {}),
+    ...(patch.letterhead !== undefined ? { 'tools.letterhead': patch.letterhead } : {}),
+    'tools.at': Date.now(),
+  })
+
 export const setLateAfter = (id: string, minutes: number | null) => updateDoc(doc(classes, id), { lateAfter: minutes })
 
 /** When a student joined the class late, or dropped it. Empty dates clear the entry. */

@@ -46,6 +46,8 @@ export function Report() {
   const classes = useMyClasses()
   if (classes.loading) return <PageLoader />
   const cls = classes.data?.find((c) => c.id === classId)
+  // The lecturer's set-up for the tools: this class's, else the newest from their other classes.
+  const savedTools = cls?.tools ?? [...(classes.data ?? [])].filter((c) => c.tools).sort((a, b) => (b.tools?.at ?? 0) - (a.tools?.at ?? 0))[0]?.tools
   if (!cls) {
     return (
       <EmptyState
@@ -55,11 +57,11 @@ export function Report() {
       />
     )
   }
-  return <ClassReportView key={cls.id} cls={cls} />
+  return <ClassReportView key={cls.id} cls={cls} savedTools={savedTools} />
 }
 
 /** One class across the semester: who needs a warning, how each session went, and the sheet the faculty asks for. */
-function ClassReportView({ cls }: { cls: WeeklyClass }) {
+function ClassReportView({ cls, savedTools }: { cls: WeeklyClass; savedTools?: WeeklyClass['tools'] }) {
   const { report, loading, failed } = useClassReport(cls)
   const [view, setView] = useState<View>('students')
   const [open, setOpen] = useState<string | null>(null)
@@ -299,8 +301,8 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
               </Button>
             )}
           </div>
-          {tool === 'uni' && (allows('export') ? <UniExportPanel cls={cls} report={report} /> : <UpgradeNote what={t('Export to your university system is part of the paid plans.')} />)}
-          {tool === 'letters' && rule && (allows('pdf') ? <LettersPanel cls={cls} report={report} /> : <UpgradeNote what={t('Warning letters and the barring list are part of the paid plans.')} />)}
+          {tool === 'uni' && (allows('export') ? <UniExportPanel cls={cls} report={report} saved={savedTools} /> : <UpgradeNote what={t('Export to your university system is part of the paid plans.')} />)}
+          {tool === 'letters' && rule && (allows('pdf') ? <LettersPanel cls={cls} report={report} saved={savedTools} /> : <UpgradeNote what={t('Warning letters and the barring list are part of the paid plans.')} />)}
 
           <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
             <div className="flex gap-1 rounded-md bg-white p-1 shadow-card">
