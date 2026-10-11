@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { TrustSection } from '../components/LandingProof'
 import { LanguageSwitch } from '../components/LanguageSwitch'
@@ -7,9 +7,6 @@ import { EDITIONS, type Edition, type EditionId } from '../lib/editions'
 import { t } from '../lib/i18n'
 import { setPurpose } from '../lib/purpose'
 import { LiveDemo } from './Landing'
-
-/** The demo on the home page: no one group's words. */
-const DEMO: Pick<Edition, 'id' | 'preview'> = { id: 'trainers', preview: { title: 'TODAY', time: '9:00 AM', counted: 'PRESENT', rows: [] } }
 
 /** The three doors. [edition, icon path, tile colours, title, text, three points] */
 const DOORS: [EditionId, string, string, string, string, string[]][] = [
@@ -58,6 +55,86 @@ const TRUST: Pick<Edition, 'trust'> = {
   },
 }
 
+const SLIDE_SECONDS = 7
+
+/**
+ * The hero's slider: one slide per edition, each with its own words and a live demo. It moves on
+ * by itself (the bar under each tab shows how long is left), waits while the pointer is over it,
+ * and stays still for anyone who prefers less motion.
+ */
+function Showcase() {
+  const [at, setAt] = useState(0)
+  const [id, icon, , title, , points] = DOORS[at]
+  const edition = EDITIONS.find((e) => e.id === id) ?? EDITIONS[0]
+  return (
+    <div className="group/show mt-14 sm:mt-16">
+      <div role="tablist" aria-label={t('Dobry for')} className="mx-auto grid max-w-3xl grid-cols-3 gap-2 sm:gap-4">
+        {DOORS.map(([door, path], i) => (
+          <button
+            key={door}
+            type="button"
+            role="tab"
+            aria-selected={i === at}
+            onClick={() => setAt(i)}
+            className={`rounded-xl px-2 pt-3 pb-2.5 text-sm font-semibold transition sm:px-4 ${i === at ? 'bg-white/10 text-white ring-1 ring-white/20' : 'text-white/55 hover:bg-white/5 hover:text-white'}`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              <svg viewBox="0 0 24 24" className="hidden size-4.5 sm:block" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d={path} />
+              </svg>
+              {t(EDITIONS.find((e) => e.id === door)?.label ?? '')}
+            </span>
+            <span aria-hidden className="mt-2.5 block h-1 overflow-hidden rounded-full bg-white/15">
+              {i === at && (
+                <span
+                  key={at}
+                  onAnimationEnd={() => setAt((x) => (x + 1) % DOORS.length)}
+                  style={{ animationDuration: `${SLIDE_SECONDS}s` }}
+                  className="animate-progress block h-full w-full origin-left rounded-full bg-sun group-hover/show:[animation-play-state:paused] group-focus-within/show:[animation-play-state:paused]"
+                />
+              )}
+            </span>
+          </button>
+        ))}
+      </div>
+      <div role="tabpanel" className="mt-5 rounded-[2rem] bg-white/[0.05] p-6 ring-1 ring-white/12 backdrop-blur sm:p-10">
+        <div key={id} className="animate-slide grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
+          <div className="text-center lg:text-left">
+            <p className="inline-flex items-center gap-2 text-sm font-semibold text-sun">
+              <svg viewBox="0 0 24 24" className="size-4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d={icon} />
+              </svg>
+              {t(title)}
+            </p>
+            <h2 className="mt-3 font-display text-3xl leading-tight font-bold tracking-tight text-balance sm:text-4xl">{t(edition.headline).replace(/\s*\|\s*/g, ' ')}</h2>
+            <p className="mt-3 text-indigo-100/80">{t(edition.sub)}</p>
+            <ul className="mt-5 inline-block space-y-2 text-left text-sm text-indigo-100/90">
+              {points.map((point) => (
+                <li key={point} className="flex items-center gap-2">
+                  <svg viewBox="0 0 20 20" className="size-4 shrink-0 text-emerald-300" fill="currentColor" aria-hidden>
+                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.700-9.300a1 1 0 0 0-1.400-1.400L9 10.600 7.700 9.300a1 1 0 0 0-1.400 1.400l2 2a1 1 0 0 0 1.400 0l4-4Z" clipRule="evenodd" />
+                  </svg>
+                  {t(point)}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 lg:justify-start">
+              <Link to={`/signup?for=${id}`} className={`${buttonClass()} !bg-sun !text-night hover:!bg-sun-strong`}>{t('Start Free')}</Link>
+              <Link to={`/${id}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-white hover:text-sun">
+                {t('See more')}
+                <span aria-hidden>→</span>
+              </Link>
+            </div>
+          </div>
+          <div className="sm:pr-6 sm:pb-44 lg:pr-8">
+            <LiveDemo edition={edition} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const sunButton = `${buttonClass({ size: 'lg' })} !bg-sun !text-night shadow-[0_10px_30px_-8px_rgb(255_200_61/0.7)] hover:!bg-sun-strong`
 
 /** The front door of Dobry: what it is, in a few seconds, and which of the three editions is yours. */
@@ -93,27 +170,23 @@ export function Home() {
       </header>
 
       <section className="relative isolate overflow-hidden bg-night text-white">
-        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(60rem_30rem_at_85%_10%,rgb(255_200_61/0.18),transparent_60%),radial-gradient(50rem_30rem_at_0%_100%,rgb(99_102_241/0.45),transparent_60%)]" />
-        <div aria-hidden className="absolute inset-0 -z-10 [background-image:radial-gradient(rgb(255_255_255/0.07)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-12 pb-24 sm:pb-52 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pb-40">
-          <div className="text-center lg:text-left">
+        {/* A sunrise behind the headline: the glow comes up from the middle, unlike the edition pages. */}
+        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(55rem_28rem_at_50%_-5%,rgb(255_200_61/0.22),transparent_65%),radial-gradient(45rem_30rem_at_10%_70%,rgb(99_102_241/0.4),transparent_60%),radial-gradient(45rem_30rem_at_90%_80%,rgb(16_185_129/0.18),transparent_60%)]" />
+        <div aria-hidden className="absolute inset-0 -z-10 [background-image:radial-gradient(rgb(255_255_255/0.07)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
+        <div className="mx-auto max-w-6xl px-5 pt-14 pb-16 sm:pt-20 sm:pb-24">
+          <div className="mx-auto max-w-4xl text-center">
             <p className="inline-flex items-center gap-2 rounded-full bg-sun/15 px-3 py-1 text-sm font-semibold text-sun ring-1 ring-sun/30">
               <span className="size-1.5 animate-pulse rounded-full bg-sun" />
               {t('QR attendance for classes, courses and workplaces')}
             </p>
-            <h1 className="mt-5 font-display text-5xl leading-[1.02] font-bold tracking-tight text-balance sm:text-6xl lg:text-7xl">
+            <h1 className="mt-6 font-display text-5xl leading-[1.02] font-bold tracking-tight text-balance sm:text-7xl lg:text-[5.5rem]">
               <span className="block">{t('Attendance in seconds.')}</span>
-              <span className="relative block w-fit text-sun max-lg:mx-auto">
-                {t('Scan, and it’s done.')}
-                <svg aria-hidden viewBox="0 0 300 20" preserveAspectRatio="none" className="absolute -bottom-3 left-0 h-3 w-full text-sun/70">
-                  <path d="M3 14 C 70 4, 150 4, 297 10" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
-                </svg>
-              </span>
+              <span className="block bg-gradient-to-r from-sun via-amber-300 to-sun-strong bg-clip-text pb-2 text-transparent">{t('Scan, and it’s done.')}</span>
             </h1>
-            <p className="mx-auto mt-8 max-w-xl text-lg text-indigo-100/85 sm:text-xl lg:mx-0">
+            <p className="mx-auto mt-7 max-w-2xl text-lg text-indigo-100/85 sm:text-xl">
               {t('Show a QR on any screen. People scan it with their own phone, and you know who is here. No machine to buy, no app to install.')}
             </p>
-            <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
+            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <a href="#who" className={sunButton}>
                 {t('Choose your Dobry')}
                 <span aria-hidden>↓</span>
@@ -122,18 +195,9 @@ export function Home() {
                 {t('See How It Works')}
               </a>
             </div>
-            <ul className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-indigo-100/80 lg:justify-start">
-              {['Free to start. No card needed.', 'Works on any phone.', 'Ready in under a minute.'].map((line) => (
-                <li key={line} className="flex items-center gap-1.5">
-                  <svg viewBox="0 0 20 20" className="size-4 text-emerald-300" fill="currentColor" aria-hidden>
-                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.700-9.300a1 1 0 0 0-1.400-1.400L9 10.600 7.700 9.300a1 1 0 0 0-1.400 1.400l2 2a1 1 0 0 0 1.400 0l4-4Z" clipRule="evenodd" />
-                  </svg>
-                  {t(line)}
-                </li>
-              ))}
-            </ul>
+            <p className="mt-6 text-sm text-indigo-100/70">{t('Free to start. No card needed.')} {t('Works on any phone.')}</p>
           </div>
-          <LiveDemo edition={DEMO} />
+          <Showcase />
         </div>
       </section>
 

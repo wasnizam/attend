@@ -92,7 +92,21 @@ main h1 {
 }
 .animate-scan { animation: scan 2.4s ease-in-out infinite; }
 
+/* Home: the bar under the open tab fills up, then the next slide comes in. */
+@keyframes progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.animate-progress { animation: progress linear both; }
+
+@keyframes slide {
+  from { opacity: 0; transform: translateX(1.5rem); }
+  to { opacity: 1; transform: none; }
+}
+.animate-slide { animation: slide 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
 @media (prefers-reduced-motion: reduce) {
+  .animate-progress, .animate-slide { animation: none; }
   .animate-pop, .animate-rowin, .animate-spin, .animate-pulse, .animate-slidein, .animate-bob, .animate-scan { animation: none; }
 }
 
