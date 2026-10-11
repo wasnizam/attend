@@ -104,8 +104,8 @@ export function Kiosk() {
       <header className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-3">
         <div className="flex items-baseline gap-4">
           <Logo />
-          {/* The name comes from the Czech greeting "dobrý den": good day. */}
-          <span className="hidden font-display text-lg font-medium text-sun sm:inline">Dobrý den! <span className="text-sm font-normal text-indigo-100/60">{t('Good day')}</span></span>
+          {/* A greeting everyone understands, in the screen's language, for the time of day. */}
+          <span className="hidden font-display text-lg font-medium text-sun sm:inline">{t(clock.getHours() < 12 ? 'Good morning' : clock.getHours() < 18 ? 'Good afternoon' : 'Good evening')}!</span>
         </div>
         <p className="tabular text-right leading-tight">
           <span className="block text-2xl font-semibold tracking-tight">{formatClock(clock)}</span>
