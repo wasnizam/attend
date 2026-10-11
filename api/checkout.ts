@@ -14,6 +14,12 @@ export async function POST(request: Request): Promise<Response> {
     const me = await caller(request)
     const body = (await request.json().catch(() => ({}))) as { planId?: unknown; currency?: unknown; yearly?: unknown; quantity?: unknown }
     const currency = body.currency === 'myr' ? 'myr' : 'usd'
+    // Ringgit prices are for Malaysia. Vercel tells us the country the request came from; someone
+    // already paying in ringgit keeps it wherever they are.
+    const country = request.headers.get('x-vercel-ip-country')
+    if (currency === 'myr' && country && country !== 'MY' && me.org.price?.currency !== 'MYR') {
+      throw new HttpError(400, 'Ringgit prices are for customers in Malaysia. Please choose US dollars.')
+    }
     const { db } = firebase()
     let charge
     try {

@@ -1602,4 +1602,5 @@ export const ms: Record<string, string> = {
   "This organisation’s plan has no place left for another person. Ask its admin to add one, then use the link again.": "Pelan organisasi ini tiada tempat lagi untuk seorang lagi. Minta adminnya menambah tempat, kemudian gunakan pautan itu semula.",
   "Your plan has no place left for another person. Add one on the Account page first.": "Pelan anda tiada tempat lagi untuk seorang lagi. Tambah tempat di halaman Akaun dahulu.",
   "This session has reached your plan’s limit of {n} people. Nobody else can scan in; you can still add someone by hand.": "Sesi ini telah mencapai had pelan anda iaitu {n} orang. Tiada orang lain boleh mengimbas; anda masih boleh menambah seseorang secara manual.",
+  "Ringgit prices are for customers in Malaysia. Please choose US dollars.": "Harga ringgit adalah untuk pelanggan di Malaysia. Sila pilih dolar AS.",
 }
