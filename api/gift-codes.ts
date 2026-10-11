@@ -25,7 +25,7 @@ export async function POST(request: Request): Promise<Response> {
     if (body.action === 'create') {
       const edition = EDITIONS.includes(String(body.edition)) ? String(body.edition) : 'any'
       const months = int(body.months, 1, 60, 1)
-      const seats = edition === 'lecturers' || edition === 'trainers' ? 0 : int(body.seats, 0, 100000, 0)
+      const seats = edition === 'trainers' ? 0 : int(body.seats, 0, 100000, 0)
       const count = int(body.count, 1, 50, 1)
       const maxUses = int(body.maxUses, 1, 10000, 1)
       const redeemBy = typeof body.redeemBy === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.redeemBy) ? body.redeemBy : null

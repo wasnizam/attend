@@ -17,6 +17,9 @@ export interface CatalogPlan {
   cycle: Cycle
   /** Workplace: the most staff this plan covers (0 = no limit). */
   seats?: number
+  /** Lecturers: the price is for each lecturer, from `minSeats` lecturers up (the Faculty plan). */
+  perSeat?: boolean
+  minSeats?: number
   /** A line under the price, e.g. "Or RM390 a year". */
   noteMyr?: string
   noteUsd?: string
@@ -58,6 +61,7 @@ export function defaultCatalog(): Catalog {
         noteUsd: typeof p.alt === 'string' ? p.alt : p.alt?.usd,
         items: p.items,
         best: p.best,
+        ...(p.perSeat ? { perSeat: true, minSeats: p.minSeats ?? 1 } : {}),
       })),
     ]),
   ) as Catalog
@@ -69,16 +73,23 @@ const money = (n: number, cur: 'myr' | 'usd') => (cur === 'myr' ? `RM${n % 1 ? n
 export const offersYear = (p: Pick<CatalogPlan, 'cycle' | 'noteMyr' | 'noteUsd'>) => p.cycle === 'month' && /year/i.test(`${p.noteMyr ?? ''} ${p.noteUsd ?? ''}`)
 
 /** A year for the price of ten months, as text. */
-export const yearPrice = (p: CatalogPlan, cur: 'myr' | 'usd') => money((cur === 'myr' ? p.priceMyr : p.priceUsd) * 10, cur)
+export const yearPrice = (p: CatalogPlan, cur: 'myr' | 'usd', quantity = 1) => money((cur === 'myr' ? p.priceMyr : p.priceUsd) * 10 * quantity, cur)
+
+/** A month's price for this many lecturers, as text. */
+export const monthPrice = (p: CatalogPlan, cur: 'myr' | 'usd', quantity = 1) => money((cur === 'myr' ? p.priceMyr : p.priceUsd) * quantity, cur)
+
+/** The most lecturers one faculty can pay for online; a bigger one talks to Dobry. */
+export const MAX_SEATS = 500
 
 /** One catalog plan in the shape the website's pricing cards use. */
 export const toPlanCard = (p: CatalogPlan): PlanCard => ({
   name: p.name,
   price: { myr: money(p.priceMyr, 'myr'), usd: money(p.priceUsd, 'usd') },
-  per: CYCLE_LABEL[p.cycle],
+  per: p.perSeat && p.cycle === 'month' ? 'per lecturer, a month' : CYCLE_LABEL[p.cycle],
   alt: p.noteMyr || p.noteUsd ? { myr: p.noteMyr ?? '', usd: p.noteUsd ?? p.noteMyr ?? '' } : undefined,
   items: p.items,
   best: p.best,
+  ...(p.perSeat ? { perSeat: true, minSeats: p.minSeats ?? 1 } : {}),
 })
 
 let cache: Catalog | null = null

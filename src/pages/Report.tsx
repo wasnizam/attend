@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { STATUS_LABEL } from '../components/AttendanceList'
 import { AttendanceTrend, LevelBar, LevelTag } from '../components/charts'
 import { LettersPanel, UniExportPanel } from '../components/ClassTools'
+import { Paid, UpgradeNote, allowedOrTell } from '../components/Paid'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat } from '../components/ui'
 import { setEnrolment, setLateAfter, setThresholds } from '../data/classes'
 import { useProfile } from '../hooks/useAuth'
@@ -11,6 +12,7 @@ import { useMyClasses } from '../hooks/useClasses'
 import { downloadCsv, slug } from '../lib/csv'
 import { courseLine, effectiveStatus, formatDate, formatDuration, formatPercent, isoDate } from '../lib/format'
 import { locale, t } from '../lib/i18n'
+import { allows } from '../lib/plan'
 import { has } from '../lib/purpose'
 import { type ClassReport, DEFAULT_BAR, DEFAULT_WARN, STREAK_FLAG, type StudentRow, counts } from '../lib/report'
 import type { PdfSection } from '../lib/reportPdf'
@@ -156,6 +158,7 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
   }
 
   const exportSummary = (excel: boolean) =>
+    allowedOrTell('export', t('Export to Excel is part of the paid plans.')) &&
     downloadCsv(
       `${file}-semester-report${excel ? '-excel' : ''}.csv`,
       toCsv([
@@ -166,6 +169,7 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
     )
 
   const exportMonthly = (excel: boolean) =>
+    allowedOrTell('export', t('Export to Excel is part of the paid plans.')) &&
     downloadCsv(
       `${file}-monthly-attendance${excel ? '-excel' : ''}.csv`,
       toCsv([
@@ -184,6 +188,7 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
     )
 
   const exportSheet = (excel: boolean) =>
+    allowedOrTell('export', t('Export to Excel is part of the paid plans.')) &&
     downloadCsv(
       `${file}-attendance-sheet${excel ? '-excel' : ''}.csv`,
       toCsv([
@@ -209,7 +214,11 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
         </div>
         <div className="flex gap-2 print:hidden">
           <Button variant="secondary" onClick={() => window.print()}>{t('Print')}</Button>
-          {held.length > 0 && <Button busy={making} onClick={downloadPdf}>{t('Download PDF')}</Button>}
+          {held.length > 0 && (
+            <Paid feature="pdf" what={t('Downloading as PDF is part of the paid plans.')}>
+              <Button busy={making} onClick={downloadPdf}>{t('Download PDF')}</Button>
+            </Paid>
+          )}
         </div>
       </div>
 
@@ -290,8 +299,8 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
               </Button>
             )}
           </div>
-          {tool === 'uni' && <UniExportPanel cls={cls} report={report} />}
-          {tool === 'letters' && rule && <LettersPanel cls={cls} report={report} />}
+          {tool === 'uni' && (allows('export') ? <UniExportPanel cls={cls} report={report} /> : <UpgradeNote what={t('Export to your university system is part of the paid plans.')} />)}
+          {tool === 'letters' && rule && (allows('pdf') ? <LettersPanel cls={cls} report={report} /> : <UpgradeNote what={t('Warning letters and the barring list are part of the paid plans.')} />)}
 
           <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
             <div className="flex gap-1 rounded-md bg-white p-1 shadow-card">

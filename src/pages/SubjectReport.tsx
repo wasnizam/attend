@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Button, Card, EmptyState, ErrorNote, PageLoader } from '../components/ui'
 import { useMyClasses } from '../hooks/useClasses'
 import { useClassReports } from '../hooks/useSubjectReport'
+import { allowedOrTell } from '../components/Paid'
 import { downloadCsv, slug } from '../lib/csv'
 import { KIND_LABEL, formatPercent } from '../lib/format'
 import { t } from '../lib/i18n'
@@ -39,6 +40,7 @@ function SubjectView({ subject }: { subject: Subject }) {
   const below = rows.filter((r) => r.lowest !== null && r.lowest < required).length
 
   const exportCsv = (excel: boolean) => {
+    if (!allowedOrTell('export', t('Export to Excel is part of the paid plans.'))) return
     const lines = [
       [t('Student ID'), t('Student Name'), ...subject.kinds.map((k) => `${t(KIND_LABEL[k])} %`), `${t('Whole course')} %`],
       ...rows.map((r) => [r.studentId, r.studentName, ...subject.kinds.map((k) => (r.byKind[k]?.rate ?? null) === null ? '' : r.byKind[k]!.rate!.toFixed(1)), r.overall.rate === null ? '' : r.overall.rate.toFixed(1)]),

@@ -337,7 +337,7 @@ export function Landing({ show }: { show?: EditionId }) {
               </div>
             </div>}
           </div>
-          <div className={`mt-12 grid gap-4 sm:grid-cols-2 ${plans.length > 2 ? 'lg:grid-cols-4' : 'mx-auto max-w-4xl'}`}>
+          <div className={`mt-12 grid gap-4 sm:grid-cols-2 ${plans.length > 3 ? 'lg:grid-cols-4' : plans.length === 3 ? 'lg:grid-cols-3' : 'mx-auto max-w-4xl'}`}>
             {plans.map((plan) => (
               <div key={plan.name} className={`flex flex-col rounded-2xl bg-white p-6 ${plan.best ? 'shadow-pop ring-2 ring-accent' : 'shadow-card'}`}>
                 <div className="flex items-center justify-between gap-3">

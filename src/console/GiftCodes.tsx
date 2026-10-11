@@ -69,7 +69,7 @@ export function GiftCodes() {
               </select>
             </label>
             {num('months', t('Months free'), 1, 60)}
-            {f.edition !== 'lecturers' && f.edition !== 'trainers' && num('seats', t('Staff covered, workplace (0 = no limit)'), 0, 100000)}
+            {f.edition !== 'trainers' && num('seats', f.edition === 'lecturers' ? t('Lecturers covered (0 = one lecturer)') : t('Staff covered, workplace (0 = no limit)'), 0, 100000)}
             {num('count', t('How many codes'), 1, 50)}
             {num('maxUses', t('Organisations per code'), 1, 10000)}
             <label className="block text-xs font-medium text-muted">
@@ -128,7 +128,7 @@ export function GiftCodes() {
                     </td>
                     <td className={td}>
                       {t(c.months === 1 ? '1 month free' : '{n} months free', { n: c.months })}
-                      <span className="block text-xs text-muted">{t(EDITION_LABEL[c.edition])}{c.seats ? ` · ${t('{n} staff', { n: c.seats })}` : ''}</span>
+                      <span className="block text-xs text-muted">{t(EDITION_LABEL[c.edition])}{c.seats ? ` · ${c.edition === 'lecturers' ? t('{n} lecturers', { n: c.seats }) : t('{n} staff', { n: c.seats })}` : ''}</span>
                     </td>
                     <td className={td}>
                       {c.note || '—'}

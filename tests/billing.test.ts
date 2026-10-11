@@ -11,8 +11,8 @@ describe('the payment server’s price list', () => {
   it('is the same as the one the website shows', () => {
     const site = defaultCatalog()
     for (const edition of ['lecturers', 'trainers', 'workplace'] as const) {
-      expect(DEFAULT_CATALOG[edition].map((p) => [p.id, p.name, p.priceMyr, p.priceUsd, p.cycle, p.seats ?? 0, p.noteMyr ?? '', p.noteUsd ?? ''])).toEqual(
-        site[edition].map((p) => [p.id, p.name, p.priceMyr, p.priceUsd, p.cycle, p.seats ?? 0, p.noteMyr ?? '', p.noteUsd ?? '']),
+      expect(DEFAULT_CATALOG[edition].map((p) => [p.id, p.name, p.priceMyr, p.priceUsd, p.cycle, p.seats ?? 0, p.noteMyr ?? '', p.noteUsd ?? '', p.perSeat ? p.minSeats : 0])).toEqual(
+        site[edition].map((p) => [p.id, p.name, p.priceMyr, p.priceUsd, p.cycle, p.seats ?? 0, p.noteMyr ?? '', p.noteUsd ?? '', p.perSeat ? p.minSeats : 0]),
       )
     }
   })
@@ -30,8 +30,22 @@ describe('what a customer is charged', () => {
     expect(charge('workplace', 'workplace-3', 'usd')).toMatchObject({ unitAmount: 4500, currency: 'usd', seats: 100 })
   })
 
-  it('charges a lecturer once every six months', () => {
-    expect(charge('education', 'lecturers-1', 'myr')).toMatchObject({ unitAmount: 3900, interval: 'month', intervalCount: 6, cycle: 'semester', seats: 0 })
+  it('charges one lecturer by the month, or by the year for the price of ten months', () => {
+    expect(charge('education', 'lecturers-1', 'myr')).toMatchObject({ unitAmount: 1900, interval: 'month', intervalCount: 1, cycle: 'month', seats: 0, quantity: 1 })
+    expect(charge('education', 'lecturers-1', 'usd', true)).toMatchObject({ unitAmount: 5000, listAmount: 50, interval: 'year', cycle: 'year', quantity: 1 })
+  })
+
+  it('charges a faculty for each lecturer, from five up', () => {
+    const faculty = (n: number, yearly = false) => chargeFor(DEFAULT_CATALOG, 'education', 'lecturers-2', 'myr', yearly, null, today, n)
+    expect(faculty(5)).toMatchObject({ unitAmount: 1500, quantity: 5, seats: 5, listAmount: 75, cycle: 'month', productId: 'dobry_lecturers_lecturers-2' })
+    expect(faculty(12, true)).toMatchObject({ unitAmount: 15000, quantity: 12, seats: 12, listAmount: 1800, interval: 'year' })
+    expect(faculty(7.9).quantity).toBe(7)
+    expect(() => faculty(4)).toThrow('starts from 5 lecturers')
+    expect(() => faculty(1)).toThrow(BillingError)
+    expect(() => faculty(501)).toThrow('contact Dobry')
+    // A number of lecturers sent for a plan that is not priced per lecturer changes nothing.
+    expect(chargeFor(DEFAULT_CATALOG, 'education', 'lecturers-1', 'myr', false, null, today, 40)).toMatchObject({ unitAmount: 1900, quantity: 1, seats: 0 })
+    expect(chargeFor(DEFAULT_CATALOG, 'workplace', 'workplace-1', 'myr', false, null, today, 40)).toMatchObject({ unitAmount: 4900, quantity: 1, seats: 20 })
   })
 
   it('gives a trainer twelve months for the price of ten when paid by the year', () => {
@@ -41,7 +55,7 @@ describe('what a customer is charged', () => {
 
   it('refuses a yearly price where none is offered', () => {
     expect(() => charge('workplace', 'workplace-1', 'usd', true)).toThrow(BillingError)
-    expect(() => charge('education', 'lecturers-1', 'usd', true)).toThrow(BillingError)
+    expect(() => charge('workplace', 'workplace-3', 'myr', true)).toThrow(BillingError)
   })
 
   it('never sells another edition’s plan, the free plan, a hidden plan or an unknown one', () => {
@@ -96,8 +110,10 @@ describe('what a subscription gives an organisation', () => {
     }
   })
 
-  it('puts no staff limit on a lecturer or trainer', () => {
+  it('puts no number on one lecturer’s plan, and the lecturers paid for on a faculty’s', () => {
     const lecturer = subscriptionMetadata('org2', 'lecturers-1', charge('education', 'lecturers-1', 'usd'))
-    expect(patchFromSubscription({ id: 'sub_2', status: 'active', periodEnd: end, currency: 'usd', metadata: lecturer })).toMatchObject({ seats: null, price: { amount: 9, currency: 'USD', cycle: 'semester' } })
+    expect(patchFromSubscription({ id: 'sub_2', status: 'active', periodEnd: end, currency: 'usd', metadata: lecturer })).toMatchObject({ seats: null, price: { amount: 5, currency: 'USD', cycle: 'month' } })
+    const faculty = subscriptionMetadata('org3', 'lecturers-2', chargeFor(DEFAULT_CATALOG, 'education', 'lecturers-2', 'usd', false, null, today, 8))
+    expect(patchFromSubscription({ id: 'sub_3', status: 'active', periodEnd: end, currency: 'usd', metadata: faculty })).toMatchObject({ seats: 8, planId: 'lecturers-2', price: { amount: 32, currency: 'USD', cycle: 'month' } })
   })
 })

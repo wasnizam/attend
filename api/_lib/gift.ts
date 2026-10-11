@@ -10,7 +10,7 @@ export interface GiftCode {
   edition: EditionId | 'any'
   /** Months of Pro each time it is used. */
   months: number
-  /** Workplace: staff covered (0 = no limit). */
+  /** Workplace: staff covered (0 = no limit). Lecturers: lecturers covered (0 = one, the Pro plan). */
   seats: number
   /** How many organisations may use it. */
   maxUses: number
@@ -80,10 +80,16 @@ export function giftPatch(
 
 /**
  * The staff limit when a gift and (maybe) a paid plan both apply: whichever covers more.
- * `current` is undefined when nothing is being paid for; null means no limit.
+ * `current` is undefined when nothing is being paid for; null means no limit. For lecturers the
+ * number is lecturers covered, and null means one.
  */
 export function withGift(purpose: string | undefined, current: number | null | undefined, giftSeats: number): number | null {
-  if (editionOf(purpose) !== 'workplace') return null
+  const edition = editionOf(purpose)
+  if (edition === 'trainers') return null
+  if (edition === 'lecturers') {
+    const most = Math.max(current ?? 1, giftSeats > 0 ? giftSeats : 1)
+    return most > 1 ? most : null
+  }
   const gift = giftSeats > 0 ? giftSeats : null
   if (current === undefined) return gift
   return current === null || gift === null ? null : Math.max(current, gift)

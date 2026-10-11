@@ -98,14 +98,66 @@ describe('what the free plan holds back', () => {
     expect(limitFor('staff')).toBe(5)
   })
 
-  it('never holds features back from lecturers or trainers: their free plan is one class', () => {
+  it('never holds features back from trainers: their free plan is one course', () => {
     storage(true)
     vi.stubGlobal('window', { location: { search: '' } })
-    for (const purpose of ['education', 'training'] as const) {
-      setPurpose(purpose)
-      setPlan({ plan: 'free' })
-      for (const f of features) expect(allows(f)).toBe(true)
-      expect(limitFor('classes')).toBe(1)
-    }
+    setPurpose('training')
+    setPlan({ plan: 'free' })
+    for (const f of features) expect(allows(f)).toBe(true)
+    expect(limitFor('classes')).toBe(1)
+    expect(limitFor('students')).toBeUndefined()
+    expect(limitFor('lecturers')).toBeUndefined()
+  })
+
+  it('holds downloads back from a free lecturer, with one class of up to 60 students', () => {
+    storage(true)
+    vi.stubGlobal('window', { location: { search: '' } })
+    setPurpose('education')
+    setPlan({ plan: 'free' })
+    expect(allows('pdf')).toBe(false)
+    expect(allows('export')).toBe(false)
+    expect(allows('geofence')).toBe(true)
+    expect(limitFor('classes')).toBe(1)
+    expect(limitFor('students')).toBe(60)
+    expect(limitFor('lecturers')).toBe(1)
+  })
+
+  it('leaves a free lecturer as before while customers have no way to pay', () => {
+    storage(false)
+    vi.stubGlobal('window', { location: { search: '' } })
+    setPurpose('education')
+    setPlan({ plan: 'free' })
+    expect(allows('pdf')).toBe(true)
+    expect(limitFor('classes')).toBe(1)
+    expect(limitFor('students')).toBeUndefined()
+    expect(limitFor('lecturers')).toBeUndefined()
+  })
+
+  it('gives one lecturer on Pro ten classes at a time and 300 students in each', () => {
+    storage(true)
+    vi.stubGlobal('window', { location: { search: '' } })
+    setPurpose('education')
+    setPlan({ plan: 'pro', paidUntil: { toMillis: () => Date.now() + 86_400_000 } })
+    expect(allows('pdf')).toBe(true)
+    expect(overLimit('classes', 10)).toBe(false)
+    expect(overLimit('classes', 11)).toBe(true)
+    expect(limitFor('students')).toBe(300)
+    expect(limitFor('lecturers')).toBe(1)
+  })
+
+  it('gives a faculty the lecturers it pays for, each with the Pro limits', () => {
+    setPurpose('education')
+    setPlan({ plan: 'pro', paidUntil: { toMillis: () => Date.now() + 86_400_000 }, seats: 12 })
+    expect(limitFor('lecturers')).toBe(12)
+    expect(limitFor('classes')).toBe(10)
+  })
+
+  it('lets a trial bring colleagues in, and early access has no limits at all', () => {
+    setPurpose('education')
+    setPlan({ plan: 'trial', trialStarted: { toMillis: () => Date.now() - 86_400_000 } })
+    expect(limitFor('lecturers')).toBeUndefined()
+    expect(limitFor('classes')).toBe(10)
+    setPlan({})
+    for (const kind of ['classes', 'students', 'lecturers', 'staff'] as const) expect(limitFor(kind)).toBeUndefined()
   })
 })

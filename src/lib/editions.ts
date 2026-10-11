@@ -45,6 +45,9 @@ export interface PlanCard {
   items: string[]
   /** The one we would pick for most people. */
   best?: boolean
+  /** Lecturers: the price is for each lecturer (the Faculty plan), from this many lecturers up. */
+  perSeat?: boolean
+  minSeats?: number
 }
 
 /** Workplace: in every plan, free included. */
@@ -162,8 +165,24 @@ export const EDITIONS: Edition[] = [
       ['Is it allowed?', 'Dobry is your own tool, like Excel or a quiz app. The official record still goes into your university system. If your university has rules on student data, check them; Dobry keeps only the ID and name from your class list.'],
     ],
     plans: [
-      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 class', 'Unlimited students', 'Every feature included'] },
-      { name: 'Pro', price: { myr: 'RM39', usd: '$9' }, per: 'per semester', alt: 'Pay once a semester. No monthly bill.', items: ['Unlimited classes', 'Unlimited students', 'Export to your university system', 'Warning letters and barring list', 'Every feature included'], best: true },
+      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 class', 'Up to 60 students in a class', 'QR attendance and live list', 'Reports on screen', '✕ Export to your university system', '✕ Warning letters and barring list', '✕ Download reports as PDF'] },
+      {
+        name: 'Pro',
+        price: { myr: 'RM19', usd: '$5' },
+        per: 'a month',
+        alt: { myr: 'Or RM190 a year: 12 months for the price of 10.', usd: 'Or $50 a year: 12 months for the price of 10.' },
+        items: ['For one lecturer', 'Up to 10 classes at a time', 'Up to 300 students in a class', 'Export to your university system', 'Warning letters and barring list', 'Download reports as PDF', 'Every feature included'],
+        best: true,
+      },
+      {
+        name: 'Faculty',
+        price: { myr: 'RM15', usd: '$4' },
+        per: 'per lecturer, a month',
+        alt: { myr: 'From 5 lecturers. Or RM150 a lecturer a year.', usd: 'From 5 lecturers. Or $40 a lecturer a year.' },
+        items: ['5 lecturers or more, each with their own login', 'Everything in Pro, for every lecturer', 'Every class in one view for the head of department', 'Hand a class over to another lecturer', 'One bill for the whole faculty'],
+        perSeat: true,
+        minSeats: 5,
+      },
     ],
   },
   {

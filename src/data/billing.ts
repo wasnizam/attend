@@ -20,8 +20,8 @@ async function call<T>(path: string, body: object): Promise<T> {
  * Starts paying for a plan: the customer is sent to Stripe's payment page. Someone who already
  * pays is moved to the new plan straight away instead (`changed`).
  */
-export async function startCheckout(planId: string, currency: Currency, yearly = false): Promise<'changed' | 'leaving'> {
-  const reply = await call<{ url?: string; changed?: boolean }>('/api/checkout', { planId, currency, yearly })
+export async function startCheckout(planId: string, currency: Currency, yearly = false, quantity = 1): Promise<'changed' | 'leaving'> {
+  const reply = await call<{ url?: string; changed?: boolean }>('/api/checkout', { planId, currency, yearly, quantity })
   if (reply.changed) return 'changed'
   if (!reply.url) throw new Error(t('Payments are not available right now. Please try again later.'))
   window.location.assign(reply.url)

@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { ExportButtons } from '../components/ExportButtons'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, StatusBadge, friendlyError, inputClass, buttonClass } from '../components/ui'
 import { UpgradeNote } from '../components/Paid'
-import { allows } from '../lib/plan'
+import { activePlan, allows, limitFor } from '../lib/plan'
 import { getOrganisation, setUserRole, setUserStatus, subscribeOrgUsers } from '../data/account'
 import { subscribeOrgAttendance } from '../data/attendance'
 import { subscribeOrgSessions } from '../data/sessions'
@@ -336,12 +336,24 @@ function Users({ users, organisation, me }: { users: ReturnType<typeof useLive<U
 
   if (users.loading) return <PageLoader />
   if (users.error) return <ErrorNote>{t('We could not load users. Check your connection and reload.')}</ErrorNote>
+  // Lecturers: the plan covers a number of lecturers; no invite link while every place is taken.
+  const seats = limitFor('lecturers')
+  const full = seats !== undefined && (users.data ?? []).filter((u) => u.status === 'active').length >= seats
 
   return (
     <div className="space-y-4">
       {has('clock') && <Offices />}
       {organisation && !allows('offices') && <UpgradeNote what={t('Branch managers and more offices are part of the paid plans.')} />}
-      {organisation && allows('offices') && (
+      {organisation && allows('offices') && full && (
+        <UpgradeNote
+          what={
+            activePlan() === 'free' || seats === 1
+              ? t('Your plan is for one lecturer. The Faculty plan adds your colleagues, each with their own login.')
+              : t('Your plan covers {n} lecturers, and all are in use. Add more on the Account page.', { n: seats ?? 0 })
+          }
+        />
+      )}
+      {organisation && allows('offices') && !full && (
         <Card className="p-5">
           <h2 className="font-semibold">{t('Invite lecturers')}</h2>
           <p className="mt-1 text-sm text-muted">

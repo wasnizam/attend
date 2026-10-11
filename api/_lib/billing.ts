@@ -14,6 +14,9 @@ export interface CatalogPlan {
   priceUsd: number
   cycle: Cycle
   seats?: number
+  /** Lecturers: the price is for each lecturer, from `minSeats` lecturers up (the Faculty plan). */
+  perSeat?: boolean
+  minSeats?: number
   /** The line under the price; one that offers a year ("Or RM390 a year") is what allows yearly payment. */
   noteMyr?: string
   noteUsd?: string
@@ -52,9 +55,14 @@ export interface Charge {
   cycle: 'month' | 'semester' | 'year'
   interval: 'month' | 'year'
   intervalCount: number
-  /** Workplace: staff covered (0 = no limit). */
+  /** Workplace: staff covered (0 = no limit). Lecturers: lecturers covered (0 = one). */
   seats: number
+  /** How many are paid for: lecturers on a plan priced per lecturer, otherwise 1. */
+  quantity: number
 }
+
+/** The most lecturers one faculty can pay for online. */
+export const MAX_SEATS = 500
 
 export class BillingError extends Error {}
 
@@ -69,6 +77,8 @@ export function chargeFor(
   yearly: boolean,
   discount: Discount | null | undefined,
   today: string,
+  /** Lecturers wanted, for a plan priced per lecturer. */
+  wanted = 1,
 ): Charge {
   const edition = editionOf(purpose)
   const plan = (catalog[edition] ?? []).find((p) => p.id === planId)
@@ -78,7 +88,13 @@ export function chargeFor(
   if (!(base > 0)) throw new BillingError('That plan has no price in this currency.')
   if (yearly && !offersYear(plan)) throw new BillingError('This plan cannot be paid by the year.')
 
+  const least = Math.max(1, Math.floor(plan.minSeats ?? 1))
+  const quantity = plan.perSeat ? Math.floor(Number(wanted) || 0) : 1
+  if (plan.perSeat && quantity < least) throw new BillingError(`This plan starts from ${least} lecturers.`)
+  if (quantity > MAX_SEATS) throw new BillingError(`For more than ${MAX_SEATS} lecturers, contact Dobry.`)
+
   const cycle = yearly ? 'year' : plan.cycle
+  // Each one's price; a discount is taken off each, so the total is always a whole number of sen.
   const listAmount = yearly ? base * YEAR_PAYS_FOR : base
   const charged = !discountLive(discount, today)
     ? listAmount
@@ -89,12 +105,13 @@ export function chargeFor(
     productId: `dobry_${edition}_${plan.id}`.replace(/[^A-Za-z0-9_-]/g, '_'),
     productName: `Dobry ${EDITION_NAME[edition]} · ${plan.name}`,
     unitAmount,
-    listAmount,
+    listAmount: listAmount * quantity,
     currency,
     cycle,
     interval: cycle === 'year' ? 'year' : 'month',
     intervalCount: cycle === 'semester' ? 6 : 1,
-    seats: edition === 'workplace' ? Math.max(0, Math.floor(plan.seats ?? 0)) : 0,
+    seats: edition === 'workplace' ? Math.max(0, Math.floor(plan.seats ?? 0)) : plan.perSeat ? quantity : 0,
+    quantity,
   }
 }
 

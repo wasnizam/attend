@@ -1,4 +1,4 @@
-import { offersYear, toPlanCard, useCatalog, yearPrice } from '../lib/pricing'
+import { MAX_SEATS, monthPrice, offersYear, toPlanCard, useCatalog, yearPrice } from '../lib/pricing'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, ErrorNote, Field, friendlyError, inputClass } from '../components/ui'
@@ -81,12 +81,14 @@ export function Account() {
   const [codeNote, setCodeNote] = useState<{ ok: boolean; text: string } | null>(null)
   // Back from Stripe's payment page.
   const [paidNotice] = useState(() => new URLSearchParams(window.location.search).get('paid') === '1')
-  const choose = async (planId: string, byYear: boolean) => {
+  // Lecturers wanted, for a plan priced per lecturer (the Faculty plan).
+  const [seats, setSeats] = useState<number | null>(null)
+  const choose = async (planId: string, byYear: boolean, quantity = 1) => {
     setBusyPlan(planId)
     setPayError('')
     try {
       // 'leaving': the browser is on its way to Stripe, so the button keeps spinning.
-      if ((await startCheckout(planId, currency, byYear)) === 'changed') setBusyPlan(null)
+      if ((await startCheckout(planId, currency, byYear, quantity)) === 'changed') setBusyPlan(null)
     } catch (e) {
       setPayError(e instanceof Error ? e.message : String(e))
       setBusyPlan(null)
@@ -315,6 +317,10 @@ export function Account() {
               const paid = cp.cycle !== 'free'
               const mine = plan === 'pro' && org?.stripePlanId === cp.id
               const byYear = yearly && offersYear(cp)
+              const least = cp.perSeat ? Math.max(1, cp.minSeats ?? 1) : 1
+              const count = cp.perSeat ? Math.min(MAX_SEATS, Math.max(least, seats ?? (mine ? org?.seats ?? least : least))) : 1
+              // On a per-lecturer plan already: the button changes how many lecturers it covers.
+              const same = mine && (!cp.perSeat || count === (org?.seats ?? 1))
               return (
                 <li key={cp.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2.5">
                   <span>
@@ -323,13 +329,19 @@ export function Account() {
                   </span>
                   <span className="flex items-center gap-3">
                     <span className="tabular whitespace-nowrap">
-                      <span className="font-semibold">{byYear ? yearPrice(cp, currency) : p.price[currency]}</span> <span className="text-muted">{byYear ? t('a year') : t(p.per)}</span>
+                      <span className="font-semibold">{byYear ? yearPrice(cp, currency, count) : cp.perSeat ? monthPrice(cp, currency, count) : p.price[currency]}</span> <span className="text-muted">{byYear ? t('a year') : cp.perSeat ? t('a month') : t(p.per)}</span>
                     </span>
-                    {paid && paying && (mine ? (
+                    {cp.perSeat && paying && (
+                      <label className="flex items-center gap-1.5 text-xs text-muted">
+                        {t('Lecturers')}
+                        <input type="number" min={least} max={MAX_SEATS} step={1} value={seats ?? count} onChange={(e) => setSeats(Number(e.target.value))} onBlur={() => setSeats(count)} className={`${inputClass} !w-20 !py-1.5`} />
+                      </label>
+                    )}
+                    {paid && paying && (same ? (
                       <span className="rounded-full bg-good-soft px-2.5 py-1 text-xs font-semibold text-good">{t('Your plan')}</span>
                     ) : (
-                      <Button variant={plan === 'pro' ? 'secondary' : 'primary'} busy={busyPlan === cp.id} disabled={busyPlan !== null} onClick={() => choose(cp.id, byYear)}>
-                        {plan === 'pro' ? t('Switch') : t('Choose')}
+                      <Button variant={plan === 'pro' ? 'secondary' : 'primary'} busy={busyPlan === cp.id} disabled={busyPlan !== null} onClick={() => choose(cp.id, byYear, count)}>
+                        {mine ? t('Change') : plan === 'pro' ? t('Switch') : t('Choose')}
                       </Button>
                     ))}
                   </span>

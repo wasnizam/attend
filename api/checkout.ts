@@ -12,12 +12,12 @@ const missing = (e: unknown) => (e as { code?: string })?.code === 'resource_mis
 export async function POST(request: Request): Promise<Response> {
   try {
     const me = await caller(request)
-    const body = (await request.json().catch(() => ({}))) as { planId?: unknown; currency?: unknown; yearly?: unknown }
+    const body = (await request.json().catch(() => ({}))) as { planId?: unknown; currency?: unknown; yearly?: unknown; quantity?: unknown }
     const currency = body.currency === 'myr' ? 'myr' : 'usd'
     const { db } = firebase()
     let charge
     try {
-      charge = chargeFor(await catalog(db), me.org.purpose, String(body.planId ?? ''), currency, body.yearly === true, me.org.discount, new Date().toISOString().slice(0, 10))
+      charge = chargeFor(await catalog(db), me.org.purpose, String(body.planId ?? ''), currency, body.yearly === true, me.org.discount, new Date().toISOString().slice(0, 10), Number(body.quantity) || 1)
     } catch (e) {
       if (e instanceof BillingError) throw new HttpError(400, e.message)
       throw e
@@ -64,7 +64,7 @@ export async function POST(request: Request): Promise<Response> {
       })
       if (sub && ['active', 'trialing', 'past_due'].includes(sub.status)) {
         if (sub.currency !== currency) throw new HttpError(400, 'Your plan is paid in another currency. Choose the same currency, or contact Dobry to change it.')
-        await s.subscriptions.update(sub.id, { items: [{ id: sub.items.data[0].id, price_data }], metadata, proration_behavior: 'create_prorations', cancel_at_period_end: false })
+        await s.subscriptions.update(sub.id, { items: [{ id: sub.items.data[0].id, price_data, quantity: charge.quantity }], metadata, proration_behavior: 'create_prorations', cancel_at_period_end: false })
         return json({ changed: true })
       }
     }
@@ -74,7 +74,7 @@ export async function POST(request: Request): Promise<Response> {
       mode: 'subscription',
       customer,
       client_reference_id: me.orgId,
-      line_items: [{ price_data, quantity: 1 }],
+      line_items: [{ price_data, quantity: charge.quantity }],
       subscription_data: { metadata },
       metadata,
       allow_promotion_codes: true,

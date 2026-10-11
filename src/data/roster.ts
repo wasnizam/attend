@@ -1,5 +1,5 @@
 import { t } from '../lib/i18n'
-import { PAYMENTS_OPEN, limitFor, overLimit } from '../lib/plan'
+import { PAYMENTS_OPEN, activePlan, limitFor, overLimit } from '../lib/plan'
 import { collection, doc, getDoc, getDocs, increment, onSnapshot, query, where, writeBatch } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { studentKey } from '../lib/format'
@@ -57,6 +57,13 @@ async function staffElsewhere(cls: WeeklyClass): Promise<Set<string>> {
 export async function addToRoster(cls: WeeklyClass, entries: RosterEntry[], existing: RosterEntry[]) {
   const known = new Set(existing.map((e) => e.studentKey))
   const added = entries.filter((e) => !known.has(e.studentKey)).length
+  const most = limitFor('students')
+  if (added > 0 && most !== undefined && existing.length + added > most)
+    throw new Error(
+      activePlan() === 'free'
+        ? t('The free plan includes up to {n} students in a class. Upgrade to Pro to add more.', { n: most })
+        : t('Your plan includes up to {n} students in a class. For a bigger class, contact Dobry.', { n: most }),
+    )
   if (added > 0 && limitFor('staff') !== undefined) {
     // The plan counts people across all of this manager's lists, each person once.
     const everyone = await staffElsewhere(cls)

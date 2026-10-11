@@ -12,7 +12,7 @@ import { useProfile } from '../hooks/useAuth'
 import { useEditableClasses, useMyClasses } from '../hooks/useClasses'
 import { KINDS, KIND_LABEL, WEEK, addDays, classSlots, dayName, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
-import { allows, overLimit } from '../lib/plan'
+import { activePlan, allows, limitFor, overLimit } from '../lib/plan'
 import { has } from '../lib/purpose'
 import type { ClassKind, Delivery, Slot, WeeklyClass } from '../lib/types'
 
@@ -148,9 +148,17 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
         if (clock && fence !== undefined) await setClassGeofence(editing.id, fence)
         navigate('/app/timetable')
       } else if (weekly) {
-        if (overLimit('classes', (myClasses?.length ?? 0) + 1)) {
+        // Classes that have finished are history: they stay, and do not count towards the plan.
+        const running = (myClasses ?? []).filter((c) => !c.endDate || c.endDate >= isoDate()).length
+        if (overLimit('classes', running + 1)) {
           setBusy(false)
-          return setError(clock ? t('The free plan includes one office with one shift. Upgrade to add more.') : t('The free plan includes 1 class. Upgrade to Pro to add more.'))
+          return setError(
+            clock
+              ? t('The free plan includes one office with one shift. Upgrade to add more.')
+              : activePlan() === 'free'
+                ? t('The free plan includes 1 class. Upgrade to Pro to add more.')
+                : t('Your plan includes up to {n} classes at a time. Classes that have ended do not count.', { n: limitFor('classes') ?? 0 }),
+          )
         }
         const id = await createClass(profile, { ...details, ...work, kind, slots, startDate: semStart, endDate: semEnd })
         if (clock && fence) await setClassGeofence(id, fence)

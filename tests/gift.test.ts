@@ -48,8 +48,10 @@ describe('what a code gives', () => {
     expect(p.seats).toBe(20)
   })
 
-  it('puts no staff limit on lecturers and trainers, or on a workplace code without one', () => {
-    expect(giftPatch({ purpose: 'education' }, { months: 1, seats: 50 }, now).seats).toBeNull()
+  it('puts no staff limit on trainers, or on a workplace code without one; for lecturers it is lecturers covered', () => {
+    expect(giftPatch({ purpose: 'training' }, { months: 1, seats: 50 }, now).seats).toBeNull()
+    expect(giftPatch({ purpose: 'education' }, { months: 1, seats: 0 }, now).seats).toBeNull()
+    expect(giftPatch({ purpose: 'education' }, { months: 1, seats: 8 }, now).seats).toBe(8)
     expect(giftPatch({ purpose: 'workplace' }, { months: 1, seats: 0 }, now).seats).toBeNull()
   })
 
@@ -78,6 +80,11 @@ describe('what a code gives', () => {
     expect(withGift('workplace', 100, 50)).toBe(100)
     expect(withGift('workplace', undefined, 50)).toBe(50)
     expect(withGift('workplace', null, 50)).toBeNull()
-    expect(withGift('education', 20, 50)).toBeNull()
+    expect(withGift('training', 20, 50)).toBeNull()
+    // Lecturers: no number means one lecturer, so the bigger of the two always wins.
+    expect(withGift('education', 20, 50)).toBe(50)
+    expect(withGift('education', 12, 0)).toBe(12)
+    expect(withGift('education', null, 6)).toBe(6)
+    expect(withGift('education', undefined, 0)).toBeNull()
   })
 })
