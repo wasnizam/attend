@@ -58,29 +58,31 @@ async function apply(sub: Stripe.Subscription) {
   if (!orgId) return
   const { db } = firebase()
   const ref = db.doc(`organisations/${orgId}`)
-  const org = (await ref.get()).data()
-  if (!org) return
-  // A cancelled old subscription must not switch off a newer one the organisation has since bought.
-  if (org.stripeSubscriptionId && org.stripeSubscriptionId !== sub.id && !['active', 'trialing', 'past_due'].includes(sub.status)) return
-
   // Since 2025 the period end is on the subscription's item.
   const periodEnd = sub.items.data[0]?.current_period_end ?? (sub as unknown as { current_period_end?: number }).current_period_end ?? null
   const p = patchFromSubscription({ id: sub.id, status: sub.status, periodEnd, currency: sub.currency, metadata: sub.metadata })
-  const before = `${org.plan ?? 'early'}${org.seats ? `/${org.seats}` : ''}`
-  await ref.update({
-    plan: p.plan,
-    paidUntil: p.paidUntil ? Timestamp.fromMillis(p.paidUntil) : FieldValue.delete(),
-    seats: p.seats ?? FieldValue.delete(),
-    price: p.price ?? FieldValue.delete(),
-    stripeSubscriptionId: p.stripeSubscriptionId ?? FieldValue.delete(),
-    stripeStatus: p.stripeStatus,
-    stripePlanId: p.planId ?? FieldValue.delete(),
-    stripeCancelAtPeriodEnd: sub.cancel_at_period_end || FieldValue.delete(),
-  })
   const after = `${p.plan}${p.seats ? `/${p.seats}` : ''}`
-  if (before !== after || org.stripeStatus !== p.stripeStatus) {
-    await audit(db, 'subscription', `${before} → ${after} (${p.stripeStatus}${p.paidUntil ? `, until ${new Date(p.paidUntil).toDateString()}` : ''})`, orgId, org.name)
-  }
+  // In one step, so two messages arriving together change the plan once and log it once.
+  await db.runTransaction(async (tx) => {
+    const org = (await tx.get(ref)).data()
+    if (!org) return
+    // A cancelled old subscription must not switch off a newer one the organisation has since bought.
+    if (org.stripeSubscriptionId && org.stripeSubscriptionId !== sub.id && !['active', 'trialing', 'past_due'].includes(sub.status)) return
+    const before = `${org.plan ?? 'early'}${org.seats ? `/${org.seats}` : ''}`
+    tx.update(ref, {
+      plan: p.plan,
+      paidUntil: p.paidUntil ? Timestamp.fromMillis(p.paidUntil) : FieldValue.delete(),
+      seats: p.seats ?? FieldValue.delete(),
+      price: p.price ?? FieldValue.delete(),
+      stripeSubscriptionId: p.stripeSubscriptionId ?? FieldValue.delete(),
+      stripeStatus: p.stripeStatus,
+      stripePlanId: p.planId ?? FieldValue.delete(),
+      stripeCancelAtPeriodEnd: sub.cancel_at_period_end || FieldValue.delete(),
+    })
+    if (before !== after || org.stripeStatus !== p.stripeStatus) {
+      tx.set(db.collection('platformAudit').doc(), auditEntry('subscription', `${before} → ${after} (${p.stripeStatus}${p.paidUntil ? `, until ${new Date(p.paidUntil).toDateString()}` : ''})`, orgId, org.name))
+    }
+  })
 }
 
 /** A payment that went through: one line in the billing history, written once per Stripe invoice. */
@@ -116,5 +118,14 @@ async function note(customer: Stripe.Invoice['customer'], action: string, detail
   if (org) await audit(db, action, detail, org.id, org.data().name)
 }
 
+const auditEntry = (action: string, detail: string, organisationId: string, organisationName?: string) => ({
+  actor: 'stripe',
+  actorEmail: 'Stripe',
+  action,
+  detail: detail.slice(0, 1000),
+  organisationId,
+  organisationName: organisationName ?? '',
+  at: FieldValue.serverTimestamp(),
+})
 const audit = (db: FirebaseFirestore.Firestore, action: string, detail: string, organisationId: string, organisationName?: string) =>
-  db.collection('platformAudit').add({ actor: 'stripe', actorEmail: 'Stripe', action, detail: detail.slice(0, 1000), organisationId, organisationName: organisationName ?? '', at: FieldValue.serverTimestamp() })
+  db.collection('platformAudit').add(auditEntry(action, detail, organisationId, organisationName))
