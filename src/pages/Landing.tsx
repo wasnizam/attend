@@ -33,7 +33,7 @@ const initials = (name: string) => name.split(' ').map((w) => w[0]).join('').sli
  * An animated illustration of Dobry at work: the door screen with its changing QR, a phone that
  * has just scanned it, and the live list filling up. Every few seconds someone new arrives.
  */
-function LiveDemo({ edition }: { edition: Edition }) {
+export function LiveDemo({ edition }: { edition: Pick<Edition, 'id' | 'preview'> }) {
   const { title, time, counted } = edition.preview
   // Arrivals run up to the start time shown in the demo (e.g. 10:00 AM), in the edition's own words.
   const [, hh, mm, ap] = /(\d{1,2}):(\d{2})\s*(AM|PM)/.exec(time) ?? ['', '9', '00', 'AM']
@@ -144,7 +144,7 @@ export function Landing({ show }: { show?: EditionId }) {
       <header className="sticky top-0 z-20 border-b border-line/70 bg-white/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-5">
           <div className="flex items-center gap-8">
-            <Logo />
+            <Link to="/" aria-label={t('Dobry home')}><Logo /></Link>
             <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
               <a href="#trust" className="hover:text-ink">{t('Why Dobry')}</a>
               <a href="#features" className="hover:text-ink">{t('Features')}</a>

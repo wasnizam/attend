@@ -3,6 +3,7 @@ import { Outlet, Route, Routes } from 'react-router-dom'
 import { PageLoader } from './components/ui'
 import { isConfigured } from './lib/firebase'
 import { useLang } from './lib/i18n'
+import { Home } from './pages/Home'
 import { Landing } from './pages/Landing'
 
 // The participant check-in page and the lecturer app are separate bundles, so a
@@ -35,7 +36,7 @@ export function App() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes key={lang}>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<Home />} />
         {/* One page, three doors: each group has its own address to share. */}
         <Route path="/lecturers" element={<Landing show="lecturers" />} />
         <Route path="/trainers" element={<Landing show="trainers" />} />

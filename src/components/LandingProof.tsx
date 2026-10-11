@@ -189,7 +189,7 @@ function Visual({ kind }: { kind: TrustVisual }) {
 }
 
 /** What sets Dobry apart: the checks that make the record hard to cheat. */
-export function TrustSection({ edition }: { edition: Edition }) {
+export function TrustSection({ edition }: { edition: Pick<Edition, 'trust'> }) {
   return (
     <section id="trust" className="relative isolate scroll-mt-16 overflow-hidden bg-night py-20 text-white">
       <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(50rem_25rem_at_100%_0%,rgb(99_102_241/0.35),transparent_60%)]" />
