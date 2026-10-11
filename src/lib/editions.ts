@@ -165,7 +165,7 @@ export const EDITIONS: Edition[] = [
       ['Is it allowed?', 'Dobry is your own tool, like Excel or a quiz app. The official record still goes into your university system. If your university has rules on student data, check them; Dobry keeps only the ID and name from your class list.'],
     ],
     plans: [
-      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 class', 'Up to 60 students in a class', 'QR attendance and live list', 'Reports on screen', '✕ Export to your university system', '✕ Warning letters and barring list', '✕ Download reports as PDF'] },
+      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 class', 'Up to 60 students in a class', '5 single sessions a month', 'QR attendance and live list', 'Reports on screen', '✕ Export to your university system', '✕ Warning letters and barring list', '✕ Download reports as PDF'] },
       {
         name: 'Pro',
         price: { myr: 'RM19', usd: '$5' },
@@ -238,7 +238,7 @@ export const EDITIONS: Edition[] = [
       need: 'Just your laptop or the screen in the room, and participants’ own phones.',
     },
     plans: [
-      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 course', 'Unlimited participants', 'Every feature included'] },
+      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 course', '5 single sessions a month', 'Unlimited participants', 'Every feature included'] },
       { name: 'Pro', price: { myr: 'RM39', usd: '$9' }, per: 'a month', alt: { myr: 'Or RM390 a year: 12 months for the price of 10.', usd: 'Or $90 a year: 12 months for the price of 10.' }, items: ['Unlimited courses', 'Unlimited participants', 'Every feature included'], best: true },
     ],
   },
