@@ -1,6 +1,7 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import type Stripe from 'stripe'
 import { patchFromSubscription } from './_lib/billing.js'
+import { withGift } from './_lib/gift.js'
 import { NotConfigured, failure, firebase, json, stripe, stripeFor, stripeSettings } from './_lib/server.js'
 
 /**
@@ -60,14 +61,20 @@ async function apply(sub: Stripe.Subscription) {
   const ref = db.doc(`organisations/${orgId}`)
   // Since 2025 the period end is on the subscription's item.
   const periodEnd = sub.items.data[0]?.current_period_end ?? (sub as unknown as { current_period_end?: number }).current_period_end ?? null
-  const p = patchFromSubscription({ id: sub.id, status: sub.status, periodEnd, currency: sub.currency, metadata: sub.metadata })
-  const after = `${p.plan}${p.seats ? `/${p.seats}` : ''}`
+  const paid = patchFromSubscription({ id: sub.id, status: sub.status, periodEnd, currency: sub.currency, metadata: sub.metadata })
   // In one step, so two messages arriving together change the plan once and log it once.
   await db.runTransaction(async (tx) => {
     const org = (await tx.get(ref)).data()
     if (!org) return
     // A cancelled old subscription must not switch off a newer one the organisation has since bought.
     if (org.stripeSubscriptionId && org.stripeSubscriptionId !== sub.id && !['active', 'trialing', 'past_due'].includes(sub.status)) return
+    // Free months from a code still count: Pro runs to the later date, with the larger staff limit.
+    const giftUntil: number = org.giftUntil?.toMillis?.() ?? 0
+    const p =
+      giftUntil > Date.now()
+        ? { ...paid, plan: 'pro' as const, paidUntil: Math.max(paid.paidUntil ?? 0, giftUntil), seats: withGift(org.purpose, paid.plan === 'pro' ? paid.seats : undefined, org.giftSeats ?? 0) }
+        : paid
+    const after = `${p.plan}${p.seats ? `/${p.seats}` : ''}`
     const before = `${org.plan ?? 'early'}${org.seats ? `/${org.seats}` : ''}`
     tx.update(ref, {
       plan: p.plan,

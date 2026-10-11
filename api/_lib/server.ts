@@ -128,3 +128,16 @@ export async function catalog(db: Firestore): Promise<Catalog> {
 
 /** Where to send the customer back to: this same website. */
 export const origin = (request: Request) => (process.env.SITE_URL?.trim() || new URL(request.url).origin).replace(/\/$/, '')
+
+/** Someone on Attend's own team with one of these roles, proven by their sign-in. (No role on record means owner.) */
+export async function staff(request: Request, roles: string[]): Promise<{ uid: string; email: string; role: string }> {
+  const token = /^Bearer (.+)$/.exec(request.headers.get('authorization') ?? '')?.[1]
+  if (!token) throw new HttpError(401, 'Please log in again.')
+  const { db, auth } = firebase()
+  const decoded = await auth.verifyIdToken(token).catch(() => null)
+  if (!decoded) throw new HttpError(401, 'Please log in again.')
+  const doc = await db.doc(`platformOwners/${decoded.uid}`).get()
+  const role = doc.exists ? (doc.data()?.role ?? 'owner') : null
+  if (!role || !roles.includes(role)) throw new HttpError(403, 'Your role does not allow this.')
+  return { uid: decoded.uid, email: decoded.email ?? '', role }
+}

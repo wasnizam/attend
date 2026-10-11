@@ -932,6 +932,14 @@ describe('the payment keys', () => {
       await assertFails(setDoc(doc(db, 'platformSecrets/stripe'), { secretKey: 'sk_test_mine' }))
       await assertFails(deleteDoc(doc(db, 'platformSecrets/stripe')))
     }
+    // Free access codes are made and used through the server only: nobody can list or invent one.
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'giftCodes/ATT-AAAA-BBBB'), { code: 'ATT-AAAA-BBBB', months: 12, maxUses: 1, uses: 0 }))
+    for (const db of [staff('boss'), as('adminA'), anon()]) {
+      await assertFails(getDoc(doc(db, 'giftCodes/ATT-AAAA-BBBB')))
+      await assertFails(getDocs(collection(db, 'giftCodes')))
+      await assertFails(setDoc(doc(db, 'giftCodes/MINE'), { code: 'MINE', months: 60, maxUses: 1, uses: 0 }))
+    }
+    await assertFails(updateDoc(doc(as('adminA'), 'organisations/orgA'), { giftUntil: new Date('2030-01-01') }))
     // Paying is the server's word alone: a customer cannot give themselves a paid plan either.
     await assertFails(updateDoc(doc(as('adminA'), 'organisations/orgA'), { plan: 'pro' }))
     await assertFails(updateDoc(doc(as('adminA'), 'organisations/orgA'), { stripeCustomerId: 'cus_x' }))

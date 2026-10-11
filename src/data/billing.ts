@@ -48,3 +48,24 @@ export interface PaymentKeysStatus {
 /** Reads the state of the Stripe keys, saves new ones, or removes the saved ones. Owners of Attend only. */
 export const paymentKeys = (action: 'status' | 'save' | 'clear', keys: { secretKey?: string; webhookSecret?: string } = {}) =>
   call<PaymentKeysStatus>('/api/stripe-settings', { action, ...keys })
+
+/** Uses a free access code for the signed-in admin's organisation. Replies with when Pro now runs to. */
+export const redeemCode = (code: string) => call<{ until: number }>('/api/redeem', { code })
+
+export interface GiftCodeRow {
+  code: string
+  edition: 'any' | 'lecturers' | 'trainers' | 'workplace'
+  months: number
+  seats: number
+  maxUses: number
+  uses: number
+  redeemBy: string | null
+  note: string
+  disabled: boolean
+  redeemedBy: string[]
+  createdBy: string
+  createdAt: number | null
+}
+
+/** Free access codes, for Attend's team: list them, make a batch, or switch one off or on. */
+export const giftCodes = (action: 'list' | 'create' | 'disable' | 'enable', body: object = {}) => call<{ codes: GiftCodeRow[] }>('/api/gift-codes', { action, ...body })

@@ -6,7 +6,7 @@ import { changeName, changePassword, getOrganisation, renameOrganisation, resend
 import { useCurrency } from '../lib/currency'
 import { editionForPurpose } from '../lib/editions'
 import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, canPay, paidUntil, trialDaysLeft } from '../lib/plan'
-import { openBilling, startCheckout } from '../data/billing'
+import { openBilling, redeemCode, startCheckout } from '../data/billing'
 import { getPurpose } from '../lib/purpose'
 import { useAuth, useProfile } from '../hooks/useAuth'
 import { LANGS, getLang, locale, setLang, t } from '../lib/i18n'
@@ -75,6 +75,9 @@ export function Account() {
   const [yearly, setYearly] = useState(false)
   const [busyPlan, setBusyPlan] = useState<string | null>(null)
   const [payError, setPayError] = useState('')
+  const [code, setCode] = useState('')
+  const [codeBusy, setCodeBusy] = useState(false)
+  const [codeNote, setCodeNote] = useState<{ ok: boolean; text: string } | null>(null)
   // Back from Stripe's payment page.
   const [paidNotice] = useState(() => new URLSearchParams(window.location.search).get('paid') === '1')
   const choose = async (planId: string, byYear: boolean) => {
@@ -346,6 +349,32 @@ export function Account() {
                 </>
               ) : null}
             </div>
+          )}
+          {profile.role === 'admin' && (
+            <form
+              className="mt-5 border-t border-line pt-4"
+              onSubmit={async (e) => {
+                e.preventDefault()
+                setCodeBusy(true)
+                setCodeNote(null)
+                try {
+                  const { until } = await redeemCode(code)
+                  setCode('')
+                  setCodeNote({ ok: true, text: t('Code accepted. You have Pro until {date}.', { date: new Date(until).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) }) })
+                } catch (err) {
+                  setCodeNote({ ok: false, text: err instanceof Error ? err.message : String(err) })
+                } finally {
+                  setCodeBusy(false)
+                }
+              }}
+            >
+              <label className="block text-sm font-medium" htmlFor="gift-code">{t('Have a code?')}</label>
+              <div className="mt-1.5 flex gap-2">
+                <input id="gift-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={40} autoComplete="off" placeholder="ATT-XXXX-XXXX" className={`${inputClass} font-mono`} />
+                <Button type="submit" variant="secondary" busy={codeBusy} disabled={!code.trim()}>{t('Use code')}</Button>
+              </div>
+              {codeNote && <p className={`mt-2 rounded-lg px-4 py-2.5 text-sm ${codeNote.ok ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>{codeNote.text}</p>}
+            </form>
           )}
         </Card>
       )}

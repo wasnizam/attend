@@ -1506,4 +1506,13 @@ export const ms: Record<string, string> = {
   "This plan is already covered by your discount. Contact Attend to switch it on.": "Pelan ini sudah diliputi oleh diskaun anda. Hubungi Attend untuk mengaktifkannya.",
   "Your plan is paid in another currency. Choose the same currency, or contact Attend to change it.": "Pelan anda dibayar dalam mata wang lain. Pilih mata wang yang sama, atau hubungi Attend untuk menukarnya.",
   "There is no paid plan to manage yet.": "Belum ada pelan berbayar untuk diurus.",
+  "Have a code?": "Ada kod?",
+  "Use code": "Guna kod",
+  "Code accepted. You have Pro until {date}.": "Kod diterima. Anda mendapat Pro sehingga {date}.",
+  "That code is not valid. Check it and try again.": "Kod itu tidak sah. Semak dan cuba lagi.",
+  "That code has expired.": "Kod itu telah tamat tempoh.",
+  "Your organisation has already used this code.": "Organisasi anda telah menggunakan kod ini.",
+  "That code has already been used.": "Kod itu telah digunakan.",
+  "That code is for a different edition of Attend.": "Kod itu untuk edisi Attend yang lain.",
+  "Your role does not allow this.": "Peranan anda tidak membenarkan ini.",
 }

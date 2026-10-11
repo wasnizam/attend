@@ -90,6 +90,15 @@ In Stripe: add a webhook endpoint for `https://<site>/api/stripe-webhook` with t
 portal settings once. No products or prices need making by hand: one product per plan is created
 the first time it is bought, and the amount always comes from the price list.
 
+**Free access codes.** Console → Pricing → Free access codes (owner, admin or finance) makes codes
+that give Pro for a number of months with no payment: random (`ATT-7KQ2-M9XD`) or named, for one
+edition or any, with a staff limit for workplaces, a number of uses and an optional last day. A
+customer's admin types one under "Have a code?" on the Account page (`POST /api/redeem`). Codes
+live in `giftCodes`, which no browser can read; `api/gift-codes.ts` lists, makes and switches them
+off. A gift is remembered on the organisation (`giftUntil`, `giftSeats`), so a Stripe subscription
+starting or ending never cuts it short: Pro runs to the later date. Logic in `api/_lib/gift.ts`,
+tests in `tests/gift.test.ts`.
+
 Before payments are open, an admin can try the whole flow by opening `/app/account?pay=test`
 (that browser only). The pricing logic lives in `api/_lib/billing.ts` and is tested in
 `tests/billing.test.ts`; `npx tsc -p api` type-checks the functions.

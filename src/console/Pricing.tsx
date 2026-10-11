@@ -8,9 +8,10 @@ import { type Catalog, type CatalogPlan, CYCLE_LABEL, type Cycle, type Launch, t
 import { PAYMENTS_OPEN } from '../lib/plan'
 import { useLive } from '../hooks/useLive'
 import { useOwner } from './context'
+import { GiftCodes } from './GiftCodes'
 import { PageHead, Section, Tabs, td, th, useAction } from './ui'
 
-type View = 'plans' | 'codes'
+type View = 'plans' | 'codes' | 'free'
 
 /** What Attend charges: the plans on the website, and the discount codes the team hands out. */
 export default function Pricing() {
@@ -19,8 +20,8 @@ export default function Pricing() {
   return (
     <>
       <PageHead title={t('Pricing')} sub={t('Plans and prices shown on the website, and discount codes.')} />
-      <Tabs value={view} onChange={setView} items={[['plans', t('Plans and prices')], ['codes', t('Discount codes'), coupons.data?.length ?? 0]]} />
-      {view === 'plans' ? <Plans /> : <Codes coupons={coupons.data ?? []} />}
+      <Tabs value={view} onChange={setView} items={[['plans', t('Plans and prices')], ['codes', t('Discount codes'), coupons.data?.length ?? 0], ['free', t('Free access codes')]]} />
+      {view === 'plans' ? <Plans /> : view === 'codes' ? <Codes coupons={coupons.data ?? []} /> : <GiftCodes />}
     </>
   )
 }
