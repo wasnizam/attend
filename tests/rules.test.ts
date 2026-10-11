@@ -73,6 +73,19 @@ describe('participants (no account)', () => {
   it('can check in to a live session with its token', () =>
     assertSucceeds(setDoc(doc(anon(), 'attendance/live_ST002'), record('live', 'ST002'))))
 
+  it('cannot check in once a session with no list has reached the plan’s class size', async () => {
+    const set = (fields: object) => env.withSecurityRulesDisabled((ctx) => updateDoc(doc(ctx.firestore(), 'sessions/live'), fields))
+    await set({ cap: 60, presentCount: 59 })
+    await assertSucceeds(setDoc(doc(anon(), 'attendance/live_ST002'), record('live', 'ST002')))
+    await set({ cap: 60, presentCount: 60 })
+    await assertFails(setDoc(doc(anon(), 'attendance/live_ST003'), record('live', 'ST003')))
+    // The lecturer can still add someone by hand.
+    const { token: _token, ...byHand } = record('live', 'ST004')
+    await assertSucceeds(setDoc(doc(as('lecA'), 'attendance/live_ST004'), { ...byHand, method: 'manual', markedBy: 'lecA' }))
+    await set({ cap: null, presentCount: 500 })
+    await assertSucceeds(setDoc(doc(anon(), 'attendance/live_ST005'), record('live', 'ST005')))
+  })
+
   it('cannot check in twice with the same student ID', () =>
     assertFails(setDoc(doc(anon(), 'attendance/live_ST001'), record('live', 'ST001', { studentName: 'Someone else' }))))
 
@@ -481,6 +494,64 @@ describe('sign-up', () => {
     await assertSucceeds(setDoc(doc(as('joiner'), 'users/joiner'), profile('lecturer', 'orgA', { inviteCode: 'INVITEAA' })))
     await assertFails(setDoc(doc(as('joiner2'), 'users/joiner2'), profile('lecturer', 'orgA', { inviteCode: 'NOPE' })))
     await assertFails(setDoc(doc(as('joiner3'), 'users/joiner3'), profile('lecturer', 'orgB', { inviteCode: 'INVITEAA' })))
+  })
+
+  describe('a plan’s places for lecturers', () => {
+    const org = (fields: object) => env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'organisations/orgA'), { name: 'A', ownerId: 'adminA', inviteCode: 'INVITEAA', ...fields }))
+    const join = (uid: string) => setDoc(doc(as(uid), `users/${uid}`), profile('lecturer', 'orgA', { inviteCode: 'INVITEAA' }))
+    const paid = Timestamp.fromMillis(Date.now() + 30 * 86_400_000)
+
+    it('has no limit on early access, or for another edition', async () => {
+      await org({ usage: { lecturers: 40 } })
+      await assertSucceeds(join('j1'))
+      await org({ purpose: 'workplace', plan: 'free', usage: { lecturers: 40 } })
+      await assertSucceeds(join('j2'))
+    })
+
+    it('lets nobody join a free account or one lecturer’s Pro', async () => {
+      await org({ plan: 'free' })
+      await assertFails(join('j1'))
+      await org({ plan: 'pro', paidUntil: paid, usage: { lecturers: 1 } })
+      await assertFails(join('j2'))
+    })
+
+    it('fills a faculty up to the lecturers it pays for, and no further', async () => {
+      await org({ plan: 'pro', paidUntil: paid, seats: 5, usage: { lecturers: 4 } })
+      await assertSucceeds(join('j1'))
+      await org({ plan: 'pro', paidUntil: paid, seats: 5, usage: { lecturers: 5 } })
+      await assertFails(join('j2'))
+      // Paid for 30, then made smaller: nobody new until it fits again.
+      await org({ plan: 'pro', paidUntil: paid, seats: 5, usage: { lecturers: 30 } })
+      await assertFails(join('j3'))
+    })
+
+    it('drops back to one place when the paid plan runs out', async () => {
+      await org({ plan: 'pro', paidUntil: past, seats: 20, usage: { lecturers: 3 } })
+      await assertFails(join('j1'))
+    })
+
+    it('lets a trial bring in five, and none once it is over', async () => {
+      await org({ plan: 'trial', trialStarted: Timestamp.fromMillis(Date.now() - 86_400_000), usage: { lecturers: 4 } })
+      await assertSucceeds(join('j1'))
+      await org({ plan: 'trial', trialStarted: Timestamp.fromMillis(Date.now() - 86_400_000), usage: { lecturers: 5 } })
+      await assertFails(join('j2'))
+      await org({ plan: 'trial', trialStarted: Timestamp.fromMillis(Date.now() - 20 * 86_400_000), usage: { lecturers: 2 } })
+      await assertFails(join('j3'))
+    })
+
+    it('takes a place to switch someone back on, but never to switch them off', async () => {
+      await org({ plan: 'pro', paidUntil: paid, seats: 5, usage: { lecturers: 5 } })
+      await assertFails(updateDoc(doc(as('adminA'), 'users/offA'), { status: 'active' }))
+      await assertSucceeds(updateDoc(doc(as('adminA'), 'users/lecA2'), { status: 'disabled' }))
+      await org({ plan: 'pro', paidUntil: paid, seats: 5, usage: { lecturers: 4 } })
+      await assertSucceeds(updateDoc(doc(as('adminA'), 'users/offA'), { status: 'active' }))
+    })
+
+    it('never lets a browser write the count, at sign-up or after', async () => {
+      await assertFails(setDoc(doc(as('newbie'), 'organisations/orgU'), { name: 'U', ownerId: 'newbie', inviteCode: 'X', usage: { lecturers: 0 } }))
+      await assertFails(updateDoc(doc(as('adminA'), 'organisations/orgA'), { usage: { lecturers: 0 } }))
+      await assertFails(updateDoc(doc(as('lecA'), 'organisations/orgA'), { 'usage.lecturers': 0 }))
+    })
   })
 
   it("cannot make itself admin of someone else's organisation", async () => {

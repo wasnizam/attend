@@ -1,6 +1,6 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useRef, useState } from 'react'
-import { endSession, rotateCode, setRotating } from '../data/sessions'
+import { endSession, rotateCode, setPresentCount, setRotating } from '../data/sessions'
 import { useAbsentees } from '../hooks/useRoster'
 import { attendUrl, countPresent, courseLine, formatClock24, formatPercent, formatRange, percent } from '../lib/format'
 import { t } from '../lib/i18n'
@@ -42,6 +42,13 @@ export function LiveSession({ session, records, owner }: Props) {
     </div>
   )
   const present = countPresent(records)
+  // With no class list the plan's class size is held by the security rules, which read the
+  // session's own count: kept in step here while this screen is open.
+  const capped = session.cap != null
+  const full = capped && records.length >= session.cap!
+  useEffect(() => {
+    if (capped && records.length > 0 && records.length !== session.presentCount) setPresentCount(session.id, records.length).catch(() => {})
+  }, [capped, records.length, session.id, session.presentCount])
   const excused = records.length - present
   const pct = percent(present, session.expected)
   const absent = session.rosterId
@@ -184,7 +191,8 @@ export function LiveSession({ session, records, owner }: Props) {
         )}
 
         <div className="mt-6 space-y-3">
-          <ErrorNote>{error}</ErrorNote>
+          {full && <p className="rounded-lg bg-[#fff4d6] px-4 py-3 text-sm text-[#8a5a00]">{t('This session has reached your plan’s limit of {n} people. Nobody else can scan in; you can still add someone by hand.', { n: session.cap ?? 0 })}</p>}
+      <ErrorNote>{error}</ErrorNote>
           {owner && (
             <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg bg-canvas px-4 py-3 text-left">
               <span>

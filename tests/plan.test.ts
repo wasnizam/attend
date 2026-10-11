@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { TRIAL_DAYS, activePlan, allows, limitFor, locksOn, overLimit, setPlan, trialDaysLeft } from '../src/lib/plan'
+import { TRIAL_DAYS, activePlan, allows, limitFor, locksOn, overLimit, overPlan, setPlan, trialDaysLeft } from '../src/lib/plan'
 import { setPurpose } from '../src/lib/purpose'
 
 const DAY = 86_400_000
@@ -130,7 +130,10 @@ describe('what the free plan holds back', () => {
     expect(allows('pdf')).toBe(true)
     expect(limitFor('classes')).toBe(1)
     expect(limitFor('students')).toBeUndefined()
-    expect(limitFor('lecturers')).toBeUndefined()
+    expect(limitFor('sessions')).toBeUndefined()
+    // One lecturer: the same as the security rules hold a join to.
+    expect(limitFor('lecturers')).toBe(1)
+    expect(overPlan({ classes: 9, students: 900 })).toBeNull()
   })
 
   it('gives one lecturer on Pro ten classes at a time and 300 students in each', () => {
@@ -155,9 +158,39 @@ describe('what the free plan holds back', () => {
   it('lets a trial bring colleagues in, and early access has no limits at all', () => {
     setPurpose('education')
     setPlan({ plan: 'trial', trialStarted: { toMillis: () => Date.now() - 86_400_000 } })
-    expect(limitFor('lecturers')).toBeUndefined()
+    expect(limitFor('lecturers')).toBe(5)
     expect(limitFor('classes')).toBe(10)
     setPlan({})
     for (const kind of ['classes', 'students', 'lecturers', 'staff'] as const) expect(limitFor(kind)).toBeUndefined()
+  })
+
+  it('finds an account that holds more than its plan covers, however it got there', () => {
+    storage(true)
+    vi.stubGlobal('window', { location: { search: '' } })
+    const paid = { toMillis: () => Date.now() + 86_400_000 }
+    setPurpose('education')
+    // Paid for 30 lecturers, then made smaller.
+    setPlan({ plan: 'pro', paidUntil: paid, seats: 5, usage: { lecturers: 30 } })
+    expect(overPlan()).toEqual({ kind: 'lecturers', have: 30, max: 5 })
+    setPlan({ plan: 'pro', paidUntil: paid, seats: 5, usage: { lecturers: 5 } })
+    expect(overPlan({ classes: 10, students: 300 })).toBeNull()
+    expect(overPlan({ classes: 11 })).toEqual({ kind: 'classes', have: 11, max: 10 })
+    expect(overPlan({ classes: 3, students: 301 })).toEqual({ kind: 'students', have: 301, max: 300 })
+    // Set up on Pro or a trial, then stopped paying: the free plan's size applies again.
+    setPlan({ plan: 'pro', paidUntil: { toMillis: () => Date.now() - 1 }, usage: { lecturers: 1 } })
+    expect(overPlan({ classes: 10 })).toEqual({ kind: 'classes', have: 10, max: 1 })
+    expect(overPlan({ classes: 1, students: 61 })).toEqual({ kind: 'students', have: 61, max: 60 })
+    expect(limitFor('sessions')).toBe(5)
+    setPlan({ plan: 'trial', trialStarted: { toMillis: () => Date.now() - 20 * 86_400_000 }, usage: { lecturers: 12 } })
+    expect(overPlan({ classes: 1 })).toEqual({ kind: 'lecturers', have: 12, max: 1 })
+    // A workplace whose paid plan ended, with more staff than the free plan holds.
+    setPurpose('workplace')
+    setPlan({ plan: 'free', usage: { staff: 40 } })
+    expect(overPlan({ classes: 1 })).toEqual({ kind: 'staff', have: 40, max: 5 })
+    setPlan({ plan: 'pro', paidUntil: paid, seats: 50, usage: { staff: 40 } })
+    expect(overPlan({ classes: 6 })).toBeNull()
+    // Early access is never held back.
+    setPlan({ usage: { lecturers: 99, staff: 999 } })
+    expect(overPlan({ classes: 99, students: 9999 })).toBeNull()
   })
 })

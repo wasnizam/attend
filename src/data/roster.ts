@@ -1,5 +1,6 @@
 import { t } from '../lib/i18n'
 import { PAYMENTS_OPEN, activePlan, limitFor, overLimit } from '../lib/plan'
+import { refreshUsage } from './billing'
 import { collection, doc, getDoc, getDocs, increment, onSnapshot, query, where, writeBatch } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { studentKey } from '../lib/format'
@@ -65,10 +66,12 @@ export async function addToRoster(cls: WeeklyClass, entries: RosterEntry[], exis
         : t('Your plan includes up to {n} students in a class. For a bigger class, contact Dobry.', { n: most }),
     )
   if (added > 0 && limitFor('staff') !== undefined) {
-    // The plan counts people across all of this manager's lists, each person once.
-    const everyone = await staffElsewhere(cls)
-    for (const e of [...existing, ...entries]) everyone.add(e.studentKey)
-    if (overLimit('staff', everyone.size))
+    // The plan counts people across the whole company, each person once. The server can see
+    // every manager's lists; without it, this manager's own lists are counted.
+    const company = await refreshUsage(entries.map((e) => e.studentKey))
+    const everyone = company ? null : await staffElsewhere(cls)
+    if (everyone) for (const e of [...existing, ...entries]) everyone.add(e.studentKey)
+    if (overLimit('staff', company?.staffWith ?? everyone?.size ?? 0))
       throw new Error(
         PAYMENTS_OPEN
           ? t('Your plan includes up to {n} staff. Upgrade to add more.', { n: limitFor('staff') ?? 0 })
@@ -125,6 +128,8 @@ async function setCount(classId: string, delta: number) {
   const batch = writeBatch(db)
   batch.update(doc(db, 'classes', classId), { rosterCount: increment(delta) })
   await batch.commit()
+  // Where the plan is sold by size, have the server count the company's staff again.
+  if (limitFor('staff') !== undefined) void refreshUsage()
 }
 
 /** Participant side: look one ID up on the list. Returns the official name, or null. */

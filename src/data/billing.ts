@@ -28,6 +28,30 @@ export async function startCheckout(planId: string, currency: Currency, yearly =
   return 'leaving'
 }
 
+export interface Usage {
+  lecturers: number
+  staff: number
+  /** Workplace: the staff there would be with the IDs sent as `adding`. */
+  staffWith: number
+}
+
+/**
+ * Asks the server to count what the organisation uses of its plan and record it. Never fails:
+ * with no answer (offline, or the server not set up) it gives null and the app carries on.
+ */
+export async function refreshUsage(adding: string[] = []): Promise<Usage | null> {
+  try {
+    const token = await auth.currentUser?.getIdToken()
+    if (!token) return null
+    const res = await fetch('/api/usage', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ adding }) })
+    if (!res.ok) return null
+    const data = (await res.json()) as Partial<Usage>
+    return typeof data.lecturers === 'number' ? { lecturers: data.lecturers, staff: data.staff ?? 0, staffWith: data.staffWith ?? data.staff ?? 0 } : null
+  } catch {
+    return null
+  }
+}
+
 /** Opens Stripe's page for changing the card, seeing invoices or cancelling. */
 export async function openBilling(): Promise<void> {
   const reply = await call<{ url?: string }>('/api/portal', {})

@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { Button, PageLoader } from './components/ui'
@@ -27,6 +27,7 @@ import { SessionDetail } from './pages/SessionDetail'
 import { Signup } from './pages/Signup'
 import { Students } from './pages/Students'
 import { SubjectReport } from './pages/SubjectReport'
+import { refreshUsage } from './data/billing'
 import { Timetable } from './pages/Timetable'
 
 /**
@@ -36,6 +37,7 @@ import { Timetable } from './pages/Timetable'
 function PurposeGate({ organisationId, uid, children }: { organisationId: string; uid?: string; children: ReactNode }) {
   const [purpose, setLoaded] = useState<string | null>(null)
   const [suspended, setSuspended] = useState(false)
+  const counted = useRef(false)
   useEffect(
     () =>
       subscribeOrganisation(organisationId, (org) => {
@@ -45,7 +47,12 @@ function PurposeGate({ organisationId, uid, children }: { organisationId: string
         setPlan(org)
         setShiftMode(org?.shifts && allows('shifts'))
         setPhoneCheck(org?.phoneCheck)
-        setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}:${org?.seats ?? ''}:${org?.shifts ? 's' : ''}:${org?.phoneCheck ?? ''}`)
+        setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}:${org?.seats ?? ''}:${org?.usage?.lecturers ?? ''}:${org?.usage?.staff ?? ''}:${org?.shifts ? 's' : ''}:${org?.phoneCheck ?? ''}`)
+        // Once per visit, where the plan has a size: have the server count what is in use.
+        if (!counted.current && org && (org.plan ?? 'early') !== 'early') {
+          counted.current = true
+          void refreshUsage()
+        }
       }),
     [organisationId, uid],
   )

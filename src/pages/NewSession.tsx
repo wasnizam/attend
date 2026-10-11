@@ -7,7 +7,7 @@ import { subscribeOrgUsers } from '../data/account'
 import { createClass, deleteClass, handOver, setClassGeofence, updateClass } from '../data/classes'
 import { useLive } from '../hooks/useLive'
 import type { UserProfile } from '../lib/types'
-import { createSession } from '../data/sessions'
+import { createSession, singleSessionsInMonth } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
 import { useEditableClasses, useMyClasses } from '../hooks/useClasses'
 import { KINDS, KIND_LABEL, WEEK, addDays, classSlots, dayName, isoDate } from '../lib/format'
@@ -164,6 +164,11 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
         if (clock && fence) await setClassGeofence(id, fence)
         navigate(rosterFrom ? '/app/timetable' : `/app/timetable/${id}/students`)
       } else {
+        const single = limitFor('sessions')
+        if (single !== undefined && (await singleSessionsInMonth(profile, date)) >= single) {
+          setBusy(false)
+          return setError(t('The free plan includes {n} single sessions a month. Upgrade to Pro for more, or add it as a class.', { n: single }))
+        }
         const list = lists.find((c) => c.id === rosterId)
         const id = await createSession(profile, {
           ...details,

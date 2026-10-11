@@ -18,7 +18,9 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { getPhoneCheck, getPurpose, has } from '../lib/purpose'
-import { isAway, parseDate, randomToken } from '../lib/format'
+import { isAway, isoDate, parseDate, randomToken } from '../lib/format'
+import { t } from '../lib/i18n'
+import { type Over, activePlan, limitFor, locksOn, overPlan } from '../lib/plan'
 import type { ClassKind, Delivery, GeoMode, Geofence, Session, SessionLink, UserProfile } from '../lib/types'
 
 export interface NewSession {
@@ -171,6 +173,8 @@ const newCode = () => randomToken(5)
  * session: it gets a new token, so the QR that was closed stays dead.
  */
 export async function startSession(session: Session, rotatingPref = false): Promise<void> {
+  // A new session only: one being reopened was already counted when it first started.
+  if (session.status === 'scheduled') await withinPlan(session)
   // Online and hybrid sessions always use the code: there is no room to be standing in.
   const rotating = rotatingPref || isRemote(session)
   const expiresAt = Timestamp.fromDate(expiryFor(session))
@@ -206,6 +210,8 @@ export async function startSession(session: Session, rotatingPref = false): Prom
       qrCode: rotating ? newCode() : null,
       qrCodePrev: null,
       checkpoint: null,
+      // With no class list anyone may type an ID, so the plan's class size is held here instead.
+      cap: session.rosterId ? null : (limitFor('students') ?? null),
     })
     try {
       await batch.commit()
@@ -215,6 +221,49 @@ export async function startSession(session: Session, rotatingPref = false): Prom
     }
   }
   throw lastError
+}
+
+/** Why a session may not start, in words for the person on the screen. */
+export function overPlanMessage(over: Over): string {
+  const free = activePlan() === 'free'
+  const n = { n: over.max, have: over.have }
+  if (over.kind === 'lecturers')
+    return over.max === 1
+      ? t('Your plan is for one lecturer, and {have} can sign in to this account. Ask your admin to choose the Faculty plan, or to switch the others off, before starting a session.', n)
+      : t('Your plan covers {n} lecturers, and {have} can sign in to this account. Ask your admin to add more, or to switch some off, before starting a session.', n)
+  if (over.kind === 'staff') return t('Your plan covers {n} staff, and {have} are on your lists. Choose a bigger plan on the Account page, or remove some, before opening a new day.', n)
+  if (over.kind === 'students')
+    return free
+      ? t('The free plan includes up to {n} students in a class, and this list has {have}. Upgrade to Pro to start it.', n)
+      : t('Your plan includes up to {n} students in a class, and this list has {have}. For a bigger class, contact Dobry.', n)
+  return has('clock')
+    ? t('The free plan includes one office with one shift. Upgrade to add more.')
+    : free
+      ? t('The free plan includes 1 class, and you are running {have}. Upgrade to Pro, or end the others, to start a session.', n)
+      : t('Your plan includes up to {n} classes at a time, and you are running {have}. End the ones that are over to start a session.', n)
+}
+
+/** Stops a new session when the organisation holds more than its plan covers. */
+async function withinPlan(session: Session) {
+  if (!locksOn() || activePlan() === 'early') return
+  // Only what the limits need is read: this person's classes, for how many run now and the list's size.
+  const mine = await getDocs(query(collection(db, 'classes'), where('organisationId', '==', session.organisationId), where('ownerId', '==', session.ownerId))).then(
+    (snap) => snap.docs.map((d) => ({ id: d.id, ...(d.data() as { endDate?: string | null; rosterCount?: number }) })),
+    () => null,
+  )
+  const today = isoDate()
+  const over = overPlan(
+    mine
+      ? { classes: mine.filter((c) => !c.endDate || c.endDate >= today).length, students: mine.find((c) => c.id === (session.rosterId ?? session.classId))?.rosterCount }
+      : {},
+  )
+  if (over) throw new Error(overPlanMessage(over))
+}
+
+/** How many single sessions (not part of a class) this person has made in the month of `date`. */
+export async function singleSessionsInMonth(profile: UserProfile, date: string): Promise<number> {
+  const snap = await getDocs(query(sessions, where('organisationId', '==', profile.organisationId), where('ownerId', '==', profile.id)))
+  return snap.docs.filter((d) => !d.data().classId && String(d.data().date ?? '').slice(0, 7) === date.slice(0, 7)).length
 }
 
 export const isRemote = (s: { delivery?: Delivery }) => s.delivery === 'online' || s.delivery === 'hybrid'

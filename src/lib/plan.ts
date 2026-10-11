@@ -46,7 +46,14 @@ export interface PlanFields {
   paidUntil?: Stamp | null
   /** Workplace Pro: how many staff the paid tier covers. Lecturers: how many lecturers (Faculty); none means one. */
   seats?: number
+  /** What the organisation uses, counted by the server: lecturers who can sign in, and a workplace's staff. */
+  usage?: { lecturers?: number; staff?: number }
 }
+
+/** Lecturers a trial may bring in, to try the Faculty plan. */
+export const TRIAL_LECTURERS = 5
+/** Free lecturers and trainers: single sessions (outside a class) in a calendar month. */
+export const FREE_SESSIONS = 5
 
 /**
  * Lecturers: what one lecturer may hold. Pro is one lecturer's plan, so its limits are ones a
@@ -117,23 +124,25 @@ export function trialDaysLeft(now = Date.now()): number | null {
 
 export const paidUntil = () => (activePlan() === 'pro' ? fields.paidUntil ?? null : null)
 
-export type Limit = 'classes' | 'staff' | 'students' | 'lecturers'
+export type Limit = 'classes' | 'staff' | 'students' | 'lecturers' | 'sessions'
 
 /**
  * The most the current plan allows: classes one person runs at a time, people on a workplace's
- * lists, students on one class list, or lecturers in the organisation. Undefined = no limit.
+ * lists, students on one class list, lecturers in the organisation, or single sessions in a
+ * month. Undefined = no limit.
  */
 export function limitFor(kind: Limit): number | undefined {
   const active = activePlan()
   const purpose = getPurpose()
   if (active === 'early') return undefined
+  if (kind === 'sessions') return active === 'free' && locksOn() && (purpose === 'education' || purpose === 'training') ? FREE_SESSIONS : undefined
   if (purpose === 'education') {
     const paid = active === 'pro' || active === 'trial'
     if (kind === 'classes') return paid ? LECTURER_LIMIT.pro.classes : LECTURER_LIMIT.free.classes
     // New with the paid plans, so held back until there is a way to pay.
     if (kind === 'students') return paid ? LECTURER_LIMIT.pro.students : locksOn() ? LECTURER_LIMIT.free.students : undefined
-    // A trial may bring colleagues in to try the Faculty plan.
-    if (kind === 'lecturers') return active === 'pro' ? Math.max(1, fields.seats ?? 1) : active === 'free' && locksOn() ? 1 : undefined
+    // The security rules hold a new lecturer to the same numbers when they join.
+    if (kind === 'lecturers') return active === 'pro' ? Math.max(1, fields.seats ?? 1) : active === 'trial' ? TRIAL_LECTURERS : 1
     return undefined
   }
   if (kind === 'students' || kind === 'lecturers') return undefined
@@ -148,4 +157,27 @@ export function limitFor(kind: Limit): number | undefined {
 export function overLimit(kind: Limit, count: number): boolean {
   const max = limitFor(kind)
   return max !== undefined && count > max
+}
+
+export interface Over {
+  kind: Limit
+  have: number
+  max: number
+}
+
+/**
+ * Whether the organisation holds more than its plan covers, however it came to: a plan that
+ * ended or was made smaller, a class handed over, an end date moved. Checked when a session is
+ * about to start. `mine` is what only the person starting it can count: the classes they are
+ * running now, and the students on this session's list.
+ */
+export function overPlan(mine: { classes?: number; students?: number } = {}): Over | null {
+  if (!locksOn() || activePlan() === 'early') return null
+  const have: Partial<Record<Limit, number>> = { lecturers: fields.usage?.lecturers, staff: fields.usage?.staff, classes: mine.classes, students: mine.students }
+  for (const kind of ['lecturers', 'staff', 'classes', 'students'] as const) {
+    const max = limitFor(kind)
+    const n = have[kind]
+    if (max !== undefined && n !== undefined && n > max) return { kind, have: n, max }
+  }
+  return null
 }

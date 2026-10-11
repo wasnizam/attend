@@ -26,6 +26,7 @@ import { auth } from '../lib/auth'
 import { db } from '../lib/firebase'
 import { randomToken } from '../lib/format'
 import { PAYMENTS_OPEN } from '../lib/plan'
+import { refreshUsage } from './billing'
 import { startPlanFor } from '../lib/pricing'
 import type { Purpose } from '../lib/purpose'
 import type { Organisation, Role, UserProfile, UserStatus } from '../lib/types'
@@ -135,15 +136,23 @@ export async function joinOrganisationProfile(name: string, code: string) {
   const inviteCode = code.trim().toUpperCase()
   const invite = await lookupInvite(inviteCode)
   if (!invite) throw new Error('That invite code is not valid.')
-  await setDoc(doc(db, 'users', user.uid), {
-    name: name.trim(),
-    email: user.email,
-    role: 'lecturer',
-    status: 'active',
-    organisationId: invite.organisationId,
-    inviteCode,
-    createdAt: serverTimestamp(),
-  })
+  try {
+    await setDoc(doc(db, 'users', user.uid), {
+      name: name.trim(),
+      email: user.email,
+      role: 'lecturer',
+      status: 'active',
+      organisationId: invite.organisationId,
+      inviteCode,
+      createdAt: serverTimestamp(),
+    })
+  } catch (e) {
+    // The invite is good, so a refusal means the organisation's plan has no place left.
+    if ((e as { code?: string }).code === 'permission-denied') throw new Error('This organisation’s plan has no place left for another person. Ask its admin to add one, then use the link again.')
+    throw e
+  }
+  // The plan counts who can sign in; the server keeps that number.
+  void refreshUsage()
 }
 
 export function subscribeProfile(
@@ -190,5 +199,12 @@ export function subscribeOrgUsers(
 
 export const setUserRole = (userId: string, role: Role) => updateDoc(doc(db, 'users', userId), { role })
 
-export const setUserStatus = (userId: string, status: UserStatus) =>
-  updateDoc(doc(db, 'users', userId), { status })
+export const setUserStatus = async (userId: string, status: UserStatus) => {
+  try {
+    await updateDoc(doc(db, 'users', userId), { status })
+  } catch (e) {
+    if (status === 'active' && (e as { code?: string }).code === 'permission-denied') throw new Error('Your plan has no place left for another person. Add one on the Account page first.')
+    throw e
+  }
+  await refreshUsage()
+}

@@ -56,6 +56,25 @@ service cloud.firestore {
         : launch.get('lecturers', 'early');
     }
 
+    // Lecturers: how many people the organisation's plan lets sign in. Early access has no limit;
+    // Pro is one lecturer; the Faculty plan is as many as it pays for; a trial may bring in five.
+    // (Other editions are not held to a number here.)
+    function places(org) {
+      return org.get('purpose', 'education') != 'education' || org.get('plan', 'early') == 'early' ? 100000
+        : org.plan == 'pro' && org.get('paidUntil', null) != null && request.time < org.paidUntil
+          ? (org.get('seats', 1) > 1 ? org.seats : 1)
+        : org.plan == 'trial' && org.get('trialStarted', null) != null && request.time < org.trialStarted + duration.value(14, 'd')
+          ? 5
+        : 1;
+    }
+
+    // Whether one more person may sign in. The number in use is counted by the server
+    // (organisation.usage), which no browser can write.
+    function hasPlace(orgId) {
+      let org = get(/databases/$(database)/documents/organisations/$(orgId)).data;
+      return org.get('usage', {}).get('lecturers', 1) < places(org);
+    }
+
     function changes(fields) {
       return request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
     }
@@ -97,7 +116,9 @@ service cloud.firestore {
         && request.resource.data.get('purpose', 'education') in ['education', 'training', 'events', 'workplace']
         && (request.resource.data.get('plan', 'early') == startPlan(request.resource.data.get('purpose', 'education'))
             || (request.resource.data.plan == 'trial' && request.resource.data.trialStarted == request.time))
-        && !('paidUntil' in request.resource.data) && !('seats' in request.resource.data);
+        && !('paidUntil' in request.resource.data) && !('seats' in request.resource.data)
+        // What is in use is counted by the server only.
+        && !('usage' in request.resource.data);
       // The purpose and the plan are what the customer pays for: not theirs to change.
       allow update: if adminOf(orgId)
         && onlyChanges(['name', 'shifts', 'phoneCheck', 'otRule', 'timezone'])
@@ -152,7 +173,9 @@ service cloud.firestore {
           ||
           (request.resource.data.role == 'lecturer'
             && get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode))
-                 .data.organisationId == request.resource.data.organisationId)
+                 .data.organisationId == request.resource.data.organisationId
+            // Only while the organisation's plan has a place for one more.
+            && hasPlace(request.resource.data.organisationId))
         );
 
       allow update: if
@@ -168,7 +191,9 @@ service cloud.firestore {
           && request.auth.uid != userId
           && onlyChanges(['role', 'status'])
           && request.resource.data.role in ['lecturer', 'admin']
-          && request.resource.data.status in ['active', 'disabled']);
+          && request.resource.data.status in ['active', 'disabled']
+          // Switching someone back on takes a place, like joining.
+          && (resource.data.status == 'active' || request.resource.data.status != 'active' || hasPlace(resource.data.organisationId)));
     }
 
     // ---------- sessions ----------
@@ -317,6 +342,8 @@ service cloud.firestore {
         && s.status == 'active'
         && s.token == d.token
         && request.time < s.expiresAt
+        // A session with no class list takes as many people as the plan's class size, no more.
+        && (s.get('cap', null) == null || s.get('presentCount', 0) < s.cap)
         && d.organisationId == s.organisationId
         && d.ownerId == s.ownerId
         && d.sessionName == s.name

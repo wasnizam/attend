@@ -22,6 +22,19 @@ export async function POST(request: Request): Promise<Response> {
       if (e instanceof BillingError) throw new HttpError(400, e.message)
       throw e
     }
+    // Lecturers: a plan must cover everyone who can sign in, so a faculty cannot pay for 5 and keep 30.
+    if (me.org.purpose === undefined || me.org.purpose === 'education') {
+      const active = (await db.collection('users').where('organisationId', '==', me.orgId).where('status', '==', 'active').select().get()).size
+      const covers = Math.max(1, charge.seats)
+      if (active > covers) {
+        throw new HttpError(
+          400,
+          covers === 1
+            ? `This plan is for one lecturer, and ${active} can sign in to your account. Choose the Faculty plan, or switch the others off first.`
+            : `${active} lecturers can sign in to your account. Choose at least ${active}, or switch some off first.`,
+        )
+      }
+    }
     const s = await stripe()
 
     // One Stripe product per plan, made the first time someone buys it. It carries its own name

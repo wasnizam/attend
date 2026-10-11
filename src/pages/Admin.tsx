@@ -338,7 +338,8 @@ function Users({ users, organisation, me }: { users: ReturnType<typeof useLive<U
   if (users.error) return <ErrorNote>{t('We could not load users. Check your connection and reload.')}</ErrorNote>
   // Lecturers: the plan covers a number of lecturers; no invite link while every place is taken.
   const seats = limitFor('lecturers')
-  const full = seats !== undefined && (users.data ?? []).filter((u) => u.status === 'active').length >= seats
+  const active = (users.data ?? []).filter((u) => u.status === 'active').length
+  const full = seats !== undefined && active >= seats
 
   return (
     <div className="space-y-4">

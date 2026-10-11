@@ -72,8 +72,10 @@ export interface Organisation {
   trialStarted?: Timestamp | null
   /** Pro runs until this moment. Written by the payment webhook only. */
   paidUntil?: Timestamp | null
-  /** Workplace Pro: staff covered by the paid tier. */
+  /** Workplace Pro: staff covered by the paid tier. Lecturers: lecturers covered (the Faculty plan). */
   seats?: number
+  /** Counted and written by the server only: lecturers who can sign in, and a workplace's staff. */
+  usage?: { lecturers?: number; staff?: number }
   /** Workplace: shifts are switched on (several shifts, rotation, the shift plan). */
   shifts?: boolean
   /** Workplace: when a normal day's overtime starts (see buildPayroll). Missing means 'fullDay'. */
@@ -131,6 +133,8 @@ export interface Session extends CourseDetails, Geofence {
   mode: 'qr'
   /** Set when the session was started from a weekly timetable class. */
   classId?: string | null
+  /** With no class list: the most people the plan lets check in. The security rules hold scans to it. */
+  cap?: number | null
   /** The class whose student list this session checks IDs against, if any. */
   rosterId?: string | null
   status: SessionStatus
