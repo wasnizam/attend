@@ -1,5 +1,5 @@
 import type Stripe from 'stripe'
-import { BillingError, chargeFor, subscriptionMetadata } from './_lib/billing.js'
+import { BillingError, STATEMENT_NAME, chargeFor, subscriptionMetadata } from './_lib/billing.js'
 import { HttpError, caller, catalog, failure, firebase, json, origin, stripe } from './_lib/server.js'
 
 const missing = (e: unknown) => (e as { code?: string })?.code === 'resource_missing'
@@ -24,11 +24,15 @@ export async function POST(request: Request): Promise<Response> {
     }
     const s = await stripe()
 
-    // One Stripe product per plan, made the first time someone buys it.
-    await s.products.retrieve(charge.productId).catch((e) => {
+    // One Stripe product per plan, made the first time someone buys it. It carries its own name
+    // for bank statements, so the Stripe account's own (which may serve other businesses) is left alone.
+    const product = await s.products.retrieve(charge.productId).catch((e) => {
       if (!missing(e)) throw e
-      return s.products.create({ id: charge.productId, name: charge.productName })
+      return s.products.create({ id: charge.productId, name: charge.productName, statement_descriptor: STATEMENT_NAME })
     })
+    if (product.name !== charge.productName || product.statement_descriptor !== STATEMENT_NAME) {
+      await s.products.update(charge.productId, { name: charge.productName, statement_descriptor: STATEMENT_NAME })
+    }
 
     // One Stripe customer per organisation. (An ID saved while testing does not exist in live mode.)
     let customer: string | undefined = me.org.stripeCustomerId

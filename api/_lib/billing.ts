@@ -33,6 +33,9 @@ export const YEAR_PAYS_FOR = 10
 /** Whether a plan may be paid by the year. The website offers it for exactly the same plans. */
 export const offersYear = (plan: Pick<CatalogPlan, 'cycle' | 'noteMyr' | 'noteUsd'>) => plan.cycle === 'month' && /year/i.test(`${plan.noteMyr ?? ''} ${plan.noteUsd ?? ''}`)
 
+/** What a customer sees on their bank statement for a Dobry payment (5 to 22 letters). */
+export const STATEMENT_NAME = 'DOBRY'
+
 export const editionOf = (purpose: string | undefined): EditionId => (purpose === 'workplace' ? 'workplace' : purpose === 'training' ? 'trainers' : 'lecturers')
 
 const EDITION_NAME: Record<EditionId, string> = { lecturers: 'Lecturers', trainers: 'Trainers', workplace: 'Workplace' }
