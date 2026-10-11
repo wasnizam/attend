@@ -148,7 +148,7 @@ function ClassReportView({ cls }: { cls: WeeklyClass }) {
         ],
         notes: { heading: t('How this is counted'), items: [t(COUNTED_NOTE)] },
         signatures: [t('Lecturer'), t('Head of department')],
-        footer: t('Made with Attend on {date}', { date: formatDate(isoDate()) }),
+        footer: t('Made with Dobry on {date}', { date: formatDate(isoDate()) }),
       })
     } finally {
       setMaking(false)

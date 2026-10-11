@@ -30,7 +30,7 @@ import { SubjectReport } from './pages/SubjectReport'
 import { Timetable } from './pages/Timetable'
 
 /**
- * Finds out what the organisation uses Attend for before any screen is drawn, and
+ * Finds out what the organisation uses Dobry for before any screen is drawn, and
  * redraws everything if an admin changes it. The purpose picks the words and features.
  */
 function PurposeGate({ organisationId, uid, children }: { organisationId: string; uid?: string; children: ReactNode }) {
@@ -50,12 +50,12 @@ function PurposeGate({ organisationId, uid, children }: { organisationId: string
     [organisationId, uid],
   )
   if (!purpose) return <PageLoader />
-  // Paused by the owner of Attend (unpaid, or on request): nothing is deleted, nothing can be used.
+  // Paused by the owner of Dobry (unpaid, or on request): nothing is deleted, nothing can be used.
   if (suspended) {
     return (
       <div className="mx-auto max-w-md px-6 py-24 text-center">
         <h1 className="text-xl font-semibold">{t('This account is paused')}</h1>
-        <p className="mt-2 text-muted">{t('Your organisation’s Attend account has been paused. All your records are kept safe. Please contact Attend to restore it.')}</p>
+        <p className="mt-2 text-muted">{t('Your organisation’s Dobry account has been paused. All your records are kept safe. Please contact Dobry to restore it.')}</p>
         <Button className="mt-6" variant="secondary" onClick={() => signOut()}>
           {t('Log out')}
         </Button>

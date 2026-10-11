@@ -7,7 +7,7 @@ import { useOwner } from './context'
 import { PaymentKeys } from './PaymentKeys'
 import { PageHead, Section, useAction } from './ui'
 
-/** The company that runs Attend, as it appears on invoices; and the price list for reference. */
+/** The company that runs Dobry, as it appears on invoices; and the price list for reference. */
 export default function Settings() {
   const { settings, me } = useOwner()
   const { busy, run, messages } = useAction()
@@ -49,7 +49,7 @@ export default function Settings() {
               <label className="block text-xs font-medium text-muted">{t('Default currency')}<select value={s.currency} onChange={(e) => setS({ ...s, currency: e.target.value as 'MYR' | 'USD' })} className={`${inputClass} mt-1`}><option value="MYR">RM</option><option value="USD">US$</option></select></label>
             </div>
             <p className="text-xs text-muted">{t('Invoices are numbered {prefix}-{year}-0001, 0002… in order, and never reused.', { prefix: s.invoicePrefix || 'INV', year: new Date().getFullYear() })}</p>
-            <label className="block text-xs font-medium text-muted">{t('How to pay (printed on unpaid invoices)')}<textarea rows={4} value={s.paymentInfo} onChange={(e) => setS({ ...s, paymentInfo: e.target.value })} placeholder={t('e.g. Maybank 5123 4567 8901, Attend Sdn Bhd. DuitNow: 0123456789. Please use the invoice number as reference.')} className={`${inputClass} mt-1`} /></label>
+            <label className="block text-xs font-medium text-muted">{t('How to pay (printed on unpaid invoices)')}<textarea rows={4} value={s.paymentInfo} onChange={(e) => setS({ ...s, paymentInfo: e.target.value })} placeholder={t('e.g. Maybank 5123 4567 8901, Dobry Sdn Bhd. DuitNow: 0123456789. Please use the invoice number as reference.')} className={`${inputClass} mt-1`} /></label>
           </fieldset>
         </Section>
         {edit && <div className="lg:col-span-2"><Button type="submit" busy={busy === 'save'}>{t('Save settings')}</Button></div>}

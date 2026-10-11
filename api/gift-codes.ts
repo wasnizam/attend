@@ -10,7 +10,7 @@ const int = (v: unknown, min: number, max: number, fallback: number) => {
 }
 
 /**
- * Free access codes for Attend's team (owner, admin or finance): make a batch, list them, or
+ * Free access codes for Dobry's team (owner, admin or finance): make a batch, list them, or
  * switch one off. Codes live where no browser can read them, so they cannot be guessed at or listed
  * by anyone else.
  */

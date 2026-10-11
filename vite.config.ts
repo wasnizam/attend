@@ -13,8 +13,8 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Attend',
-        short_name: 'Attend',
+        name: 'Dobry',
+        short_name: 'Dobry',
         description: 'Start a session. Share the QR. Attendance is done.',
         start_url: '/app',
         scope: '/',

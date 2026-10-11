@@ -65,7 +65,7 @@ export async function addToRoster(cls: WeeklyClass, entries: RosterEntry[], exis
       throw new Error(
         PAYMENTS_OPEN
           ? t('Your plan includes up to {n} staff. Upgrade to add more.', { n: limitFor('staff') ?? 0 })
-          : t('The free plan includes up to {n} staff. Paid plans open soon; contact Attend if you need more now.', { n: limitFor('staff') ?? 0 }),
+          : t('The free plan includes up to {n} staff. Paid plans open soon; contact Dobry if you need more now.', { n: limitFor('staff') ?? 0 }),
       )
   }
   for (let i = 0; i < entries.length; i += BATCH) {

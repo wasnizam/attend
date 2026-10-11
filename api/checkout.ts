@@ -59,7 +59,7 @@ export async function POST(request: Request): Promise<Response> {
         return null
       })
       if (sub && ['active', 'trialing', 'past_due'].includes(sub.status)) {
-        if (sub.currency !== currency) throw new HttpError(400, 'Your plan is paid in another currency. Choose the same currency, or contact Attend to change it.')
+        if (sub.currency !== currency) throw new HttpError(400, 'Your plan is paid in another currency. Choose the same currency, or contact Dobry to change it.')
         await s.subscriptions.update(sub.id, { items: [{ id: sub.items.data[0].id, price_data }], metadata, proration_behavior: 'create_prorations', cancel_at_period_end: false })
         return json({ changed: true })
       }

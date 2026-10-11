@@ -136,9 +136,9 @@ export function Stat({ label, value, note }: { label: string; value: ReactNode; 
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <span className={cx('inline-flex items-center gap-2 text-lg font-semibold tracking-tight', className)}>
-      <img src="/favicon.svg" alt="" className="size-7 rounded-md" />
-      Attend
+    <span className={cx('inline-flex items-center gap-2 font-display text-xl font-bold tracking-tight', className)}>
+      <img src="/favicon.svg" alt="" className="size-7 rounded-[7px]" />
+      Dobry
     </span>
   )
 }

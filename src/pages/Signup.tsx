@@ -91,7 +91,7 @@ export function Signup() {
         </p>
         {!joining && (
           <p className="mt-3 rounded-lg bg-canvas px-3 py-2 text-sm">
-            <span className="font-semibold">Attend · {t(edition.label)}</span>{' '}
+            <span className="font-semibold">Dobry · {t(edition.label)}</span>{' '}
             <Link to="/" className="font-medium text-accent">{t('Not you? See the others')}</Link>
           </p>
         )}

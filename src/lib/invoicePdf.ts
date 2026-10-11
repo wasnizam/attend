@@ -15,7 +15,7 @@ export async function downloadInvoicePdf(inv: Invoice, seller: PlatformSettings)
 
   doc.setFillColor(...accent).rect(0, 0, W, 3, 'F')
   // Seller, top left.
-  doc.setFont('helvetica', 'bold').setFontSize(16).setTextColor(...ink).text(plain(seller.companyName || 'Attend'), M, 20)
+  doc.setFont('helvetica', 'bold').setFontSize(16).setTextColor(...ink).text(plain(seller.companyName || 'Dobry'), M, 20)
   doc.setFont('helvetica', 'normal').setFontSize(8.5).setTextColor(...muted)
   const sellerLines = [seller.regNo && `Reg. no. ${seller.regNo}`, ...plain(seller.address).split('\n'), seller.email, seller.phone, seller.sstNo && `SST reg. no. ${seller.sstNo}`].filter(Boolean) as string[]
   doc.text(sellerLines.map(plain), M, 26)
@@ -87,7 +87,7 @@ export async function downloadInvoicePdf(inv: Invoice, seller: PlatformSettings)
   if (inv.status !== 'paid') block('HOW TO PAY', seller.paymentInfo)
   block('NOTE', inv.note ?? '')
   const H = doc.internal.pageSize.getHeight()
-  doc.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(...muted).text(plain(`${seller.companyName || 'Attend'} - ${inv.number}`), M, H - 10)
+  doc.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(...muted).text(plain(`${seller.companyName || 'Dobry'} - ${inv.number}`), M, H - 10)
   doc.text('Computer-generated invoice. No signature required.', W - M, H - 10, { align: 'right' })
   doc.save(`${inv.number}.pdf`)
 }

@@ -5,7 +5,7 @@ import { t } from '../lib/i18n'
 import { dateOf, useOwner } from './context'
 import { PageHead, Section, td, th, useAction } from './ui'
 
-/** Who works on Attend's back office, and what each may do. */
+/** Who works on Dobry's back office, and what each may do. */
 export default function Team() {
   const { team, invites, me } = useOwner()
   const { busy, run, messages } = useAction()
@@ -20,7 +20,7 @@ export default function Team() {
   }
   return (
     <>
-      <PageHead title={t('Team & roles')} sub={t('The people who run Attend, each with a role. Only owners can change the team.')} />
+      <PageHead title={t('Team & roles')} sub={t('The people who run Dobry, each with a role. Only owners can change the team.')} />
       {messages}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="overflow-x-auto lg:col-span-2">
@@ -41,7 +41,7 @@ export default function Team() {
                   </td>
                   <td className={`${td} whitespace-nowrap text-muted`}>{dateOf(m.addedAt?.toMillis())}</td>
                   <td className={`${td} text-right`}>
-                    {owner && m.id !== me.id && <button type="button" className="text-xs font-medium text-bad" onClick={() => run(`x${m.id}`, () => removeStaff(m, me), t('Removed from the team.'), t('Remove {email} from the Attend team?', { email: m.email }))}>{t('Remove')}</button>}
+                    {owner && m.id !== me.id && <button type="button" className="text-xs font-medium text-bad" onClick={() => run(`x${m.id}`, () => removeStaff(m, me), t('Removed from the team.'), t('Remove {email} from the Dobry team?', { email: m.email }))}>{t('Remove')}</button>}
                   </td>
                 </tr>
               ))}

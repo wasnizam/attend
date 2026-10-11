@@ -26,7 +26,7 @@ describe('the payment server’s price list', () => {
 
 describe('what a customer is charged', () => {
   it('charges a workplace plan by the month, in sen or cents, with its staff limit', () => {
-    expect(charge('workplace', 'workplace-1', 'myr')).toMatchObject({ unitAmount: 4900, currency: 'myr', interval: 'month', intervalCount: 1, seats: 20, cycle: 'month', productId: 'attend_workplace_workplace-1' })
+    expect(charge('workplace', 'workplace-1', 'myr')).toMatchObject({ unitAmount: 4900, currency: 'myr', interval: 'month', intervalCount: 1, seats: 20, cycle: 'month', productId: 'dobry_workplace_workplace-1' })
     expect(charge('workplace', 'workplace-3', 'usd')).toMatchObject({ unitAmount: 4500, currency: 'usd', seats: 100 })
   })
 
@@ -65,7 +65,7 @@ describe('what a customer is charged', () => {
 
   it('uses the price list from the Console when one is saved', () => {
     const saved = { ...DEFAULT_CATALOG, workplace: [{ id: 'w-new', name: 'Team', priceMyr: 59, priceUsd: 15, cycle: 'month' as const, seats: 30 }] }
-    expect(chargeFor(saved, 'workplace', 'w-new', 'myr', false, null, today)).toMatchObject({ unitAmount: 5900, seats: 30, productName: 'Attend Workplace · Team' })
+    expect(chargeFor(saved, 'workplace', 'w-new', 'myr', false, null, today)).toMatchObject({ unitAmount: 5900, seats: 30, productName: 'Dobry Workplace · Team' })
   })
 })
 

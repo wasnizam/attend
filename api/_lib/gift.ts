@@ -1,7 +1,7 @@
 import { type EditionId, editionOf } from './billing.js'
 
 /**
- * Free access codes: a code Attend's team makes and hands to a person or an organisation, which
+ * Free access codes: a code Dobry's team makes and hands to a person or an organisation, which
  * gives Pro for a number of months without any payment. Plain logic, tested on its own.
  */
 export interface GiftCode {
@@ -29,10 +29,10 @@ export class GiftError extends Error {}
 // No 0/O/1/I/L: codes get read aloud and typed by hand.
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 
-/** A new code such as ATT-7KQ2-M9XD, from random bytes. */
+/** A new code such as DOB-7KQ2-M9XD, from random bytes. */
 export function newCode(bytes: Uint8Array): string {
   const chars = Array.from(bytes.slice(0, 8), (b) => ALPHABET[b % ALPHABET.length]).join('')
-  return `ATT-${chars.slice(0, 4)}-${chars.slice(4, 8)}`
+  return `DOB-${chars.slice(0, 4)}-${chars.slice(4, 8)}`
 }
 
 /** What someone typed, tidied to the stored form: capitals, no spaces. */
@@ -44,7 +44,7 @@ export function checkGift(gift: GiftCode | undefined, org: { purpose?: string },
   if (gift.redeemBy && gift.redeemBy < today) throw new GiftError('That code has expired.')
   if ((gift.redeemedBy ?? []).includes(orgId)) throw new GiftError('Your organisation has already used this code.')
   if (gift.uses >= gift.maxUses) throw new GiftError('That code has already been used.')
-  if (gift.edition !== 'any' && gift.edition !== editionOf(org.purpose)) throw new GiftError('That code is for a different edition of Attend.')
+  if (gift.edition !== 'any' && gift.edition !== editionOf(org.purpose)) throw new GiftError('That code is for a different edition of Dobry.')
   return gift
 }
 

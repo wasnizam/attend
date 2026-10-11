@@ -4,13 +4,13 @@ import { GiftError, type GiftCode, addMonths, checkGift, giftPatch, newCode, tid
 const today = '2026-10-11'
 const now = Date.UTC(2026, 9, 11)
 const DAY = 86_400_000
-const gift = (extra: Partial<GiftCode> = {}): GiftCode => ({ code: 'ATT-AAAA-BBBB', edition: 'any', months: 3, seats: 0, maxUses: 1, uses: 0, note: '', redeemedBy: [], ...extra })
+const gift = (extra: Partial<GiftCode> = {}): GiftCode => ({ code: 'DOB-AAAA-BBBB', edition: 'any', months: 3, seats: 0, maxUses: 1, uses: 0, note: '', redeemedBy: [], ...extra })
 
 describe('free access codes', () => {
   it('are made in a form that is easy to read aloud and type', () => {
     const code = newCode(Uint8Array.from([0, 1, 2, 3, 250, 251, 252, 253]))
-    expect(code).toMatch(/^ATT-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/)
-    expect(tidyCode('  att-7kq2 -m9xd ')).toBe('ATT-7KQ2-M9XD')
+    expect(code).toMatch(/^DOB-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/)
+    expect(tidyCode('  dob-7kq2 -m9xd ')).toBe('DOB-7KQ2-M9XD')
   })
 
   it('can be used by the right organisation, once', () => {
@@ -19,7 +19,7 @@ describe('free access codes', () => {
     expect(() => checkGift(gift({ disabled: true }), {}, 'org1', today)).toThrow('not valid')
     expect(() => checkGift(gift({ uses: 1 }), {}, 'org1', today)).toThrow('already been used')
     expect(() => checkGift(gift({ maxUses: 5, uses: 1, redeemedBy: ['org1'] }), {}, 'org1', today)).toThrow('already used this code')
-    expect(checkGift(gift({ maxUses: 5, uses: 1, redeemedBy: ['org1'] }), {}, 'org2', today).code).toBe('ATT-AAAA-BBBB')
+    expect(checkGift(gift({ maxUses: 5, uses: 1, redeemedBy: ['org1'] }), {}, 'org2', today).code).toBe('DOB-AAAA-BBBB')
   })
 
   it('stop working after their last day', () => {

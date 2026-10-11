@@ -5,7 +5,7 @@ import { Logo } from './ui'
 
 /**
  * The night-blue frame around the sign-in, sign-up and staff clock-in cards, matching the
- * website's top section, so every first screen of Attend feels like one place.
+ * website's top section, so every first screen of Dobry feels like one place.
  */
 export function AuthShell({ children, footer, below }: { children: ReactNode; footer?: ReactNode; below?: ReactNode }) {
   return (

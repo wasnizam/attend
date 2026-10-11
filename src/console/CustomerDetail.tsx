@@ -241,13 +241,13 @@ function Subscription({ c }: { c: C }) {
             )}
           </Section>
           <Section title={t('Access')}>
-            <p className="text-sm text-muted">{org.suspended ? t('Suspended: nobody in this organisation can use Attend.') : t('Active.')}</p>
+            <p className="text-sm text-muted">{org.suspended ? t('Suspended: nobody in this organisation can use Dobry.') : t('Active.')}</p>
             {can(me.role, 'suspend') && (
               <div className="mt-3">
                 {org.suspended ? (
                   <Button variant="secondary" busy={busy === 'suspend'} onClick={() => run('suspend', () => updateCustomer(org, { suspended: false }, me, 'access', 'Account restored'), t('Account restored.'))}>{t('Restore account')}</Button>
                 ) : (
-                  <Button variant="danger" busy={busy === 'suspend'} onClick={() => run('suspend', () => updateCustomer(org, { suspended: true }, me, 'access', 'Account suspended'), t('Account suspended.'), t('Suspend {name}? Their people will not be able to use Attend until you restore it. Nothing is deleted.', { name: org.name }))}>{t('Suspend account')}</Button>
+                  <Button variant="danger" busy={busy === 'suspend'} onClick={() => run('suspend', () => updateCustomer(org, { suspended: true }, me, 'access', 'Account suspended'), t('Account suspended.'), t('Suspend {name}? Their people will not be able to use Dobry until you restore it. Nothing is deleted.', { name: org.name }))}>{t('Suspend account')}</Button>
                 )}
               </div>
             )}

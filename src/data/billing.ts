@@ -45,7 +45,7 @@ export interface PaymentKeysStatus {
   events: string[]
 }
 
-/** Reads the state of the Stripe keys, saves new ones, or removes the saved ones. Owners of Attend only. */
+/** Reads the state of the Stripe keys, saves new ones, or removes the saved ones. Owners of Dobry only. */
 export const paymentKeys = (action: 'status' | 'save' | 'clear', keys: { secretKey?: string; webhookSecret?: string } = {}) =>
   call<PaymentKeysStatus>('/api/stripe-settings', { action, ...keys })
 
@@ -67,5 +67,5 @@ export interface GiftCodeRow {
   createdAt: number | null
 }
 
-/** Free access codes, for Attend's team: list them, make a batch, or switch one off or on. */
+/** Free access codes, for Dobry's team: list them, make a batch, or switch one off or on. */
 export const giftCodes = (action: 'list' | 'create' | 'disable' | 'enable', body: object = {}) => call<{ codes: GiftCodeRow[] }>('/api/gift-codes', { action, ...body })

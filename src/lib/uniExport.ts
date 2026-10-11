@@ -4,7 +4,7 @@ import type { AttendanceStatus, WeeklyClass } from './types'
 /**
  * An attendance file in the shape a university's own system accepts. Every system wants
  * something slightly different (P/A or 1/0, day first or year first, one row per class or
- * one column per class), so the lecturer sets it once and Attend remembers it.
+ * one column per class), so the lecturer sets it once and Dobry remembers it.
  */
 export type Mark = AttendanceStatus | 'absent'
 

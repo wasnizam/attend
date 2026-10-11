@@ -1,5 +1,5 @@
 /**
- * What an organisation uses Attend for. One engine serves all of them; the purpose only
+ * What an organisation uses Dobry for. One engine serves all of them; the purpose only
  * decides which words are used and which features are shown. It is chosen by the landing
  * page someone signs up from (see editions.ts) and cannot be changed afterwards.
  */

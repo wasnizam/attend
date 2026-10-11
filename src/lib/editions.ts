@@ -2,7 +2,7 @@ import type { Currency } from './currency'
 import type { Purpose } from './purpose'
 
 /**
- * The three ways Attend is sold. One brand and one engine, but each group gets its own
+ * The three ways Dobry is sold. One brand and one engine, but each group gets its own
  * address, its own words on the landing page, its own sign-up and its own plan.
  */
 export type EditionId = 'lecturers' | 'trainers' | 'workplace'
@@ -65,7 +65,7 @@ export interface Edition {
   id: EditionId
   /** What the organisation is set up as when someone signs up from this edition. */
   purpose: Purpose
-  /** Name on the switch, and after "Attend for". */
+  /** Name on the switch, and after "Dobry for". */
   label: string
   badge: string
   headline: string
@@ -104,7 +104,7 @@ export const EDITIONS: Edition[] = [
     label: 'Lecturers',
     badge: 'Works alongside your university system',
     headline: 'Attendance in seconds. | No signing for friends.',
-    sub: 'Keep your university system. Attend takes attendance with a QR that cannot be shared, then exports to your portal in one click.',
+    sub: 'Keep your university system. Dobry takes attendance with a QR that cannot be shared, then exports to your portal in one click.',
     note: 'No app for students to install.',
     facts: [
       ['10 min', 'Back in a big class'],
@@ -129,7 +129,7 @@ export const EDITIONS: Edition[] = [
     cta: 'Get your time back in your next class.',
     trust: {
       title: 'No more signing in for a friend',
-      sub: 'Paper lists and plain QR codes are easy to cheat. Attend closes the gaps.',
+      sub: 'Paper lists and plain QR codes are easy to cheat. Dobry closes the gaps.',
       cards: [
         ['qr', 'A QR that changes every 45 seconds', 'A photo or a forwarded link of the QR is useless a moment later. Only students in front of your screen can check in.'],
         ['geo', 'Location check (geofence)', 'Set a distance around your class. A check-in from outside it is flagged for you, or refused.'],
@@ -154,12 +154,12 @@ export const EDITIONS: Edition[] = [
     without: {
       title: 'Keep your university system. Lose the hassle.',
       skip: ['Passing a sign-in sheet round', 'Calling out every name', 'Typing attendance into the portal again', 'Working out the 80% rule by hand'],
-      need: 'Your university system keeps the official record. Attend takes attendance for you, then exports in the exact format your portal accepts.',
+      need: 'Your university system keeps the official record. Dobry takes attendance for you, then exports in the exact format your portal accepts.',
       focus: 'A big class can take 10 minutes to sign in. Over a semester, that is hours of teaching time back.',
     },
     faq: [
-      ['My university already has a system. Why use Attend?', 'Keep it. Attend is for taking attendance quickly and honestly; your university system keeps the official record. Set up the export once, then upload in one click.'],
-      ['Is it allowed?', 'Attend is your own tool, like Excel or a quiz app. The official record still goes into your university system. If your university has rules on student data, check them; Attend keeps only the ID and name from your class list.'],
+      ['My university already has a system. Why use Dobry?', 'Keep it. Dobry is for taking attendance quickly and honestly; your university system keeps the official record. Set up the export once, then upload in one click.'],
+      ['Is it allowed?', 'Dobry is your own tool, like Excel or a quiz app. The official record still goes into your university system. If your university has rules on student data, check them; Dobry keeps only the ID and name from your class list.'],
     ],
     plans: [
       { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 class', 'Unlimited students', 'Every feature included'] },
@@ -191,7 +191,7 @@ export const EDITIONS: Edition[] = [
     cta: 'Take attendance at your next session.',
     trust: {
       title: 'Proof that people were really there',
-      sub: 'Clients and sponsors want attendance they can trust. Attend gives you that.',
+      sub: 'Clients and sponsors want attendance they can trust. Dobry gives you that.',
       cards: [
         ['qr', 'A QR that changes every 45 seconds', 'A photo or a forwarded link of the QR is useless a moment later. Only participants in front of your screen can check in.'],
         ['geo', 'Location check (geofence)', 'Set a distance around your venue. A check-in from outside it is flagged for you, or refused.'],
@@ -251,7 +251,7 @@ export const EDITIONS: Edition[] = [
     cta: 'Start clocking in tomorrow morning.',
     trust: {
       title: 'No more clocking in for a friend',
-      sub: 'Punch cards and plain QR codes are easy to cheat. Attend closes the gaps, one by one.',
+      sub: 'Punch cards and plain QR codes are easy to cheat. Dobry closes the gaps, one by one.',
       cards: [
         ['qr', 'A QR that changes every 45 seconds', 'A photo of the QR is useless a moment later. Only staff standing at your screen can clock in or out.'],
         ['phone', 'One phone per person', 'Each person’s first clock-in registers their phone. A clock-in from someone else’s phone is flagged, or refused until you approve it.'],
@@ -280,14 +280,14 @@ export const EDITIONS: Edition[] = [
       title: 'Nothing to buy. Nothing to install.',
       skip: ['A fingerprint or face-scan machine', 'An app on every staff phone', 'Accounts and passwords for staff', 'Anyone’s face or fingerprint on file'],
       need: 'Just a screen at the door, and your staff’s own phones.',
-      focus: 'Just attendance, done properly. Keep your payroll or HR system; Attend gives it clean data.',
+      focus: 'Just attendance, done properly. Keep your payroll or HR system; Dobry gives it clean data.',
       saving: {
-        myr: 'A basic attendance machine costs around RM500 to RM1,000 or more, plus setup and repairs. Attend needs none.',
-        usd: 'A basic attendance machine costs around $100 to $1,000 or more, plus setup and repairs. Attend needs none.',
+        myr: 'A basic attendance machine costs around RM500 to RM1,000 or more, plus setup and repairs. Dobry needs none.',
+        usd: 'A basic attendance machine costs around $100 to $1,000 or more, plus setup and repairs. Dobry needs none.',
       },
     },
     faq: [
-      ['Do you do payroll?', 'No, on purpose. Attend does attendance only, and does it properly. It exports clean reports for your payroll, your HR system or your accountant.'],
+      ['Do you do payroll?', 'No, on purpose. Dobry does attendance only, and does it properly. It exports clean reports for your payroll, your HR system or your accountant.'],
       ['Does it follow our country’s labour rules?', 'You set your working hours, grace period, breaks, public holidays and when overtime starts, so the hours match your local rules.'],
       ['What does the free plan leave out?', 'The free plan covers daily attendance for up to 5 staff: clock in and out, the Today screen, the daily list and the door screen, with all your history and reports to view on screen. Downloading reports as PDF, Excel export, overtime, leave, many offices, shift plans, the location check and one phone per person come with a paid plan.'],
     ],

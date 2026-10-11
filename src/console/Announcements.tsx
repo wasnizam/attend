@@ -31,7 +31,7 @@ export default function Announcements() {
           <Section title={draft.id ? t('Edit announcement') : t('New announcement')} className="lg:col-span-2">
             <form onSubmit={submit} className="space-y-3">
               <input required maxLength={120} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder={t('Title, e.g. Scheduled maintenance')} className={inputClass} />
-              <textarea required maxLength={1000} rows={3} value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} placeholder={t('Message, e.g. Attend will be unavailable on Sunday 2–3 AM.')} className={inputClass} />
+              <textarea required maxLength={1000} rows={3} value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} placeholder={t('Message, e.g. Dobry will be unavailable on Sunday 2–3 AM.')} className={inputClass} />
               <div className="grid grid-cols-2 gap-2">
                 <select value={draft.level} onChange={(e) => setDraft({ ...draft, level: e.target.value as Announcement['level'] })} className={inputClass} aria-label={t('Kind')}><option value="info">{t('Information')}</option><option value="warning">{t('Warning')}</option></select>
                 <select value={draft.audience} onChange={(e) => setDraft({ ...draft, audience: e.target.value as Announcement['audience'] })} className={inputClass} aria-label={t('Who sees it')}>{Object.entries(AUDIENCE).map(([k, v]) => <option key={k} value={k}>{t(v)}</option>)}</select>

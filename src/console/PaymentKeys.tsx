@@ -6,7 +6,7 @@ import { t } from '../lib/i18n'
 import { Section, useAction } from './ui'
 
 /**
- * The Stripe keys, for an owner of Attend. Keys go in here and are kept where no browser can read
+ * The Stripe keys, for an owner of Dobry. Keys go in here and are kept where no browser can read
  * them: this screen only ever shows which account they belong to and their last four characters.
  */
 export function PaymentKeys() {
@@ -35,7 +35,7 @@ export function PaymentKeys() {
   return (
     <Section
       title={t('Payments (Stripe)')}
-      sub={t('The keys that connect Attend to your Stripe account. To move to another Stripe account, save its keys here.')}
+      sub={t('The keys that connect Dobry to your Stripe account. To move to another Stripe account, save its keys here.')}
       actions={status && <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pill[0]}`}>{pill[1]}</span>}
       className="lg:col-span-2"
     >

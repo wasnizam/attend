@@ -8,7 +8,7 @@ const SIGNING = /^whsec_[A-Za-z0-9]{16,}$/
 const EVENTS = ['checkout.session.completed', 'customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted', 'invoice.paid', 'invoice.payment_failed']
 
 /**
- * The Stripe keys, managed from the Console by an owner of Attend. Keys can be saved, replaced or
+ * The Stripe keys, managed from the Console by an owner of Dobry. Keys can be saved, replaced or
  * removed, and checked, but never read back: only their last four characters, the account they
  * belong to, and whether they are test or live keys are ever sent to a browser.
  */
@@ -21,7 +21,7 @@ export async function POST(request: Request): Promise<Response> {
     if (!decoded) throw new HttpError(401, 'Please log in again.')
     // Only an owner: whoever holds these keys decides where the money goes.
     const staff = await db.doc(`platformOwners/${decoded.uid}`).get()
-    if (!staff.exists || (staff.data()?.role ?? 'owner') !== 'owner') throw new HttpError(403, 'Only an owner of Attend can manage the payment keys.')
+    if (!staff.exists || (staff.data()?.role ?? 'owner') !== 'owner') throw new HttpError(403, 'Only an owner of Dobry can manage the payment keys.')
 
     const body = (await request.json().catch(() => ({}))) as { action?: string; secretKey?: unknown; webhookSecret?: unknown }
     const ref = db.doc(STRIPE_SECRETS)

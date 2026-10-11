@@ -483,7 +483,7 @@ export function Payroll() {
           ...(toDate_ ? [t('Figures are as at {time}. A day still in progress counts nobody as absent yet, and hours for people still at work are added when they clock out.', { time: `${formatDate(today)}, ${formatClock(new Date())}` })] : []),
         ],
       },
-      footer: [company, t('Confidential'), t('Made with Attend')].filter(Boolean).join('  |  '),
+      footer: [company, t('Confidential'), t('Made with Dobry')].filter(Boolean).join('  |  '),
       moreLabel: t('{n} more in the table'),
     }
   }
@@ -885,7 +885,7 @@ function Timesheet({ row, period, company, preparedBy, onBack }: { row: PayrollR
       },
     ],
     signatures: [t('Employee signature'), t('Checked by (HR)')],
-    footer: [company, t('Confidential'), t('Made with Attend')].filter(Boolean).join('  |  '),
+    footer: [company, t('Confidential'), t('Made with Dobry')].filter(Boolean).join('  |  '),
   })
 
   return (

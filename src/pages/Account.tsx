@@ -286,7 +286,7 @@ export function Account() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="font-semibold">{t('Your plan')}</h2>
-              <p className="mt-0.5 text-sm text-muted">Attend · {t(edition.label)}</p>
+              <p className="mt-0.5 text-sm text-muted">Dobry · {t(edition.label)}</p>
             </div>
             <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">{t(PLAN_LABEL[plan])}</span>
           </div>
@@ -345,12 +345,12 @@ export function Account() {
                   {org?.stripeCustomerId && (
                     <Button variant="secondary" busy={busyPlan === 'portal'} disabled={busyPlan !== null} onClick={manage}>{t('Manage billing')}</Button>
                   )}
-                  <p className="mt-2 text-xs text-muted">{t('Payment is handled by Stripe. Attend never sees your card. You can cancel at any time; your records stay.')}</p>
+                  <p className="mt-2 text-xs text-muted">{t('Payment is handled by Stripe. Dobry never sees your card. You can cancel at any time; your records stay.')}</p>
                 </>
               ) : plan !== 'pro' ? (
                 <>
                   <Button disabled>{t('Upgrade to Pro')}</Button>
-                  <p className="mt-2 text-xs text-muted">{plan === 'free' ? t('Paid plans open soon. Need more now? Contact Attend and we will set it up for you.') : t('Payment is not open yet. You do not need to do anything.')}</p>
+                  <p className="mt-2 text-xs text-muted">{plan === 'free' ? t('Paid plans open soon. Need more now? Contact Dobry and we will set it up for you.') : t('Payment is not open yet. You do not need to do anything.')}</p>
                 </>
               ) : null}
             </div>
@@ -375,7 +375,7 @@ export function Account() {
             >
               <label className="block text-sm font-medium" htmlFor="gift-code">{t('Have a code?')}</label>
               <div className="mt-1.5 flex gap-2">
-                <input id="gift-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={40} autoComplete="off" placeholder="ATT-XXXX-XXXX" className={`${inputClass} font-mono`} />
+                <input id="gift-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={40} autoComplete="off" placeholder="DOB-XXXX-XXXX" className={`${inputClass} font-mono`} />
                 <Button type="submit" variant="secondary" busy={codeBusy} disabled={!code.trim()}>{t('Use code')}</Button>
               </div>
               {codeNote && <p className={`mt-2 rounded-lg px-4 py-2.5 text-sm ${codeNote.ok ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>{codeNote.text}</p>}

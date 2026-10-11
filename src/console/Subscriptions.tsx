@@ -25,7 +25,7 @@ export default function Subscriptions() {
   const mrr = (list: typeof customers) => list.reduce<Record<string, number>>((a, c) => (c.mrr && c.org.price ? { ...a, [c.org.price.currency]: (a[c.org.price.currency] ?? 0) + c.mrr } : a), {})
   const noPrice = lists.paying.filter((c) => !c.org.price).length
   const exportCsv = () =>
-    csvDownload(`attend-subscriptions-${isoDate()}.csv`, [
+    csvDownload(`dobry-subscriptions-${isoDate()}.csv`, [
       ['Company', 'Edition', 'Plan', 'Price', 'Currency', 'Billed', 'Monthly revenue', 'Staff covered', 'Until'],
       ...shown.map((c) => [c.org.name, editionName(c.org), statusLabel(c.status), c.org.price?.amount ?? '', c.org.price?.currency ?? '', c.org.price?.cycle ?? '', c.mrr ? Math.round(c.mrr * 100) / 100 : 0, c.org.seats ?? '', dateOf(c.until)]),
     ])

@@ -83,7 +83,7 @@ const BOTTOM = H - 16
 export async function downloadReportPdf(report: PdfReport) {
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true })
-  doc.setProperties({ title: plain(`${report.title} - ${report.period}`), subject: plain(report.organisation ?? ''), creator: 'Attend' })
+  doc.setProperties({ title: plain(`${report.title} - ${report.period}`), subject: plain(report.organisation ?? ''), creator: 'Dobry' })
   let y = coverHeader(doc, report)
 
   const newPage = () => {

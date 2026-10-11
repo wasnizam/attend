@@ -42,7 +42,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <PageHead title={t('Dashboard')} sub={t('Attend at a glance, {date}.', { date: dateOf(now) })} />
+      <PageHead title={t('Dashboard')} sub={t('Dobry at a glance, {date}.', { date: dateOf(now) })} />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kpi label={t('Monthly recurring revenue')} value={moneyMix(mrr)} note={t('{n} paying customers', { n: paying })} />
         <Kpi label={t('Annual run rate')} value={moneyMix(arr)} note={arpa ? t('{amount} per customer a month', { amount: money(Math.round(arpa)) }) : undefined} />
@@ -111,7 +111,7 @@ export default function Dashboard() {
         </Section>
         <Section title={t('Customers at risk')} sub={t('Paying or on trial, and not using it much')}>
           {atRisk.length === 0 ? (
-            <p className="text-sm text-muted">{t('Every paying customer is using Attend.')}</p>
+            <p className="text-sm text-muted">{t('Every paying customer is using Dobry.')}</p>
           ) : (
             <ul className="divide-y divide-line text-sm">
               {atRisk.slice(0, 8).map((c) => (

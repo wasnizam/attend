@@ -81,10 +81,10 @@ export function chargeFor(
     ? listAmount
     : Math.max(0, discount.kind === 'percent' ? listAmount * (1 - Math.min(100, discount.value) / 100) : listAmount - discount.value)
   const unitAmount = Math.round(charged * 100)
-  if (unitAmount < 50) throw new BillingError('This plan is already covered by your discount. Contact Attend to switch it on.')
+  if (unitAmount < 50) throw new BillingError('This plan is already covered by your discount. Contact Dobry to switch it on.')
   return {
-    productId: `attend_${edition}_${plan.id}`.replace(/[^A-Za-z0-9_-]/g, '_'),
-    productName: `Attend ${EDITION_NAME[edition]} · ${plan.name}`,
+    productId: `dobry_${edition}_${plan.id}`.replace(/[^A-Za-z0-9_-]/g, '_'),
+    productName: `Dobry ${EDITION_NAME[edition]} · ${plan.name}`,
     unitAmount,
     listAmount,
     currency,

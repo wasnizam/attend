@@ -20,7 +20,7 @@ export default function Users() {
     .filter((u) => (!term || `${u.name} ${u.email} ${orgName(u.organisationId)}`.toLowerCase().includes(term)) && (!role || u.role === role) && (!status || u.status === status))
     .sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0))
   const exportCsv = () =>
-    csvDownload(`attend-users-${isoDate()}.csv`, [['Name', 'Email', 'Customer', 'Role', 'Status', 'Joined'], ...shown.map((u) => [u.name, u.email, orgName(u.organisationId), u.role, u.status, dateOf(u.createdAt?.toMillis())])])
+    csvDownload(`dobry-users-${isoDate()}.csv`, [['Name', 'Email', 'Customer', 'Role', 'Status', 'Joined'], ...shown.map((u) => [u.name, u.email, orgName(u.organisationId), u.role, u.status, dateOf(u.createdAt?.toMillis())])])
   return (
     <>
       <PageHead title={t('Users')} sub={t('{n} people with an account, across all customers.', { n: users.length })} actions={<Button variant="secondary" onClick={exportCsv} disabled={!shown.length}>{t('Export for Excel')}</Button>} />

@@ -1,4 +1,4 @@
-# Attend
+# Dobry
 
 **Start a session. Share the QR. Attendance is done.**
 
@@ -61,7 +61,7 @@ the rules as well, or the live site and its rules will disagree.
 
 ## Payments (Stripe)
 
-Customers pay through Stripe Checkout; Attend never handles a card. Three small Vercel functions
+Customers pay through Stripe Checkout; Dobry never handles a card. Three small Vercel functions
 in `api/` do the work (they need no Firebase paid plan):
 
 | Function | What it does |
@@ -100,7 +100,7 @@ with `?pay=test`. They are checks in the app, not in the database rules. Reports
 Today screen, the door screen and full history stay free. Tests in `tests/plan.test.ts`.
 
 **Free access codes.** Console → Pricing → Free access codes (owner, admin or finance) makes codes
-that give Pro for a number of months with no payment: random (`ATT-7KQ2-M9XD`) or named, for one
+that give Pro for a number of months with no payment: random (`DOB-7KQ2-M9XD`) or named, for one
 edition or any, with a staff limit for workplaces, a number of uses and an optional last day. A
 customer's admin types one under "Have a code?" on the Account page (`POST /api/redeem`). Codes
 live in `giftCodes`, which no browser can read; `api/gift-codes.ts` lists, makes and switches them
@@ -181,7 +181,7 @@ chosen at sign-up and changeable by an admin under Account. It decides two thing
   need: events have no timetable, class reports, class type, 80% rule or MC; training keeps
   repeating courses and MC but not class type or the barring ladder.
 
-**Editions and plans.** Attend is sold as one brand in three editions (`src/lib/editions.ts`):
+**Editions and plans.** Dobry is sold as one brand in three editions (`src/lib/editions.ts`):
 Lecturers (`/lecturers`, purpose `education`), Trainers (`/trainers`, `training`) and Workplace
 (`/workplace`, `workplace`). It is one landing page with a switch; each address opens it on its
 own tab with its own words and pricing. Sign-up takes the edition from `?for=` (or the last
@@ -450,7 +450,7 @@ week of September) and Studio KL (flexible hours), and prints what the September
 (`fetchManyAttendance`, `fetchManyClockOuts`, `fetchManyLeaveTypes`, using `sessionId in [...]` with
 the organisation and, for a manager, their own records), instead of three queries per day.
 
-**Attend Console (`/console`).** Attend's own back office, separate from the customers' app (own bundle,
+**Dobry Console (`/console`).** Dobry's own back office, separate from the customers' app (own bundle,
 sign-in and dark sidebar; `src/console/`). The team lives in `platformOwners/{uid}` with a role: Owner
 (everything, including the team), Admin (all but the team), Finance (plans, prices, invoices, payments,
 refunds), Support (notes, tasks, tags, trial days, password resets), Viewer (read-only). The first

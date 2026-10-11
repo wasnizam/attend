@@ -10,7 +10,7 @@ import { Landing } from './pages/Landing'
 const Attend = lazy(() => import('./pages/Attend'))
 const DoorEntry = lazy(() => import('./pages/DoorEntry'))
 const Staff = lazy(() => import('./Staff'))
-// Attend Console, the company's own back office: a separate bundle and sign-in, never part of a customer's app.
+// Dobry Console, the company's own back office: a separate bundle and sign-in, never part of a customer's app.
 const Console = lazy(() => import('./console/ConsoleApp'))
 
 function SetupNeeded() {

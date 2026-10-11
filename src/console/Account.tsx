@@ -58,7 +58,7 @@ export default function Account() {
 
   return (
     <>
-      <PageHead title={t('My account')} sub={t('Your own sign-in for the Attend back office.')} />
+      <PageHead title={t('My account')} sub={t('Your own sign-in for the Dobry back office.')} />
       {messages}
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title={t('Profile')}>
@@ -105,7 +105,7 @@ export default function Account() {
               <Button type="submit" busy={busy === 'password'}>{t('Change password')}</Button>
             </form>
           ) : (
-            <p className="text-sm text-muted">{google ? t('You sign in with Google, so there is no Attend password. Change your password in your Google account.') : t('This account has no password.')}</p>
+            <p className="text-sm text-muted">{google ? t('You sign in with Google, so there is no Dobry password. Change your password in your Google account.') : t('This account has no password.')}</p>
           )}
           <div className="mt-4 border-t border-line pt-4">
             <p className="text-sm text-muted">{t('Forgot your current password? We can email you a link to set a new one.')}</p>

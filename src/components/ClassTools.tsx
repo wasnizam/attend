@@ -57,7 +57,7 @@ export function UniExportPanel({ cls, report }: { cls: WeeklyClass; report: Clas
     <Card className="space-y-5 p-5">
       <div>
         <h2 className="font-semibold">{t('Export for your university system')}</h2>
-        <p className="text-sm text-muted">{t('Set the file up the way your university portal wants it, once. Attend remembers it on this device.')}</p>
+        <p className="text-sm text-muted">{t('Set the file up the way your university portal wants it, once. Dobry remembers it on this device.')}</p>
       </div>
 
       <Row label={t('Layout')}>
@@ -204,7 +204,7 @@ export function LettersPanel({ cls, report }: { cls: WeeklyClass; report: ClassR
     setLetters(next)
     saveLetters(lang, next)
   }
-  const generated = t('Made with Attend on {date}', { date: formatDate(isoDate()) })
+  const generated = t('Made with Dobry on {date}', { date: formatDate(isoDate()) })
 
   const run = async (make: () => Promise<{ save(name: string): void }>, name: string) => {
     setBusy(true)

@@ -32,7 +32,7 @@ export default function Customers() {
       sort === 'name' ? a.org.name.localeCompare(b.org.name) : sort === 'activity' ? b.active30 - a.active30 : sort === 'mrr' ? b.mrr - a.mrr : (b.joined ?? 0) - (a.joined ?? 0),
     )
   const exportCsv = () =>
-    csvDownload(`attend-customers-${isoDate()}.csv`, [
+    csvDownload(`dobry-customers-${isoDate()}.csv`, [
       ['Company', 'Customer ID', 'Edition', 'Contact', 'Email', 'Joined', 'People', 'Days used (30 days)', 'Last activity', 'Health', 'Plan', 'Until', 'Monthly revenue', 'Currency', 'Tags', 'Account manager'],
       ...shown.map((c) => [c.org.name, c.org.id, editionName(c.org), c.owner?.name ?? '', c.owner?.email ?? '', dateOf(c.joined), c.people, c.active30, c.lastSeen ?? '', c.health, statusLabel(c.status), dateOf(c.until), c.mrr ? Math.round(c.mrr * 100) / 100 : 0, c.org.price?.currency ?? '', (c.org.tags ?? []).join('; '), c.org.accountManager ? staffName(c.org.accountManager) : '']),
     ])

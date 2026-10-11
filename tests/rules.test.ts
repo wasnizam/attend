@@ -741,7 +741,7 @@ describe('early leave and half days', () => {
   })
 })
 
-describe('the owner of Attend', () => {
+describe('the owner of Dobry', () => {
   beforeEach(() =>
     env.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(ctx.firestore(), 'platformOwners/boss'), { name: 'Owner' })
@@ -785,7 +785,7 @@ describe('the owner of Attend', () => {
   })
 })
 
-describe("Attend's back-office team and roles", () => {
+describe("Dobry's back-office team and roles", () => {
   beforeEach(() =>
     env.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore()
@@ -933,9 +933,9 @@ describe('the payment keys', () => {
       await assertFails(deleteDoc(doc(db, 'platformSecrets/stripe')))
     }
     // Free access codes are made and used through the server only: nobody can list or invent one.
-    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'giftCodes/ATT-AAAA-BBBB'), { code: 'ATT-AAAA-BBBB', months: 12, maxUses: 1, uses: 0 }))
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'giftCodes/DOB-AAAA-BBBB'), { code: 'DOB-AAAA-BBBB', months: 12, maxUses: 1, uses: 0 }))
     for (const db of [staff('boss'), as('adminA'), anon()]) {
-      await assertFails(getDoc(doc(db, 'giftCodes/ATT-AAAA-BBBB')))
+      await assertFails(getDoc(doc(db, 'giftCodes/DOB-AAAA-BBBB')))
       await assertFails(getDocs(collection(db, 'giftCodes')))
       await assertFails(setDoc(doc(db, 'giftCodes/MINE'), { code: 'MINE', months: 60, maxUses: 1, uses: 0 }))
     }

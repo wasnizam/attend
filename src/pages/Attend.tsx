@@ -23,7 +23,7 @@ function remembered(): { studentId: string; name: string } {
 
 function Shell({ children, below }: { children: React.ReactNode; below?: React.ReactNode }) {
   return (
-    <AuthShell below={below} footer={<span className="text-xs">Attend · {t('Attendance, without the hassle')}</span>}>
+    <AuthShell below={below} footer={<span className="text-xs">Dobry · {t('Attendance, without the hassle')}</span>}>
       <div className="p-1">{children}</div>
     </AuthShell>
   )

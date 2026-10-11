@@ -30,7 +30,7 @@ const AVATAR = ['bg-sun text-night', 'bg-emerald-300 text-emerald-950', 'bg-sky-
 const initials = (name: string) => name.split(' ').map((w) => w[0]).join('').slice(0, 2)
 
 /**
- * An animated illustration of Attend at work: the door screen with its changing QR, a phone that
+ * An animated illustration of Dobry at work: the door screen with its changing QR, a phone that
  * has just scanned it, and the live list filling up. Every few seconds someone new arrives.
  */
 function LiveDemo({ edition }: { edition: Edition }) {
@@ -137,7 +137,7 @@ export function Landing({ show }: { show?: EditionId }) {
   setPurpose('education')
   useEffect(() => {
     rememberEdition(edition.id)
-    document.title = `Attend · ${t(edition.headline).replace(/\s*\|\s*/g, ' ')}`
+    document.title = `Dobry · ${t(edition.headline).replace(/\s*\|\s*/g, ' ')}`
   }, [edition])
   return (
     <div className="min-h-dvh bg-white">
@@ -146,7 +146,7 @@ export function Landing({ show }: { show?: EditionId }) {
           <div className="flex items-center gap-8">
             <Logo />
             <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-              <a href="#trust" className="hover:text-ink">{t('Why Attend')}</a>
+              <a href="#trust" className="hover:text-ink">{t('Why Dobry')}</a>
               <a href="#features" className="hover:text-ink">{t('Features')}</a>
               <a href="#how" className="hover:text-ink">{t('How it works')}</a>
               <a href="#pricing" className="hover:text-ink">{t('Pricing')}</a>
@@ -172,8 +172,8 @@ export function Landing({ show }: { show?: EditionId }) {
         <div aria-hidden className="absolute inset-0 -z-10 [background-image:radial-gradient(rgb(255_255_255/0.07)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 pt-12 pb-24 sm:pb-52 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pb-40">
           <div className="text-center lg:text-left">
-            <nav aria-label={t('Attend for')} className="inline-flex max-w-full items-center gap-1 rounded-full bg-white/10 p-1 text-sm font-medium ring-1 ring-white/15">
-              <span className="hidden pr-1 pl-3 text-white/60 sm:inline">{t('Attend for')}</span>
+            <nav aria-label={t('Dobry for')} className="inline-flex max-w-full items-center gap-1 rounded-full bg-white/10 p-1 text-sm font-medium ring-1 ring-white/15">
+              <span className="hidden pr-1 pl-3 text-white/60 sm:inline">{t('Dobry for')}</span>
               {EDITIONS.map((e) => (
                 <Link
                   key={e.id}
@@ -231,7 +231,7 @@ export function Landing({ show }: { show?: EditionId }) {
       </section>
 
       {/* Four plain facts, big and bright. */}
-      <section aria-label={t('Attend in numbers')} className="border-b border-line bg-white">
+      <section aria-label={t('Dobry in numbers')} className="border-b border-line bg-white">
         <dl className="mx-auto grid max-w-6xl grid-cols-2 gap-px bg-line sm:grid-cols-4">
           {(edition.facts ?? [
             ['45s', 'A new QR code, every 45 seconds'],
@@ -419,9 +419,10 @@ export function Landing({ show }: { show?: EditionId }) {
           <div>
             <Logo className="!text-base text-ink" />
             <p className="mt-3 max-w-xs text-muted">{t('Start a session. Share the QR. Attendance is done.')}</p>
+            <p className="mt-3 max-w-xs text-muted">{t('“Dobrý den” means “good day”. Every good day starts with showing up.')}</p>
           </div>
           <div>
-            <p className="font-semibold">{t('Attend for')}</p>
+            <p className="font-semibold">{t('Dobry for')}</p>
             <ul className="mt-3 space-y-2 text-slate-600">
               {EDITIONS.map((e) => (
                 <li key={e.id}>
@@ -433,7 +434,7 @@ export function Landing({ show }: { show?: EditionId }) {
           <div>
             <p className="font-semibold">{t('Product')}</p>
             <ul className="mt-3 space-y-2 text-slate-600">
-              <li><a href="#trust" className="hover:text-ink">{t('Why Attend')}</a></li>
+              <li><a href="#trust" className="hover:text-ink">{t('Why Dobry')}</a></li>
               <li><a href="#pricing" className="hover:text-ink">{t('Pricing')}</a></li>
               <li><a href="#faq" className="hover:text-ink">{t('Questions')}</a></li>
               <li><Link to="/login" className="hover:text-ink">{t('Log in')}</Link></li>
@@ -442,7 +443,7 @@ export function Landing({ show }: { show?: EditionId }) {
         </div>
         <div className="border-t border-line">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 text-sm text-muted">
-            <span>© {new Date().getFullYear()} Attend</span>
+            <span>© {new Date().getFullYear()} Dobry</span>
             <LanguageSwitch />
           </div>
         </div>

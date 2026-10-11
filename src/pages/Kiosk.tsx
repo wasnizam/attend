@@ -102,7 +102,11 @@ export function Kiosk() {
     <div className="fixed inset-0 z-50 isolate flex flex-col overflow-hidden bg-night text-white">
       <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(50rem_30rem_at_85%_0%,rgb(255_200_61/0.14),transparent_60%),radial-gradient(50rem_35rem_at_0%_100%,rgb(99_102_241/0.45),transparent_60%)]" />
       <header className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-3">
-        <Logo />
+        <div className="flex items-baseline gap-4">
+          <Logo />
+          {/* The name comes from the Czech greeting "dobrý den": good day. */}
+          <span className="hidden font-display text-lg font-medium text-sun sm:inline">Dobrý den! <span className="text-sm font-normal text-indigo-100/60">{t('Good day')}</span></span>
+        </div>
         <p className="tabular text-right leading-tight">
           <span className="block text-2xl font-semibold tracking-tight">{formatClock(clock)}</span>
           <span className="block text-xs text-indigo-100/70 capitalize">{clock.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' })}</span>

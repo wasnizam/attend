@@ -24,7 +24,7 @@ const Account = lazy(() => import('./Account'))
 const Pricing = lazy(() => import('./Pricing'))
 
 /**
- * Attend Console, the back office, separate from the customers' app: its own address (/console), sign-in, frame
+ * Dobry Console, the back office, separate from the customers' app: its own address (/console), sign-in, frame
  * and bundle. Only the team in platformOwners gets in, each with a role.
  */
 export default function ConsoleApp() {
@@ -48,7 +48,7 @@ export default function ConsoleApp() {
     return (
       <Bare>
         <Card className="mx-auto mt-16 max-w-sm p-6 text-center">
-          <h1 className="text-xl font-semibold">{t('Not on the Attend team')}</h1>
+          <h1 className="text-xl font-semibold">{t('Not on the Dobry team')}</h1>
           <p className="mt-2 text-sm text-muted">{t('{email} has no access to the back office. If you were invited, sign in with the invited email after verifying it.', { email: user.email ?? '' })}</p>
           <Button className="mt-6" variant="secondary" onClick={() => signOut()}>{t('Log out')}</Button>
         </Card>
@@ -208,8 +208,8 @@ function OwnerLogin() {
   return (
     <Bare>
       <Card className="mx-auto mt-12 max-w-sm p-6">
-        <h1 className="text-xl font-semibold">{t('Attend Console sign-in')}</h1>
-        <p className="mt-1 text-sm text-muted">{t('For the Attend team. Customers sign in at the usual page.')}</p>
+        <h1 className="text-xl font-semibold">{t('Dobry Console sign-in')}</h1>
+        <p className="mt-1 text-sm text-muted">{t('For the Dobry team. Customers sign in at the usual page.')}</p>
         <form onSubmit={submit} className="mt-5 space-y-4">
           <Field label={t('Email')} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <Field label={t('Password')} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />

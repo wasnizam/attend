@@ -23,7 +23,7 @@ export default function Audit() {
       (!from || (a.at && isoDate(a.at.toDate()) >= from)),
   )
   const exportCsv = () =>
-    csvDownload(`attend-audit-${isoDate()}.csv`, [['When', 'Who', 'Action', 'Customer', 'Detail'], ...shown.map((a) => [a.at ? a.at.toDate().toISOString() : '', a.actorEmail ?? a.actor, a.action, a.organisationName ?? '', a.detail ?? ''])])
+    csvDownload(`dobry-audit-${isoDate()}.csv`, [['When', 'Who', 'Action', 'Customer', 'Detail'], ...shown.map((a) => [a.at ? a.at.toDate().toISOString() : '', a.actorEmail ?? a.actor, a.action, a.organisationName ?? '', a.detail ?? ''])])
   return (
     <>
       <PageHead title={t('Audit log')} sub={t('Every change the team makes, kept for good: nobody can edit or delete an entry.')} actions={<Button variant="secondary" onClick={exportCsv} disabled={!shown.length}>{t('Export for Excel')}</Button>} />

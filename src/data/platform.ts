@@ -21,7 +21,7 @@ import { isoDate } from '../lib/format'
 import { db } from '../lib/firebase'
 import type { Organisation, Session, UserProfile, WeeklyClass } from '../lib/types'
 
-// Attend's own back office. The rules allow these reads and writes only to the team listed in
+// Dobry's own back office. The rules allow these reads and writes only to the team listed in
 // platformOwners, each by role (see firestore.rules). Customers never reach any of it.
 
 export type StaffRole = 'owner' | 'admin' | 'finance' | 'support' | 'viewer'
@@ -67,7 +67,7 @@ export async function staffRoleOf(uid: string): Promise<StaffRole | null> {
   }
 }
 
-/** Whether this account runs Attend itself (any role). */
+/** Whether this account runs Dobry itself (any role). */
 export const isPlatformOwner = async (uid: string) => (await staffRoleOf(uid)) !== null
 
 /** Takes up an invitation sent to this (verified) email. Returns the role, or null when there is none. */
@@ -475,7 +475,7 @@ export interface PlatformSettings {
   paymentInfo: string
   currency: 'MYR' | 'USD'
 }
-export const DEFAULT_SETTINGS: PlatformSettings = { companyName: 'Attend', regNo: '', address: '', email: '', phone: '', sstNo: '', taxRate: 0, invoicePrefix: 'INV', paymentInfo: '', currency: 'MYR' }
+export const DEFAULT_SETTINGS: PlatformSettings = { companyName: 'Dobry', regNo: '', address: '', email: '', phone: '', sstNo: '', taxRate: 0, invoicePrefix: 'INV', paymentInfo: '', currency: 'MYR' }
 export function subscribeSettings(onData: (s: PlatformSettings) => void, onError: (e: Error) => void) {
   return onSnapshot(doc(db, 'platformConfig', 'settings'), (snap) => onData({ ...DEFAULT_SETTINGS, ...(snap.exists() ? (snap.data() as Partial<PlatformSettings>) : {}) }), onError)
 }

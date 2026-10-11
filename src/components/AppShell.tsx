@@ -89,7 +89,7 @@ export function AppShell() {
     <div className="min-h-dvh md:pl-60 print:!pl-0">
       {/* Night blue, as on the website, so the app is clearly the same brand; the work area stays light. */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-night text-white md:flex print:!hidden">
-        <NavLink to="/app" aria-label={t('Attend home')} className="flex h-16 items-center px-5">
+        <NavLink to="/app" aria-label={t('Dobry home')} className="flex h-16 items-center px-5">
           <Logo />
         </NavLink>
         <div className="px-3">
@@ -142,7 +142,7 @@ export function AppShell() {
 
       <header className="sticky top-0 z-20 border-b border-line bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur md:hidden print:hidden">
         <div className="flex h-14 items-center justify-between px-4">
-          <NavLink to="/app" aria-label={t('Attend home')}>
+          <NavLink to="/app" aria-label={t('Dobry home')}>
             <Logo />
           </NavLink>
           <NavLink to="/app/account" aria-label={t('Account')}>

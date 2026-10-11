@@ -114,7 +114,7 @@ export async function caller(request: Request): Promise<Caller> {
   if (user.role !== 'admin') throw new HttpError(403, 'Only an admin of your organisation can change the plan.')
   const org = (await db.doc(`organisations/${user.organisationId}`).get()).data()
   if (!org) throw new HttpError(404, 'Organisation not found.')
-  if (org.suspended) throw new HttpError(403, 'This account is suspended. Contact Attend.')
+  if (org.suspended) throw new HttpError(403, 'This account is suspended. Contact Dobry.')
   return { uid: decoded.uid, email: decoded.email ?? user.email ?? '', orgId: user.organisationId, org }
 }
 
@@ -129,7 +129,7 @@ export async function catalog(db: Firestore): Promise<Catalog> {
 /** Where to send the customer back to: this same website. */
 export const origin = (request: Request) => (process.env.SITE_URL?.trim() || new URL(request.url).origin).replace(/\/$/, '')
 
-/** Someone on Attend's own team with one of these roles, proven by their sign-in. (No role on record means owner.) */
+/** Someone on Dobry's own team with one of these roles, proven by their sign-in. (No role on record means owner.) */
 export async function staff(request: Request, roles: string[]): Promise<{ uid: string; email: string; role: string }> {
   const token = /^Bearer (.+)$/.exec(request.headers.get('authorization') ?? '')?.[1]
   if (!token) throw new HttpError(401, 'Please log in again.')

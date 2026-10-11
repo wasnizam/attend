@@ -1,7 +1,7 @@
 import { collection, onSnapshot } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
-/** A message from the Attend team, shown in customers' apps between two dates. */
+/** A message from the Dobry team, shown in customers' apps between two dates. */
 export interface LiveAnnouncement {
   id: string
   title: string

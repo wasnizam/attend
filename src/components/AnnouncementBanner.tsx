@@ -13,7 +13,7 @@ const closed = (): string[] => {
   }
 }
 
-/** The Attend team's current messages for this kind of customer; each can be closed. */
+/** The Dobry team's current messages for this kind of customer; each can be closed. */
 export function AnnouncementBanner() {
   const [rows, setRows] = useState<LiveAnnouncement[]>([])
   const [hidden, setHidden] = useState<string[]>(closed)

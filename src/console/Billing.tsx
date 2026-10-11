@@ -38,12 +38,12 @@ export default function Billing() {
   const revenue = revenueByMonth(billing, months)
   const customer = customers.find((c) => c.org.id === newFor)
   const exportInvoices = () =>
-    csvDownload(`attend-invoices-${today}.csv`, [
+    csvDownload(`dobry-invoices-${today}.csv`, [
       ['Number', 'Customer', 'Email', 'Issued', 'Due', 'Currency', 'Subtotal', 'SST', 'Total', 'Status'],
       ...shownInvoices.map((i) => [i.number, i.organisationName, i.billTo.email, i.issueDate, i.dueDate, i.currency, i.subtotal, i.tax, i.total, i.status]),
     ])
   const exportPayments = () =>
-    csvDownload(`attend-payments-${today}.csv`, [
+    csvDownload(`dobry-payments-${today}.csv`, [
       ['Date', 'Customer', 'Type', 'Amount', 'Currency', 'Method', 'Reference'],
       ...money_.map((b) => [b.at ? isoDate(b.at.toDate()) : '', b.organisationName ?? b.organisationId, b.kind, (b.kind === 'refund' ? -1 : 1) * (b.amount ?? 0), b.currency ?? 'MYR', b.method ?? '', b.note ?? '']),
     ])

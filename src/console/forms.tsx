@@ -25,7 +25,7 @@ export function InvoiceForm({ c, onDone }: { c: Customer; onDone: (message?: str
   const [dueDate, setDueDate] = useState(addDays(isoDate(), 14))
   const [note, setNote] = useState('')
   const [items, setItems] = useState<{ description: string; qty: string; unitPrice: string }[]>([
-    { description: `Attend ${editionName(c.org)} Pro${price ? ` (${CYCLE[price.cycle]})` : ''}${c.org.purpose === 'workplace' && c.org.seats ? `, up to ${c.org.seats} staff` : ''}`, qty: '1', unitPrice: price ? String(price.amount) : '' },
+    { description: `Dobry ${editionName(c.org)} Pro${price ? ` (${CYCLE[price.cycle]})` : ''}${c.org.purpose === 'workplace' && c.org.seats ? `, up to ${c.org.seats} staff` : ''}`, qty: '1', unitPrice: price ? String(price.amount) : '' },
   ])
   const parsed: InvoiceItem[] = items.filter((i) => i.description.trim()).map((i) => ({ description: i.description.trim(), qty: Math.max(0, Number(i.qty) || 0), unitPrice: Math.max(0, Number(i.unitPrice) || 0) }))
   // Discount: the customer's standing one by default, or a code, or one set by hand.

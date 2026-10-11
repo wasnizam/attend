@@ -13,7 +13,7 @@ import { PageHead, Section, Tabs, td, th, useAction } from './ui'
 
 type View = 'plans' | 'codes' | 'free'
 
-/** What Attend charges: the plans on the website, and the discount codes the team hands out. */
+/** What Dobry charges: the plans on the website, and the discount codes the team hands out. */
 export default function Pricing() {
   const coupons = useLive<Coupon[]>((d, e) => subscribeCoupons(d, e), [])
   const [view, setView] = useState<View>('plans')

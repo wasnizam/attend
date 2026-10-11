@@ -64,7 +64,7 @@ export interface UserProfile {
 
 export interface Organisation {
   id: string
-  /** What the organisation uses Attend for. Missing means education. */
+  /** What the organisation uses Dobry for. Missing means education. */
   purpose?: Purpose
   /** What they pay for. Missing means early access (everything open). */
   plan?: Plan
@@ -82,9 +82,9 @@ export interface Organisation {
   timezone?: string
   /** Workplace: a clock-in from a phone that is not the person's own is flagged, or refused. */
   phoneCheck?: 'flag' | 'block'
-  /** Set by the owner of Attend: nobody in the organisation can use the app until restored. */
+  /** Set by the owner of Dobry: nobody in the organisation can use the app until restored. */
   suspended?: boolean
-  /** The owner of Attend's private note about this customer. */
+  /** The owner of Dobry's private note about this customer. */
   ownerNote?: string
   /** Back office: labels, the team member who looks after them, and what they pay. */
   tags?: string[]

@@ -188,14 +188,14 @@ function Visual({ kind }: { kind: TrustVisual }) {
   return null
 }
 
-/** What sets Attend apart: the checks that make the record hard to cheat. */
+/** What sets Dobry apart: the checks that make the record hard to cheat. */
 export function TrustSection({ edition }: { edition: Edition }) {
   return (
     <section id="trust" className="relative isolate scroll-mt-16 overflow-hidden bg-night py-20 text-white">
       <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(50rem_25rem_at_100%_0%,rgb(99_102_241/0.35),transparent_60%)]" />
       <div className="mx-auto max-w-6xl px-5">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold text-sun">{t('Why Attend')}</p>
+          <p className="text-sm font-semibold text-sun">{t('Why Dobry')}</p>
           <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">{t(edition.trust.title)}</h2>
           <p className="mt-3 text-indigo-100/80">{t(edition.trust.sub)}</p>
         </div>
