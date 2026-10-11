@@ -16,6 +16,7 @@ import type { AttendanceRecord, AttendanceStatus, Session, EarlyReason } from '.
 import { AbsentList } from './AbsentList'
 import { AttendanceList } from './AttendanceList'
 import { EvidenceDialog } from './EvidenceDialog'
+import { allowedOrTell } from './Paid'
 import { Button, EmptyState, ErrorNote, friendlyError, inputClass } from './ui'
 
 const EARLY_LABEL: Record<EarlyReason, string> = { clinic: 'Clinic or hospital', personal: 'Personal matter', work: 'Work outside', other: 'Other reason' }
@@ -237,6 +238,7 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
               : undefined
           }
           onStatus={(r, status) =>
+            (!clocking || !isAway(status) || allowedOrTell('leave', t('Leave and sick leave tracking is part of the paid plans.'))) &&
             run(async () => {
               await setAttendanceStatus(r.id, status)
               // An MC needs its remarks and certificate: ask for them straight away.
@@ -256,7 +258,7 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
         busy={busy}
         onMark={(student, status) =>
           isAway(status)
-            ? setAsking({ studentId: student.studentId, studentName: student.studentName, studentKey: studentKeyOf(student.studentId), status, recorded: false })
+            ? (!clocking || allowedOrTell('leave', t('Leave and sick leave tracking is part of the paid plans.'))) && setAsking({ studentId: student.studentId, studentName: student.studentName, studentKey: studentKeyOf(student.studentId), status, recorded: false })
             : run(() => markManually(session, viewer, student, status))
         }
       />

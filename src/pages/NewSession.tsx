@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button, Card, EmptyState, ErrorNote, Field, PageLoader, friendlyError, inputClass } from '../components/ui'
 import { type Fence, LocationPicker } from '../components/LocationPicker'
+import { UpgradeNote } from '../components/Paid'
 import { subscribeOrgUsers } from '../data/account'
 import { createClass, deleteClass, handOver, setClassGeofence, updateClass } from '../data/classes'
 import { useLive } from '../hooks/useLive'
@@ -11,7 +12,7 @@ import { useProfile } from '../hooks/useAuth'
 import { useEditableClasses, useMyClasses } from '../hooks/useClasses'
 import { KINDS, KIND_LABEL, WEEK, addDays, classSlots, dayName, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
-import { overLimit } from '../lib/plan'
+import { allows, overLimit } from '../lib/plan'
 import { has } from '../lib/purpose'
 import type { ClassKind, Delivery, Slot, WeeklyClass } from '../lib/types'
 
@@ -149,7 +150,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
       } else if (weekly) {
         if (overLimit('classes', (myClasses?.length ?? 0) + 1)) {
           setBusy(false)
-          return setError(t('The free plan includes 1 class. Upgrade to Pro to add more.'))
+          return setError(clock ? t('The free plan includes one office with one shift. Upgrade to add more.') : t('The free plan includes 1 class. Upgrade to Pro to add more.'))
         }
         const id = await createClass(profile, { ...details, ...work, kind, slots, startDate: semStart, endDate: semEnd })
         if (clock && fence) await setClassGeofence(id, fence)
@@ -329,7 +330,7 @@ function SessionForm({ editing }: { editing?: WeeklyClass }) {
               </datalist>
               <div>
                 <p className="mb-1.5 text-sm font-medium">{t('Where it is')}</p>
-                <LocationPicker stored={editing} onChange={setFence} />
+                {allows('geofence') ? <LocationPicker stored={editing} onChange={setFence} /> : <UpgradeNote what={t('The location check is part of the paid plans.')} />}
               </div>
             </div>
           )}

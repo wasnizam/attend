@@ -5,7 +5,8 @@ import { Button, Card, ErrorNote, Field, friendlyError, inputClass } from '../co
 import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, setPhoneCheckFor, setOrgSetting, setShifts, signOut } from '../data/account'
 import { useCurrency } from '../lib/currency'
 import { editionForPurpose } from '../lib/editions'
-import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, canPay, paidUntil, trialDaysLeft } from '../lib/plan'
+import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, allows, canPay, paidUntil, trialDaysLeft } from '../lib/plan'
+import { UpgradeNote } from '../components/Paid'
 import { openBilling, redeemCode, startCheckout } from '../data/billing'
 import { getPurpose } from '../lib/purpose'
 import { useAuth, useProfile } from '../hooks/useAuth'
@@ -194,7 +195,8 @@ export function Account() {
           <label className="mt-5 flex items-start gap-3 border-t border-line pt-4">
             <input
               type="checkbox"
-              checked={Boolean(org.shifts)}
+              checked={Boolean(org.shifts) && allows('shifts')}
+              disabled={!allows('shifts')}
               onChange={(e) => {
                 const on = e.target.checked
                 orgSave.run(async () => {
@@ -206,6 +208,7 @@ export function Account() {
             />
             <span>
               <span className="block text-sm font-medium">{t('We work in shifts', undefined, true)}</span>
+              {!allows('shifts') && <UpgradeNote what={t('Night, rotating and planned shifts are part of the paid plans.')} className="my-1" />}
               <span className="block text-xs text-muted">{t('Adds several shifts, people who rotate between them, and a weekly shift plan. Leave it off for ordinary office hours.', undefined, true)}</span>
             </span>
           </label>
@@ -214,7 +217,8 @@ export function Account() {
           <label className="mt-5 block border-t border-line pt-4">
             <span className="mb-1.5 block text-sm font-medium">{t('A clock-in from a phone that is not their own')}</span>
             <select
-              value={org.phoneCheck ?? 'flag'}
+              value={allows('phoneCheck') ? (org.phoneCheck ?? 'flag') : 'flag'}
+              disabled={!allows('phoneCheck')}
               onChange={(e) => {
                 const value = e.target.value as 'flag' | 'block'
                 orgSave.run(async () => {
@@ -227,6 +231,7 @@ export function Account() {
               <option value="flag">{t('Allow it, and flag it for me')}</option>
               <option value="block">{t('Refuse it until I approve the phone')}</option>
             </select>
+            {!allows('phoneCheck') && <UpgradeNote what={t('Refusing a clock-in from someone else’s phone is part of the paid plans.')} className="mt-2" />}
             <span className="mt-1.5 block text-xs text-muted">{t('Each person’s first clock-in registers their phone. A new phone can be approved in one tap on the day’s list. Applies to days opened from now on.')}</span>
           </label>
         )}

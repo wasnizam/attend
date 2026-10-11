@@ -81,6 +81,23 @@ export function planOf(org: PlanFields, now = Date.now()): { active: ActivePlan;
   return { active: plan === 'free' ? 'free' : 'early', until: null, lapsed: false }
 }
 
+/** What only paid workplace plans include. The pricing cards list the same eight. */
+export type Feature = 'pdf' | 'export' | 'overtime' | 'leave' | 'offices' | 'shifts' | 'geofence' | 'phoneCheck'
+
+/**
+ * Whether the free plan's limits are being applied: only once customers can pay (or in a browser
+ * trying payments out), so nobody is locked out of something with no way to get it back.
+ */
+export const locksOn = () => canPay()
+
+/**
+ * Whether the organisation's plan includes a feature. Only a workplace on the free plan is held
+ * back; lecturers and trainers get every feature on any plan (their free plan is limited to one class).
+ */
+export function allows(_feature: Feature): boolean {
+  return !(locksOn() && getPurpose() === 'workplace' && activePlan() === 'free')
+}
+
 /** Whole days left of the Pro trial, or null when not on one. */
 export function trialDaysLeft(now = Date.now()): number | null {
   if (activePlan(now) !== 'trial' || !fields.trialStarted) return null
@@ -92,6 +109,8 @@ export const paidUntil = () => (activePlan() === 'pro' ? fields.paidUntil ?? nul
 /** The most classes, or people on one list, the current plan allows. Undefined = no limit. */
 export function limitFor(kind: 'classes' | 'staff'): number | undefined {
   const active = activePlan()
+  // A free workplace has one office with one shift, once the limits apply.
+  if (active === 'free' && kind === 'classes' && getPurpose() === 'workplace') return locksOn() ? 1 : undefined
   if (active === 'free') return FREE_LIMIT[getPurpose()][kind]
   // Paid workplace plans are sold by size.
   if (active === 'pro' && kind === 'staff' && getPurpose() === 'workplace') return fields.seats

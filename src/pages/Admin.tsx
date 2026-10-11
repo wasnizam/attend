@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ExportButtons } from '../components/ExportButtons'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, StatusBadge, friendlyError, inputClass, buttonClass } from '../components/ui'
+import { UpgradeNote } from '../components/Paid'
+import { allows } from '../lib/plan'
 import { getOrganisation, setUserRole, setUserStatus, subscribeOrgUsers } from '../data/account'
 import { subscribeOrgAttendance } from '../data/attendance'
 import { subscribeOrgSessions } from '../data/sessions'
@@ -338,7 +340,8 @@ function Users({ users, organisation, me }: { users: ReturnType<typeof useLive<U
   return (
     <div className="space-y-4">
       {has('clock') && <Offices />}
-      {organisation && (
+      {organisation && !allows('offices') && <UpgradeNote what={t('Branch managers and more offices are part of the paid plans.')} />}
+      {organisation && allows('offices') && (
         <Card className="p-5">
           <h2 className="font-semibold">{t('Invite lecturers')}</h2>
           <p className="mt-1 text-sm text-muted">

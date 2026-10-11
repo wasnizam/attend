@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { PARTS, ReportCharts, buckets, chartData } from '../components/ReportCharts'
 import { getOrganisation } from '../data/account'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, inputClass } from '../components/ui'
+import { Paid, UpgradeNote } from '../components/Paid'
+import { allows } from '../lib/plan'
 import { fetchManyAttendance, fetchManyClockOuts } from '../data/attendance'
 import { LEAVE_LABEL, fetchManyLeaveTypes } from '../data/evidence'
 import { fetchPlans } from '../data/plans'
@@ -308,7 +310,9 @@ export function Payroll() {
   const has = (x: Section) => setup.sections.includes(x)
   // The shifts column only means something when people work more than one kind of shift.
   const manyShifts = (rows ?? []).some((r) => Object.keys(r.shifts).length > 1 || r.nightDays > 0)
-  const columns = COLUMNS.filter((c) => setup.columns.includes(c.id) && (c.id !== 'shifts' || manyShifts))
+  // Overtime, rest-day and holiday hours belong to the paid plans.
+  const overtimeOn = allows('overtime')
+  const columns = COLUMNS.filter((c) => setup.columns.includes(c.id) && (c.id !== 'shifts' || manyShifts) && (c.id !== 'overtime' || overtimeOn))
   const departments = [...new Set((rows ?? []).map((r) => r.department).filter(Boolean))]
   const offices = [...new Set((rows ?? []).map((r) => r.office).filter(Boolean))]
   const shown = (rows ?? []).filter((r) => (!department || r.department === department) && (!office || r.office === office))
@@ -506,8 +510,14 @@ export function Payroll() {
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">
           <Button variant="secondary" onClick={() => setCustomising(!customising)}>{t('Customise report')}</Button>
-          <Button variant="secondary" disabled={shown.every((r) => r.entries.length === 0)} busy={making} onClick={() => savePdf(pdf(), setMaking)}>{t('Download PDF')}</Button>
-          <Button disabled={shown.every((r) => r.entries.length === 0)} onClick={exportCsv}>{t('Export for Excel')}</Button>
+          {allows('pdf') && allows('export') ? (
+            <>
+              <Button variant="secondary" disabled={shown.every((r) => r.entries.length === 0)} busy={making} onClick={() => savePdf(pdf(), setMaking)}>{t('Download PDF')}</Button>
+              <Button disabled={shown.every((r) => r.entries.length === 0)} onClick={exportCsv}>{t('Export for Excel')}</Button>
+            </>
+          ) : (
+            <UpgradeNote what={t('Downloading as PDF and exporting to Excel are part of the paid plans.')} />
+          )}
         </div>
       </div>
 
@@ -643,7 +653,7 @@ export function Payroll() {
               value={formatDuration(total(shown, (r) => r.minutes))}
               note={total(shown, (r) => r.timedDays) < days ? t('from {a} of {b} days worked', { a: total(shown, (r) => r.timedDays), b: days }) : undefined}
             />
-            <Stat label={t('Overtime')} value={formatDuration(total(shown, (r) => r.overtime + r.restMinutes + r.holidayMinutes))} />
+            {overtimeOn ? <Stat label={t('Overtime')} value={formatDuration(total(shown, (r) => r.overtime + r.restMinutes + r.holidayMinutes))} /> : <UpgradeNote what={t('Overtime, rest-day and holiday hours are part of the paid plans.')} className="self-center" />}
             <Stat label={t('Late')} value={total(shown, (r) => r.late)} />
           </div>
 
@@ -886,13 +896,15 @@ function Timesheet({ row, period, company, preparedBy, onBack }: { row: PayrollR
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{row.name}</h1>
           <p className="text-sm text-muted">{[t('Timesheet'), period, row.staffId, row.office, row.department].filter(Boolean).join(' · ')}</p>
         </div>
-        <Button variant="secondary" busy={making} onClick={() => savePdf(timesheetPdf(), setMaking)} className="print:hidden">{t('Download PDF')}</Button>
+        <Paid feature="pdf" what={t('Downloading as PDF is part of the paid plans.')}>
+          <Button variant="secondary" busy={making} onClick={() => savePdf(timesheetPdf(), setMaking)} className="print:hidden">{t('Download PDF')}</Button>
+        </Paid>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Stat label={t('Days worked')} value={row.days} />
         <Stat label={t('Attendance')} value={row.rate === null ? '—' : `${row.rate}%`} />
         <Stat label={t('Hours')} value={formatDuration(row.minutes)} />
-        <Stat label={t('Overtime')} value={formatDuration(row.overtime + row.restMinutes + row.holidayMinutes)} />
+        {allows('overtime') && <Stat label={t('Overtime')} value={formatDuration(row.overtime + row.restMinutes + row.holidayMinutes)} />}
         <Stat label={t('Absent')} value={row.absent} />
       </div>
       {row.entries.length === 0 ? (

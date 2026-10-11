@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { type Fence, LocationPicker } from '../components/LocationPicker'
+import { UpgradeNote } from '../components/Paid'
+import { allows } from '../lib/plan'
 import { ListUploader } from '../components/ListUploader'
 import { Button, Card, ErrorNote, Field, Logo, PageLoader, friendlyError, inputClass } from '../components/ui'
 import { getOrganisation, renameOrganisation, setShifts } from '../data/account'
@@ -129,6 +131,8 @@ export function Setup() {
                     await renameOrganisation(org, name)
                     setOrg({ ...org, name: name.trim() })
                   }
+                  // The free plan has one office; more than one already set up is kept, not added to.
+                  if (!allows('offices') && rows.filter((r) => !offices.some((c) => c.id === r.id)).length + offices.length > 1) throw new Error(t('The free plan includes one office with one shift. Upgrade to add more.'))
                   for (const row of rows) {
                     const label = row.name.trim() || t('Main office')
                     const existing = offices.find((c) => c.id === row.id)
@@ -241,7 +245,7 @@ function Company({ org, offices, busy, onNext }: { org: Organisation; offices: W
                   <button type="button" aria-label={t('Remove')} onClick={() => setRows((cur) => cur.filter((_, j) => j !== i))} className="size-12 rounded-md text-muted hover:bg-bad-soft hover:text-bad">×</button>
                 )}
               </div>
-              <LocationPicker pointOnly stored={offices.find((c) => c.id === row.id)} onChange={(fence) => patch(i, { fence })} />
+              {allows('geofence') ? <LocationPicker pointOnly stored={offices.find((c) => c.id === row.id)} onChange={(fence) => patch(i, { fence })} /> : <UpgradeNote what={t('The location check is part of the paid plans.')} />}
             </div>
           ))}
         </div>

@@ -90,6 +90,15 @@ In Stripe: add a webhook endpoint for `https://<site>/api/stripe-webhook` with t
 portal settings once. No products or prices need making by hand: one product per plan is created
 the first time it is bought, and the amount always comes from the price list.
 
+**What the free plan holds back.** `allows(feature)` in `src/lib/plan.ts` is the one switch: a
+workplace on the free plan (and only a workplace) is without PDF download, Excel export, overtime
+and rest-day/holiday hours, leave tracking, more than one office or shift, branch managers, shift
+mode, the location check and refusing other people's phones. `<Paid>` / `<UpgradeNote>`
+(`src/components/Paid.tsx`) put a note with a link to the plans where the feature would be. The
+limits apply only when `locksOn()` is true: once payments are open, or in a browser trying them
+with `?pay=test`. They are checks in the app, not in the database rules. Reports on screen, the
+Today screen, the door screen and full history stay free. Tests in `tests/plan.test.ts`.
+
 **Free access codes.** Console → Pricing → Free access codes (owner, admin or finance) makes codes
 that give Pro for a number of months with no payment: random (`ATT-7KQ2-M9XD`) or named, for one
 edition or any, with a staff limit for workplaces, a number of uses and an optional last day. A

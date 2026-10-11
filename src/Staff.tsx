@@ -4,7 +4,7 @@ import { AppShell } from './components/AppShell'
 import { Button, PageLoader } from './components/ui'
 import { signOut, subscribeOrganisation } from './data/account'
 import { isPlatformOwner } from './data/platform'
-import { setPlan } from './lib/plan'
+import { allows, setPlan } from './lib/plan'
 import { setPhoneCheck, setPurpose, setShiftMode } from './lib/purpose'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { MySessionsProvider } from './hooks/useSessions'
@@ -43,7 +43,7 @@ function PurposeGate({ organisationId, uid, children }: { organisationId: string
         if (org?.suspended && uid) isPlatformOwner(uid).then((owner) => owner && setSuspended(false))
         setPurpose(org?.purpose)
         setPlan(org)
-        setShiftMode(org?.shifts)
+        setShiftMode(org?.shifts && allows('shifts'))
         setPhoneCheck(org?.phoneCheck)
         setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}:${org?.seats ?? ''}:${org?.shifts ? 's' : ''}:${org?.phoneCheck ?? ''}`)
       }),

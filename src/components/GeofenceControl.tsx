@@ -3,6 +3,8 @@ import { setGeofence } from '../data/sessions'
 import { DEFAULT_RADIUS, RADII, getPosition } from '../lib/geo'
 import { t } from '../lib/i18n'
 import type { GeoMode, Session } from '../lib/types'
+import { allows } from '../lib/plan'
+import { UpgradeNote } from './Paid'
 import { ErrorNote, friendlyError } from './ui'
 
 /**
@@ -48,6 +50,9 @@ export function GeofenceControl({ session }: { session: Session }) {
     )
 
   const select = 'h-9 rounded-md border border-line bg-white px-2 !text-sm font-medium'
+
+  // Already-on checks stay switchable off; turning one on needs a plan that includes it.
+  if (!on && !allows('geofence')) return <UpgradeNote what={t('The location check is part of the paid plans.')} />
 
   return (
     <div className="rounded-lg bg-canvas px-4 py-3 text-left">
