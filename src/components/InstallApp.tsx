@@ -75,14 +75,14 @@ export function InstallApp({ always = false }: { always?: boolean }) {
     )
   }
   return (
-    <div className="flex items-start gap-3 rounded-xl bg-night px-4 py-3 text-white shadow-card print:hidden">
-      <img src="/favicon.svg" alt="" className="mt-0.5 size-9 shrink-0 rounded-lg" />
-      <div className="min-w-0 flex-1">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-night px-4 py-3 text-white shadow-card print:hidden">
+      <img src="/favicon.svg" alt="" className="size-9 shrink-0 rounded-lg" />
+      <div className="min-w-0 flex-1 basis-48">
         <p className="font-semibold">{t('Get the Dobry app')}</p>
         <p className="text-sm text-indigo-100/80">{t('One tap to open, and no logging in each time.')}</p>
         {showSteps && way !== 'button' && <div className="text-indigo-100/90"><Steps way={way} /></div>}
       </div>
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="ml-auto flex shrink-0 items-center gap-1">
         {!(showSteps && way !== 'button') && (
           <Button variant="sun" busy={busy} onClick={go}>{way === 'button' ? t('Install') : t('Show me how')}</Button>
         )}

@@ -191,18 +191,18 @@ export function Account() {
       <header className="flex flex-wrap items-center gap-4">
         <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-night font-display text-xl font-bold text-sun">{initials || '·'}</span>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-semibold tracking-tight sm:text-3xl">{profile.name}</h1>
-          <p className="truncate text-sm text-muted">{profile.email}</p>
+          <h1 className="text-2xl font-semibold tracking-tight break-words sm:text-3xl">{profile.name}</h1>
+          <p className="text-sm break-all text-muted">{profile.email}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-          {org?.name && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{org.name}</span>}
+        <div className="flex basis-full flex-wrap items-center gap-2 text-xs font-semibold md:basis-auto">
+          {org?.name && <span className="max-w-full truncate rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{org.name}</span>}
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{profile.role === 'admin' ? t('Admin') : t('Lecturer')}</span>
           <span className="rounded-full bg-accent-soft px-2.5 py-1 text-accent">{t(myPlan?.name ?? PLAN_LABEL[plan])}</span>
         </div>
       </header>
 
       <div className="mt-6 gap-8 md:grid md:grid-cols-[11rem_1fr]">
-        <nav aria-label={t('Account')} className="-mx-4 mb-4 flex gap-1 overflow-x-auto px-4 pb-1 text-sm font-medium md:sticky md:top-6 md:mx-0 md:mb-0 md:block md:space-y-0.5 md:self-start md:overflow-visible md:px-0">
+        <nav aria-label={t('Account')} className="-mx-4 mb-4 flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden text-sm font-medium md:sticky md:top-6 md:mx-0 md:mb-0 md:block md:space-y-0.5 md:self-start md:overflow-visible md:px-0">
           {sections.map(([id, label]) => (
             <a key={id} href={`#${id}`} className="block shrink-0 rounded-lg px-3 py-2 whitespace-nowrap text-slate-600 hover:bg-slate-100 hover:text-ink">
               {t(label)}
