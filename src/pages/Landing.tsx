@@ -8,6 +8,7 @@ import { Logo, buttonClass } from '../components/ui'
 import { inMalaysia, setCurrency, useCurrency } from '../lib/currency'
 import { EDITIONS, type Edition, type EditionId, editionById, rememberEdition } from '../lib/editions'
 import { t } from '../lib/i18n'
+import { describePage } from '../lib/seo'
 import { setPurpose } from '../lib/purpose'
 
 const FAQ = [
@@ -136,7 +137,7 @@ export function Landing({ show }: { show?: EditionId }) {
   setPurpose('education')
   useEffect(() => {
     rememberEdition(edition.id)
-    document.title = `Dobry · ${t(edition.headline).replace(/\s*\|\s*/g, ' ')}`
+    describePage(edition.id)
   }, [edition])
   return (
     <div className="min-h-dvh bg-white">

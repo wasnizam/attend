@@ -6,6 +6,7 @@ import { Logo, buttonClass } from '../components/ui'
 import { EDITIONS, type Edition, type EditionId } from '../lib/editions'
 import { t } from '../lib/i18n'
 import { setPurpose } from '../lib/purpose'
+import { describePage } from '../lib/seo'
 import { LiveDemo } from './Landing'
 
 /** The three doors. [edition, icon path, tile colours, title, text, three points] */
@@ -141,7 +142,7 @@ const sunButton = `${buttonClass({ size: 'lg' })} !bg-sun !text-night shadow-[0_
 export function Home() {
   setPurpose('education')
   useEffect(() => {
-    document.title = `Dobry · ${t('Attendance in seconds')}`
+    describePage('')
   }, [])
   return (
     <div className="min-h-dvh bg-white">

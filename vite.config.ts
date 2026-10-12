@@ -3,6 +3,7 @@ import { type Plugin, defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { PAGES, SITE } from './src/lib/seo'
 
 /**
  * The Console gets its own page file, the same app with the Console's name, icon and manifest
@@ -24,11 +25,40 @@ const consolePage = (): Plugin => ({
   },
 })
 
+/**
+ * Each public page gets its own file with its own title, description, address and share preview
+ * written in. Search engines and link previews (WhatsApp, LinkedIn) read these before any script
+ * runs, so without them every page looked like the same page.
+ */
+const seoPages = (): Plugin => ({
+  name: 'dobry-seo-pages',
+  apply: 'build',
+  closeBundle() {
+    const html = readFileSync('dist/index.html', 'utf8')
+    const attr = (v: string) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+    for (const [path, page] of Object.entries(PAGES)) {
+      const url = `${SITE}/${path}`
+      const out = html
+        .replace(/<title>[^<]*<\/title>/, `<title>${page.title.replace(/&/g, '&amp;')}</title>`)
+        .replace(/(<meta name="description" content=")[^"]*"/, `$1${attr(page.description)}"`)
+        .replace(/(<link rel="canonical" href=")[^"]*"/, `$1${url}"`)
+        .replace(/(<meta property="og:url" content=")[^"]*"/, `$1${url}"`)
+        .replace(/(<meta (?:property="og:title"|name="twitter:title") content=")[^"]*"/g, `$1${attr(page.title)}"`)
+        .replace(/(<meta (?:property="og:description"|name="twitter:description") content=")[^"]*"/g, `$1${attr(page.description)}"`)
+        // The description of the product as a whole belongs to the home page only.
+        .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, '')
+      if (!out.includes(`<link rel="canonical" href="${url}"`)) throw new Error(`${path}.html: the canonical link was not found in index.html`)
+      writeFileSync(`dist/${path}.html`, out)
+    }
+  },
+})
+
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
     consolePage(),
+    seoPages(),
     VitePWA({
       registerType: 'autoUpdate',
       // Registered from src/lib/updates.ts, which also reloads when a new version arrives.

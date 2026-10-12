@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from '../components/ui'
+import { describePage } from '../lib/seo'
 
 /**
  * The Terms of Service and the Privacy Policy. Written in plain English on purpose: they are a
@@ -109,7 +110,7 @@ export function Legal({ doc }: { doc: 'terms' | 'privacy' }) {
   const terms = doc === 'terms'
   const title = terms ? 'Terms of Service' : 'Privacy Policy'
   useEffect(() => {
-    document.title = `Dobry · ${title}`
+    describePage(doc)
     window.scrollTo(0, 0)
   }, [title])
   return (

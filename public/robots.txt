@@ -1,0 +1,13 @@
+# Dobry: the public pages are for everyone; the app itself is private to its users.
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /console
+Disallow: /admin
+Disallow: /session/
+Disallow: /door
+Disallow: /api/
+Disallow: /login
+Disallow: /signup
+
+Sitemap: https://dobry.app/sitemap.xml
