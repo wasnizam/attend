@@ -63,6 +63,32 @@ export async function resumePlan(): Promise<void> {
   await call<{ resumed?: boolean }>('/api/portal', { action: 'resume' })
 }
 
+/** What the Console is told about the email set-up: never the key itself. */
+export interface EmailStatus {
+  ready: boolean
+  keyEnd: string | null
+  keyFromVercel: boolean
+  from: string
+  replyTo: string
+  updatedBy: string | null
+  updatedAt: number | null
+  tested?: { ok: boolean; error?: string; to?: string }
+}
+
+/** The email set-up, for an owner of Dobry: see it, save it, try it, or remove it. */
+export const emailSetup = (action: 'status' | 'save' | 'test' | 'clear', fields: { apiKey?: string; from?: string; replyTo?: string } = {}) =>
+  call<EmailStatus>('/api/email-settings', { action, ...fields })
+
+/** Asks for the welcome email, after signing up. Never fails: it is a courtesy, not a step. */
+export async function sendWelcome(): Promise<void> {
+  try {
+    const token = await auth.currentUser?.getIdToken()
+    if (token) await fetch('/api/welcome', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: '{}' })
+  } catch {
+    // No email this time; nothing else depends on it.
+  }
+}
+
 /** What the Console is told about the Stripe keys: never the keys themselves. */
 export interface PaymentKeysStatus {
   keysFrom: 'console' | 'vercel' | null

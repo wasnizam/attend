@@ -301,7 +301,11 @@ export function Home() {
         </div>
         <div className="border-t border-line">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 text-sm text-muted">
-            <span>© {new Date().getFullYear()} Dobry</span>
+            <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>© {new Date().getFullYear()} Dobry</span>
+              <Link to="/terms" className="hover:text-ink">{t('Terms')}</Link>
+              <Link to="/privacy" className="hover:text-ink">{t('Privacy')}</Link>
+            </span>
             <LanguageSwitch />
           </div>
         </div>

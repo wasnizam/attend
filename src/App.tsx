@@ -5,6 +5,7 @@ import { isConfigured } from './lib/firebase'
 import { useLang } from './lib/i18n'
 import { Home } from './pages/Home'
 import { Landing } from './pages/Landing'
+import { Legal } from './pages/Legal'
 
 // The participant check-in page and the lecturer app are separate bundles, so a
 // student scanning the QR downloads only what the check-in form needs.
@@ -41,6 +42,8 @@ export function App() {
         <Route path="/lecturers" element={<Landing show="lecturers" />} />
         <Route path="/trainers" element={<Landing show="trainers" />} />
         <Route path="/workplace" element={<Landing show="workplace" />} />
+        <Route path="/terms" element={<Legal doc="terms" />} />
+        <Route path="/privacy" element={<Legal doc="privacy" />} />
         <Route element={<NeedsFirebase />}>
           <Route path="/session/:token" element={<Attend />} />
           <Route path="/door" element={<DoorEntry />} />

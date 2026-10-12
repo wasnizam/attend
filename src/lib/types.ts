@@ -97,6 +97,8 @@ export interface Organisation {
   stripeSubscriptionId?: string
   stripeStatus?: string
   stripePlanId?: string
+  /** Set by the payment server while a card is failing; cleared when a payment goes through. */
+  paymentFailure?: { at?: Timestamp; amount: number; currency: 'MYR' | 'USD'; attempt: number; nextTry?: Timestamp | null }
   /** They have cancelled: Pro runs to the end of what is paid, then stops. */
   stripeCancelAtPeriodEnd?: boolean
   /** A standing discount on what they pay, until a date (none = for as long as it lasts). */

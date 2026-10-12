@@ -26,7 +26,7 @@ import { auth } from '../lib/auth'
 import { db } from '../lib/firebase'
 import { randomToken } from '../lib/format'
 import { PAYMENTS_OPEN } from '../lib/plan'
-import { refreshUsage } from './billing'
+import { refreshUsage, sendWelcome } from './billing'
 import { startPlanFor } from '../lib/pricing'
 import type { Purpose } from '../lib/purpose'
 import type { Organisation, Role, UserProfile, UserStatus } from '../lib/types'
@@ -119,7 +119,8 @@ export async function createOrganisationProfile(name: string, organisationName: 
     organisationId: orgRef.id,
     organisationName: organisationName.trim(),
     createdAt: serverTimestamp(),
-  })
+  })  // A welcome email, when emails are set up. Not waited for: the account is ready either way.
+  void sendWelcome()
 }
 
 export async function lookupInvite(code: string): Promise<{ organisationId: string; organisationName: string } | null> {

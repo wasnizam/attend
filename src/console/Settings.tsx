@@ -4,6 +4,7 @@ import { type PlatformSettings, can, saveSettings } from '../data/platform'
 import { Link } from 'react-router-dom'
 import { t } from '../lib/i18n'
 import { useOwner } from './context'
+import { EmailSetup } from './EmailSetup'
 import { PaymentKeys } from './PaymentKeys'
 import { PageHead, Section, useAction } from './ui'
 
@@ -55,6 +56,7 @@ export default function Settings() {
         {edit && <div className="lg:col-span-2"><Button type="submit" busy={busy === 'save'}>{t('Save settings')}</Button></div>}
       </form>
       {me.role === 'owner' && <PaymentKeys />}
+      {me.role === 'owner' && <EmailSetup />}
       <Section title={t('Prices and discounts')} sub={t('Plans, prices and discount codes are managed on their own page.')}>
         <Link to="/console/pricing" className="text-sm font-medium text-accent">{t('Open Pricing')} →</Link>
       </Section>

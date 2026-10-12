@@ -1,6 +1,7 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import type Stripe from 'stripe'
 import { patchFromSubscription } from './_lib/billing.js'
+import { emailOrg } from './_lib/email.js'
 import { withGift } from './_lib/gift.js'
 import { NotConfigured, failure, firebase, json, stripe, stripeFor, stripeSettings } from './_lib/server.js'
 
@@ -40,9 +41,11 @@ export async function POST(request: Request): Promise<Response> {
         break
       case 'invoice.paid':
         await paid(event.data.object)
+        await failure_(event.data.object, false)
         break
       case 'invoice.payment_failed':
         await note(event.data.object.customer, 'payment failed', `Stripe could not take ${money(event.data.object.amount_due, event.data.object.currency)}. Stripe will try again.`)
+        await failure_(event.data.object, true)
         break
     }
     return json({ received: true })
@@ -116,6 +119,39 @@ async function paid(invoice: Stripe.Invoice) {
     at: FieldValue.serverTimestamp(),
   })
   await audit(db, 'payment', `${money(invoice.amount_paid, invoice.currency)} by Stripe (${invoice.number ?? invoice.id})`, org.id, org.data().name)
+}
+
+/**
+ * Keeps on the organisation what the Console shows under "Payment failed": how much, which try it
+ * was and when Stripe will try again. A payment that goes through clears it.
+ */
+async function failure_(invoice: Stripe.Invoice, failed: boolean) {
+  const customer = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id
+  if (!customer) return
+  const { db } = firebase()
+  const org = (await db.collection('organisations').where('stripeCustomerId', '==', customer).limit(1).get()).docs[0]
+  if (!org) return
+  if (!failed) {
+    if (org.data().paymentFailure) await org.ref.update({ paymentFailure: FieldValue.delete() })
+    return
+  }
+  const first = !org.data().paymentFailure
+  await org.ref.update({
+    paymentFailure: {
+      at: FieldValue.serverTimestamp(),
+      amount: invoice.amount_due / 100,
+      currency: invoice.currency.toUpperCase() === 'MYR' ? 'MYR' : 'USD',
+      attempt: invoice.attempt_count ?? 1,
+      nextTry: invoice.next_payment_attempt ? Timestamp.fromMillis(invoice.next_payment_attempt * 1000) : null,
+    },
+  })
+  // Tell the customer once, on the first failure, with the way to fix it.
+  if (first) {
+    await emailOrg(db, org.id, 'paymentFailed', {
+      amount: money(invoice.amount_due, invoice.currency),
+      retry: invoice.next_payment_attempt ? new Date(invoice.next_payment_attempt * 1000).toISOString().slice(0, 10) : '',
+    }).catch(() => {})
+  }
 }
 
 async function note(customer: Stripe.Invoice['customer'], action: string, detail: string) {

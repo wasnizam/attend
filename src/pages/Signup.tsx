@@ -146,6 +146,9 @@ export function Signup() {
             {finishing ? t('Continue') : joining ? t('Join') : t('Start Free')}
           </Button>
         </form>
+        <p className="mt-4 text-center text-xs text-muted">
+          {t('By continuing you agree to our')} <Link to="/terms" className="font-medium text-accent">{t('Terms')}</Link> {t('and')} <Link to="/privacy" className="font-medium text-accent">{t('Privacy Policy')}</Link>.
+        </p>
         <button onClick={() => setJoining(!joining)} className="mt-4 w-full text-center text-sm font-medium text-accent">
           {joining ? t('Set up a new organisation instead') : t('Have an invite code from your organisation?')}
         </button>

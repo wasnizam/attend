@@ -6,7 +6,7 @@ import { t } from '../lib/i18n'
 import { DAY, csvDownload, dateOf, editionName, money, moneyMix, statusLabel, useOwner } from './context'
 import { Kpi, PageHead, StatusBadge, Tabs, planUntil, td, th } from './ui'
 
-type View = 'paying' | 'renewing' | 'trials' | 'lapsed' | 'all'
+type View = 'paying' | 'failed' | 'cancelling' | 'renewing' | 'trials' | 'lapsed' | 'all'
 
 /** Every subscription: who pays what, how often, and when it renews. */
 export default function Subscriptions() {
@@ -16,6 +16,9 @@ export default function Subscriptions() {
   const now = Date.now()
   const lists: Record<View, typeof customers> = {
     paying: customers.filter((c) => c.status === 'pro'),
+    // A card that Stripe could not charge: still on Pro while it retries, then for a few days of grace.
+    failed: customers.filter((c) => c.org.paymentFailure || c.org.stripeStatus === 'past_due' || c.org.stripeStatus === 'unpaid'),
+    cancelling: customers.filter((c) => c.status === 'pro' && c.org.stripeCancelAtPeriodEnd),
     renewing: customers.filter((c) => c.status === 'pro' && c.until && c.until - now < 30 * DAY),
     trials: customers.filter((c) => c.status === 'trial'),
     lapsed: customers.filter((c) => c.lapsed),
@@ -35,7 +38,7 @@ export default function Subscriptions() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label={t('Monthly recurring revenue')} value={moneyMix(mrr(lists.paying))} note={noPrice ? t('{n} paying customers have no price set', { n: noPrice }) : undefined} tone={noPrice ? 'warn' : undefined} />
         <Kpi label={t('Paying')} value={lists.paying.length} />
-        <Kpi label={t('Renewing in 30 days')} value={lists.renewing.length} note={moneyMix(mrr(lists.renewing))} />
+        <Kpi label={t('Payment failed')} value={lists.failed.length} note={lists.failed.length ? moneyMix(mrr(lists.failed)) : t('Every card is going through.')} tone={lists.failed.length ? 'warn' : undefined} />
         <Kpi label={t('On trial')} value={lists.trials.length} />
       </div>
       <Tabs
@@ -43,6 +46,8 @@ export default function Subscriptions() {
         onChange={setView}
         items={[
           ['paying', t('Paying'), lists.paying.length],
+          ['failed', t('Payment failed'), lists.failed.length],
+          ['cancelling', t('Cancelling'), lists.cancelling.length],
           ['renewing', t('Renewing soon'), lists.renewing.length],
           ['trials', t('Trials'), lists.trials.length],
           ['lapsed', t('Lapsed'), lists.lapsed.length],
@@ -60,7 +65,19 @@ export default function Subscriptions() {
                 <tr key={c.org.id} className="cursor-pointer hover:bg-canvas/60" onClick={() => navigate(`/console/customers/${c.org.id}`)}>
                   <td className={`${td} font-medium text-accent`}>{c.org.name}</td>
                   <td className={td}>{editionName(c.org)}</td>
-                  <td className={td}><StatusBadge c={c} /></td>
+                  <td className={td}>
+                    <StatusBadge c={c} />
+                    {c.org.paymentFailure && (
+                      <span className="mt-1 block text-xs font-medium whitespace-nowrap text-bad">
+                        {t('Card failed {date}', { date: dateOf(c.org.paymentFailure.at?.toMillis() ?? null) })} · {money(c.org.paymentFailure.amount, c.org.paymentFailure.currency)}
+                        <span className="block font-normal text-muted">
+                          {t('Try {n}', { n: c.org.paymentFailure.attempt })}
+                          {c.org.paymentFailure.nextTry ? ` · ${t('next try {date}', { date: dateOf(c.org.paymentFailure.nextTry.toMillis()) })}` : ` · ${t('no more tries')}`}
+                        </span>
+                      </span>
+                    )}
+                    {c.status === 'pro' && c.org.stripeCancelAtPeriodEnd && <span className="mt-1 block text-xs font-medium whitespace-nowrap text-[#b25e00]">{t('Cancelled: will not renew')}</span>}
+                  </td>
                   <td className={`${td} tabular`}>{c.org.price ? `${money(c.org.price.amount, c.org.price.currency)} / ${t(c.org.price.cycle)}` : <span className="text-muted">—</span>}</td>
                   <td className={`${td} tabular`}>{c.mrr ? money(Math.round(c.mrr * 100) / 100, c.org.price?.currency) : '—'}</td>
                   <td className={`${td} tabular`}>{c.org.purpose === 'workplace' ? (c.org.seats ? `${c.people} / ${c.org.seats}` : c.people) : '—'}</td>

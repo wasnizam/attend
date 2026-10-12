@@ -1,0 +1,49 @@
+import { describe, expect, it } from 'vitest'
+import { emailText, longDate, render } from '../api/_lib/emailText'
+
+describe('emails to customers', () => {
+  it('greets by first name, and speaks each edition’s language', () => {
+    const lecturer = emailText('welcome', { name: 'Aisha Bello', organisation: 'FSKM', purpose: 'education' })
+    expect(lecturer.subject).toBe('Welcome to Dobry')
+    expect(lecturer.lines[0]).toBe('Hello Aisha,')
+    expect(lecturer.lines.join(' ')).toMatch(/Lecturers account/)
+    expect(lecturer.lines.join(' ')).toMatch(/Students scan/)
+    const work = emailText('welcome', { name: '  ', purpose: 'workplace' })
+    expect(work.lines[0]).toBe('Hello,')
+    expect(work.lines.join(' ')).toMatch(/Workplace account/)
+    expect(work.lines.join(' ')).toMatch(/clock in and out/)
+  })
+
+  it('says when a trial ends, and that nothing is deleted', () => {
+    const three = emailText('trialEnding', { name: 'Ali', organisation: 'Sunrise Café' }, { days: '3', until: '2026-10-15' })
+    expect(three.subject).toBe('Your Dobry Pro trial ends in 3 days')
+    expect(three.lines.join(' ')).toMatch(/Sunrise Café ends on 15 October 2026/)
+    expect(three.lines.join(' ')).toMatch(/Nothing is deleted/)
+    expect(three.button).toEqual({ label: 'Choose a plan', path: '/app/account#plan' })
+    expect(emailText('trialEnding', {}, { days: '1', until: '2026-10-15' }).subject).toBe('Your Dobry Pro trial ends in 1 day')
+    expect(emailText('trialEnded', { organisation: 'X' }).lines.join(' ')).toMatch(/Nothing was deleted/)
+  })
+
+  it('tells a customer whose card failed how much, when it is tried again, and where to fix it', () => {
+    const e = emailText('paymentFailed', { name: 'Ali', organisation: 'MAXU' }, { amount: 'MYR 19.00', retry: '2026-10-18' })
+    expect(e.lines.join(' ')).toMatch(/MYR 19\.00 for MAXU/)
+    expect(e.lines.join(' ')).toMatch(/try again on 18 October 2026/)
+    expect(e.button?.path).toBe('/app/account#plan')
+    expect(emailText('paymentFailed', {}, {}).lines.join(' ')).toMatch(/a few more days/)
+  })
+
+  it('writes dates in words, and nothing for a bad date', () => {
+    expect(longDate('2027-01-05')).toBe('5 January 2027')
+    expect(longDate('soon')).toBe('')
+    expect(longDate(undefined)).toBe('')
+  })
+
+  it('renders as HTML and as plain text, with the button’s full address, and never lets a name inject HTML', () => {
+    const { html, text } = render(emailText('trialEnded', { name: '<b>Eve</b>', organisation: 'A & B <script>' }), 'https://dobry.app', 'Dobry')
+    expect(html).toContain('href="https://dobry.app/app/account#plan"')
+    expect(html).not.toContain('<script>')
+    expect(html).toContain('A &amp; B &lt;script&gt;')
+    expect(text).toContain('See the plans: https://dobry.app/app/account#plan')
+    expect(text).toContain('Hello <b>Eve</b>,')
+  })
+})
