@@ -15,6 +15,7 @@ const Dashboard = lazy(() => import('./Dashboard'))
 const Customers = lazy(() => import('./Customers'))
 const CustomerDetail = lazy(() => import('./CustomerDetail'))
 const Subscriptions = lazy(() => import('./Subscriptions'))
+const Limits = lazy(() => import('./Limits'))
 const Billing = lazy(() => import('./Billing'))
 const Users = lazy(() => import('./Users'))
 const Tasks = lazy(() => import('./Tasks'))
@@ -75,6 +76,7 @@ export default function ConsoleApp() {
           <Route path="customers" element={<Customers />} />
           <Route path="customers/:id" element={<CustomerDetail />} />
           <Route path="subscriptions" element={<Subscriptions />} />
+          <Route path="limits" element={<Limits />} />
           <Route path="billing" element={<Billing />} />
           <Route path="pricing" element={<Pricing />} />
           <Route path="users" element={<Users />} />
@@ -98,6 +100,7 @@ const ICON: Record<string, string> = {
   subscriptions: 'M4 7h16M4 12h16M4 17h10',
   billing: 'M4 5h16v14H4zM4 10h16M8 15h3',
   pricing: 'M20 12l-8 8-9-9V3h8l9 9ZM7.5 7.5h.01',
+  limits: 'M4 20V10M10 20V4M16 20v-7M22 20H2M3 6h4M9 2h4',
   users: 'M16 19v-1a4 4 0 0 0-8 0v1M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
   tasks: 'M9 11l2 2 4-4M5 4h14v16H5z',
   team: 'M17 20v-1a4 4 0 0 0-3-3.9M7 20v-1a4 4 0 0 1 8 0v1M11 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM17 8a3 3 0 0 1 0 5',
@@ -111,6 +114,7 @@ function Shell({ email, role, children }: { email: string; role: StaffRole; chil
     ['', t('Dashboard'), 'dashboard'],
     ['customers', t('Customers'), 'customers'],
     ['subscriptions', t('Subscriptions'), 'subscriptions'],
+    ['limits', t('Plan limits'), 'limits'],
     ['billing', t('Billing'), 'billing'],
     ['pricing', t('Pricing'), 'pricing'],
     ['users', t('Users'), 'users'],

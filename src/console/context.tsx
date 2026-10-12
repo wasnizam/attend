@@ -31,7 +31,7 @@ import { editionForPurpose } from '../lib/editions'
 import { addDays, formatDate, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import { PLAN_LABEL, planOf } from '../lib/plan'
-import type { Organisation, UserProfile } from '../lib/types'
+import type { Organisation, Session, UserProfile, WeeklyClass } from '../lib/types'
 
 export const DAY = 86_400_000
 export const dateOf = (ms: number | null | undefined) => (ms ? formatDate(isoDate(new Date(ms))) : '—')
@@ -74,6 +74,9 @@ export interface Customer {
 interface OwnerData {
   me: Actor & { role: StaffRole }
   customers: Customer[]
+  /** Every class, and every session of the last 12 weeks: what a customer has set up and done. */
+  classes: WeeklyClass[]
+  sessions: Session[]
   users: UserProfile[]
   billing: BillingEntry[]
   invoices: Invoice[]
@@ -107,7 +110,7 @@ export function OwnerDataProvider({ me, children, loading, failed }: { me: Actor
   const announcements = useLive<Announcement[]>((d, e) => subscribeAnnouncements(d, e), [])
   const auditLog = useLive<AuditEntry[]>(can(me.role, 'audit') ? (d, e) => subscribeAudit(d, e) : null, [me.role])
   const settings = useLive<PlatformSettings>((d, e) => subscribeSettings(d, e), [])
-  const [extra, setExtra] = useState<{ sessions: { organisationId: string; date: string; status: string }[]; classes: { organisationId: string; rosterCount?: number; rosterFrom?: string | null }[] } | null>(null)
+  const [extra, setExtra] = useState<{ sessions: Session[]; classes: WeeklyClass[] } | null>(null)
   const [error, setError] = useState(false)
   const today = isoDate()
 
@@ -169,6 +172,8 @@ export function OwnerDataProvider({ me, children, loading, failed }: { me: Actor
   const value: OwnerData = {
     me,
     customers,
+    classes: extra!.classes,
+    sessions: extra!.sessions,
     users: users.data!,
     billing: byTime(billing.data!),
     invoices: byTime(invoices.data!),

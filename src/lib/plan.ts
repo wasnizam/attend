@@ -206,3 +206,30 @@ export function solo(): boolean {
   const active = activePlan()
   return !(active === 'trial' || (active === 'pro' && (fields.seats ?? 1) > 1))
 }
+
+export type PlanLimits = Partial<Record<Limit, number>>
+
+/**
+ * What any organisation's plan allows once limits apply: the same numbers as `limitFor`, for a
+ * customer other than the one signed in (the Console's view of everyone). Early access has none.
+ */
+export function planLimits(org: PlanFields & { purpose?: Purpose }, now = Date.now()): PlanLimits {
+  const active = planOf(org, now).active
+  const purpose = org.purpose ?? 'education'
+  if (active === 'early') return {}
+  const paid = active === 'pro' || active === 'trial'
+  if (purpose === 'education') {
+    return {
+      classes: paid ? LECTURER_LIMIT.pro.classes : LECTURER_LIMIT.free.classes,
+      students: paid ? LECTURER_LIMIT.pro.students : LECTURER_LIMIT.free.students,
+      lecturers: active === 'pro' ? Math.max(1, org.seats ?? 1) : active === 'trial' ? TRIAL_LECTURERS : 1,
+      ...(active === 'free' ? { sessions: FREE_SESSIONS } : {}),
+    }
+  }
+  if (purpose === 'training') return active === 'free' ? { classes: FREE_LIMIT.training.classes, sessions: FREE_SESSIONS } : {}
+  if (purpose === 'workplace') {
+    if (active === 'free') return { classes: 1, staff: FREE_LIMIT.workplace.staff }
+    return active === 'pro' && org.seats ? { staff: org.seats } : {}
+  }
+  return {}
+}

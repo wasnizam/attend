@@ -96,14 +96,14 @@ export const subscribeTeam = live<StaffMember>('platformOwners', (d) => ({ id: d
 export const subscribeInvites = live<{ id: string; role: StaffRole; invitedBy?: string; at?: Timestamp }>('platformInvites', (d) => ({ id: d.id, ...d.data() }) as never)
 
 /** Every day opened since a date, across all customers: for activity and health. */
-export async function fetchSessionsSince(date: string): Promise<Pick<Session, 'id' | 'organisationId' | 'date' | 'status'>[]> {
+export async function fetchSessionsSince(date: string): Promise<Session[]> {
   const snap = await getDocs(query(collection(db, 'sessions'), where('date', '>=', date)))
-  return snap.docs.map((d) => ({ id: d.id, organisationId: d.data().organisationId, date: d.data().date, status: d.data().status }))
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Session)
 }
 
-export async function fetchAllClasses(): Promise<Pick<WeeklyClass, 'id' | 'organisationId' | 'rosterCount' | 'rosterFrom'>[]> {
+export async function fetchAllClasses(): Promise<WeeklyClass[]> {
   const snap = await getDocs(collection(db, 'classes'))
-  return snap.docs.map((d) => ({ id: d.id, organisationId: d.data().organisationId, rosterCount: d.data().rosterCount, rosterFrom: d.data().rosterFrom }))
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as WeeklyClass)
 }
 
 /** The customer's most recent opened day, however long ago. */

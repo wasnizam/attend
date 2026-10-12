@@ -10,9 +10,10 @@ import { downloadInvoicePdf } from '../lib/invoicePdf'
 import { PLAN_LABEL, TRIAL_DAYS } from '../lib/plan'
 import { DAY, dateOf, editionName, money, statusLabel, useOwner } from './context'
 import { InvoiceForm, PaymentForm } from './forms'
+import { TheirView } from './TheirView'
 import { HealthBadge, Kpi, Section, StatusBadge, Tabs, planUntil, td, th, useAction } from './ui'
 
-type Tab = 'overview' | 'subscription' | 'billing' | 'users' | 'activity' | 'notes' | 'audit'
+type Tab = 'overview' | 'view' | 'subscription' | 'billing' | 'users' | 'activity' | 'notes' | 'audit'
 
 export default function CustomerDetail() {
   const { id } = useParams()
@@ -45,6 +46,7 @@ export default function CustomerDetail() {
         onChange={setTab}
         items={[
           ['overview', t('Overview')],
+          ['view', t('Their view')],
           ['subscription', t('Subscription')],
           ['billing', t('Billing'), invoices.length + money_.filter((b) => b.kind !== 'change').length],
           ['users', t('Users'), c.users.length],
@@ -54,6 +56,7 @@ export default function CustomerDetail() {
         ]}
       />
       {tab === 'overview' && <Overview c={c} />}
+      {tab === 'view' && <TheirView c={c} />}
       {tab === 'subscription' && <Subscription c={c} />}
       {tab === 'billing' && <BillingTab c={c} />}
       {tab === 'users' && <UsersTab c={c} />}
