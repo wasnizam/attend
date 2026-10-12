@@ -57,4 +57,6 @@ export const useCurrency = () =>
       return () => listeners.delete(l)
     },
     getCurrency,
+    // When a page is drawn at build time: the same answer as a first visit.
+    getCurrency,
   )

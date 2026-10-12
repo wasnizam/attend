@@ -44,6 +44,7 @@ export function useLang(): Lang {
       return () => listeners.delete(l)
     },
     getLang,
+    getLang,
   )
 }
 

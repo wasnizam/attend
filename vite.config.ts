@@ -1,5 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
-import { type Plugin, defineConfig } from 'vite'
+import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { type Plugin, build, defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -30,12 +32,46 @@ const consolePage = (): Plugin => ({
  * written in. Search engines and link previews (WhatsApp, LinkedIn) read these before any script
  * runs, so without them every page looked like the same page.
  */
+/**
+ * Draws the public pages to plain HTML (src/prerender.tsx), in a small second build. If that
+ * fails for any reason the site is still published, with those pages drawn in the browser as
+ * before: a missing extra must never stop a release.
+ */
+async function prerenderer(): Promise<((path: string) => string) | null> {
+  try {
+    const out = resolve('node_modules/.dobry-prerender')
+    await build({
+      configFile: false,
+      logLevel: 'error',
+      plugins: [react()],
+      build: { ssr: 'src/prerender.tsx', outDir: out, emptyOutDir: true, rollupOptions: { output: { entryFileNames: 'prerender.mjs' } } },
+    })
+    const made = (await import(`${pathToFileURL(resolve(out, 'prerender.mjs')).href}?t=${Date.now()}`)) as { render: (path: string) => string }
+    return made.render
+  } catch (e) {
+    console.warn('\nPublic pages were not pre-drawn; they will be drawn in the browser instead.\n', e)
+    return null
+  }
+}
+
 const seoPages = (): Plugin => ({
   name: 'dobry-seo-pages',
   apply: 'build',
-  closeBundle() {
+  async closeBundle() {
     const html = readFileSync('dist/index.html', 'utf8')
     const attr = (v: string) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+    const render = await prerenderer()
+    const EMPTY = '<div id="root"></div>'
+    const drawn = (path: string, page: string, guard = '') => {
+      if (!render || !page.includes(EMPTY)) return page
+      try {
+        const body = render(path)
+        return body.length > 500 ? page.replace(EMPTY, () => `<div id="root">${body}</div>${guard}`) : page
+      } catch (e) {
+        console.warn(`\n${path} was not pre-drawn.\n`, e)
+        return page
+      }
+    }
     for (const [path, page] of Object.entries(PAGES)) {
       const url = `${SITE}/${path}`
       const out = html
@@ -48,8 +84,11 @@ const seoPages = (): Plugin => ({
         // The description of the product as a whole belongs to the home page only.
         .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, '')
       if (!out.includes(`<link rel="canonical" href="${url}"`)) throw new Error(`${path}.html: the canonical link was not found in index.html`)
-      writeFileSync(`dist/${path}.html`, out)
+      writeFileSync(`dist/${path}.html`, drawn(`/${path}`, out))
     }
+    // index.html is the home page, and also the page every address inside the app starts from.
+    // So the home page's drawing is cleared at once anywhere else, before anything is shown.
+    writeFileSync('dist/index.html', drawn('/', html, `<script>if(location.pathname!=='/')document.getElementById('root').innerHTML=''</script>`))
   },
 })
 
