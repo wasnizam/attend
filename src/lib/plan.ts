@@ -9,13 +9,19 @@ import { type Purpose, getPurpose } from './purpose'
 export const PAYMENTS_OPEN = import.meta.env.VITE_PAYMENTS_OPEN === 'true'
 
 const PAY_TEST = 'attend.payTest'
+let fields: PlanFields = {}
+/** A customer the team has tagged with this in the Console may try payments out, on any device. */
+export const PAY_TEST_TAG = 'pay-test'
 
 /**
- * Whether this browser may start a payment. Before payments open for everyone, opening the
- * Account page with ?pay=test switches it on for this browser only, to try the whole flow.
+ * Whether a payment may be started here. Before payments open for everyone, the team can let one
+ * customer try the whole flow by tagging them "pay-test" in the Console (it then works on every
+ * device they use, the installed app included); opening the site with ?pay=test does the same
+ * for one browser only.
  */
 export function canPay(): boolean {
   if (PAYMENTS_OPEN) return true
+  if (fields.tags?.includes(PAY_TEST_TAG)) return true
   try {
     if (new URLSearchParams(window.location.search).get('pay') === 'test') localStorage.setItem(PAY_TEST, '1')
     return localStorage.getItem(PAY_TEST) === '1'
@@ -53,6 +59,8 @@ export interface PlanFields {
   seats?: number
   /** What the organisation uses, counted by the server: lecturers who can sign in, and a workplace's staff. */
   usage?: { lecturers?: number; staff?: number }
+  /** Labels the team puts on a customer in the Console. */
+  tags?: string[]
 }
 
 /** Lecturers a trial may bring in, to try the Faculty plan. */
@@ -75,7 +83,6 @@ const FREE_LIMIT: Record<Purpose, { classes?: number; staff?: number }> = {
 }
 
 const DAY = 86_400_000
-let fields: PlanFields = {}
 
 export const setPlan = (org: PlanFields | null | undefined) => {
   fields = org ?? {}

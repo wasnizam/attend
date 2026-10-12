@@ -47,7 +47,7 @@ function PurposeGate({ organisationId, uid, children }: { organisationId: string
         setPlan(org)
         setShiftMode(org?.shifts && allows('shifts'))
         setPhoneCheck(org?.phoneCheck)
-        setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}:${org?.seats ?? ''}:${org?.usage?.lecturers ?? ''}:${org?.usage?.staff ?? ''}:${org?.shifts ? 's' : ''}:${org?.phoneCheck ?? ''}`)
+        setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}:${org?.seats ?? ''}:${org?.usage?.lecturers ?? ''}:${org?.usage?.staff ?? ''}:${org?.shifts ? 's' : ''}:${org?.phoneCheck ?? ''}:${org?.tags?.includes('pay-test') ? 't' : ''}`)
         // Once per visit, where the plan has a size: have the server count what is in use.
         if (!counted.current && org && (org.plan ?? 'early') !== 'early') {
           counted.current = true

@@ -193,4 +193,17 @@ describe('what the free plan holds back', () => {
     setPlan({ usage: { lecturers: 99, staff: 999 } })
     expect(overPlan({ classes: 99, students: 9999 })).toBeNull()
   })
+
+  it('lets a customer the team has tagged try payments on any device, and nobody else', () => {
+    storage(false)
+    vi.stubGlobal('window', { location: { search: '' } })
+    setPurpose('workplace')
+    setPlan({ plan: 'free' })
+    expect(locksOn()).toBe(false)
+    setPlan({ plan: 'free', tags: ['vip', 'pay-test'] })
+    expect(locksOn()).toBe(true)
+    expect(allows('pdf')).toBe(false)
+    setPlan({ plan: 'free', tags: ['vip'] })
+    expect(locksOn()).toBe(false)
+  })
 })
