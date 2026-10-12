@@ -1,12 +1,34 @@
-import { defineConfig } from 'vite'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { type Plugin, defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+
+/**
+ * The Console gets its own page file, the same app with the Console's name, icon and manifest
+ * written into it. An iPhone reads those when the page loads, before any script runs, so this is
+ * what makes "Add to Home Screen" from the Console give a Console app and not the Dobry one.
+ */
+const consolePage = (): Plugin => ({
+  name: 'dobry-console-page',
+  apply: 'build',
+  closeBundle() {
+    const html = readFileSync('dist/index.html', 'utf8')
+    const page = html
+      .replace(/<link rel="manifest"[^>]*>/, '<link rel="manifest" href="/console.webmanifest" />')
+      .replace(/<link rel="apple-touch-icon"[^>]*>/, '<link rel="apple-touch-icon" href="/console-touch-icon.png" />')
+      .replace(/(<meta name="apple-mobile-web-app-title" content=")[^"]*"/, '$1Dobry Console"')
+      .replace(/<title>[^<]*<\/title>/, '<title>Dobry Console</title>')
+    if (!page.includes('/console.webmanifest')) throw new Error('console.html: the manifest link was not found in index.html')
+    writeFileSync('dist/console.html', page)
+  },
+})
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    consolePage(),
     VitePWA({
       registerType: 'autoUpdate',
       // Registered from src/lib/updates.ts, which also reloads when a new version arrives.
@@ -37,7 +59,8 @@ export default defineConfig({
         navigateFallback: '/index.html',
         // A request for a script or style must never be answered with the app's HTML page.
         // /__/auth/ is Firebase's sign-in helper, passed through by Vercel so Google shows our own address.
-        navigateFallbackDenylist: [/^\/assets\//, /^\/api\//, /^\/__\//],
+        // The Console is fetched fresh, from its own page (see consolePage above), never from the saved Dobry page.
+        navigateFallbackDenylist: [/^\/assets\//, /^\/api\//, /^\/__\//, /^\/console(\/|$)/],
         cleanupOutdatedCaches: true,
         // The PDF reader is about 1.2 MB; keep it in the saved copy so every part of an
         // installed version comes from the same release.

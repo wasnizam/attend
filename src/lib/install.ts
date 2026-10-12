@@ -79,13 +79,16 @@ export function useConsoleApp() {
   useEffect(() => {
     const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')
     const title = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-title"]')
-    const before = { href: link?.getAttribute('href') ?? null, title: title?.getAttribute('content') ?? null, doc: document.title }
+    const touch = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]')
+    const before = { href: link?.getAttribute('href') ?? null, title: title?.getAttribute('content') ?? null, doc: document.title, touch: touch?.getAttribute('href') ?? null }
     link?.setAttribute('href', '/console.webmanifest')
     title?.setAttribute('content', 'Dobry Console')
+    touch?.setAttribute('href', '/console-touch-icon.png')
     document.title = 'Dobry Console'
     return () => {
       if (before.href) link?.setAttribute('href', before.href)
       if (before.title) title?.setAttribute('content', before.title)
+      if (before.touch) touch?.setAttribute('href', before.touch)
       document.title = before.doc
     }
   }, [])

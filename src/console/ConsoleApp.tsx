@@ -8,6 +8,7 @@ import { auth } from '../lib/auth'
 import { t } from '../lib/i18n'
 import { setPurpose } from '../lib/purpose'
 import { InstallApp } from '../components/InstallApp'
+import { LanguageSwitch } from '../components/LanguageSwitch'
 import { useConsoleApp } from '../lib/install'
 import { OwnerDataProvider } from './context'
 
@@ -176,13 +177,17 @@ function Shell({ email, role, children }: { email: string; role: StaffRole; chil
               <span className="block text-xs text-white/50">{t(ROLE_LABEL[role])}</span>
             </span>
           </NavLink>
-          <button type="button" onClick={() => signOut()} className="mt-2 px-2 text-xs font-medium text-white/60 hover:text-white">{t('Log out')}</button>
+          <div className="mt-2 flex items-center justify-between gap-2 px-2">
+            <button type="button" onClick={() => signOut()} className="text-xs font-medium text-white/60 hover:text-white">{t('Log out')}</button>
+            <LanguageSwitch className="!bg-white/10 [&_button]:!text-white/70 [&_button[aria-pressed=true]]:!bg-white [&_button[aria-pressed=true]]:!text-night" />
+          </div>
         </div>
       </aside>
       {open && <button type="button" aria-label={t('Close menu')} className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setOpen(false)} />}
       <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-line bg-white/90 px-4 backdrop-blur lg:hidden">
         <Logo />
         <span className="rounded bg-night px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-sun uppercase">{t('Console')}</span>
+        <LanguageSwitch className="ml-auto" />
       </header>
       <main className="mx-auto max-w-7xl space-y-5 px-4 pt-5 pb-28 sm:space-y-6 sm:px-6 lg:px-8 lg:py-8">
         {/* Offered once, on the first page, not in the way of every other one. */}

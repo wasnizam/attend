@@ -6,6 +6,8 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/__/auth/:path*", "destination": "https://attend-d2744.firebaseapp.com/__/auth/:path*" },
+    { "source": "/console", "destination": "/console.html" },
+    { "source": "/console/:path*", "destination": "/console.html" },
     { "source": "/((?!assets/|api/|__/).*)", "destination": "/index.html" }
   ],
   "headers": [
