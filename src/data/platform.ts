@@ -290,7 +290,7 @@ export async function voidInvoice(inv: Invoice, reason: string, me: Actor) {
 
 // ---------- prices and discount codes ----------
 
-export async function savePricing(catalog: import('../lib/pricing').Catalog, me: Actor, what: string, launch?: import('../lib/pricing').Launch) {
+export async function savePricing(catalog: import('../lib/pricing').Catalog, me: Actor, what: string, launch?: import('../lib/pricing').Launch & Partial<import('../lib/pricing').Switches>) {
   // The database refuses empty (undefined) fields, such as a staff limit on a teaching plan: drop them.
   const clean = JSON.parse(JSON.stringify(catalog)) as typeof catalog
   await setDoc(doc(db, 'platformConfig', 'pricing'), { ...clean, ...(launch ? { launch } : {}), updatedBy: me.id, updatedAt: serverTimestamp() })

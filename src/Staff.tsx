@@ -27,6 +27,7 @@ import { SessionDetail } from './pages/SessionDetail'
 import { Signup } from './pages/Signup'
 import { Students } from './pages/Students'
 import { SubjectReport } from './pages/SubjectReport'
+import { useSwitches } from './lib/pricing'
 import { refreshUsage } from './data/billing'
 import { Timetable } from './pages/Timetable'
 
@@ -38,6 +39,8 @@ function PurposeGate({ organisationId, uid, children }: { organisationId: string
   const [purpose, setLoaded] = useState<string | null>(null)
   const [suspended, setSuspended] = useState(false)
   const counted = useRef(false)
+  // The Console's switch for paid plans: listened to here so every screen follows it at once.
+  const selling = useSwitches().paymentsOpen
   useEffect(
     () =>
       subscribeOrganisation(organisationId, (org) => {
@@ -69,7 +72,7 @@ function PurposeGate({ organisationId, uid, children }: { organisationId: string
       </div>
     )
   }
-  return <div key={purpose}>{children}</div>
+  return <div key={`${purpose}:${selling ? 'sell' : 'free'}`}>{children}</div>
 }
 
 function RequireAuth({ admin = false }: { admin?: boolean }) {

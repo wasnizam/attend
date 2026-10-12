@@ -5,7 +5,7 @@ import { Button, Card, ErrorNote, friendlyError, inputClass } from '../component
 import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, setPhoneCheckFor, setOrgSetting, setShifts, signOut } from '../data/account'
 import { useCurrency } from '../lib/currency'
 import { editionForPurpose } from '../lib/editions'
-import { GRACE_DAYS, PAYMENTS_OPEN, PLAN_LABEL, activePlan, allows, canPay, paidUntil, solo, trialDaysLeft } from '../lib/plan'
+import { GRACE_DAYS, PLAN_LABEL, activePlan, allows, canPay, paidUntil, paymentsOpen, solo, trialDaysLeft } from '../lib/plan'
 import { InstallApp } from '../components/InstallApp'
 import { InviteFriends } from '../components/InviteFriends'
 import { UpgradeNote } from '../components/Paid'
@@ -426,7 +426,7 @@ export function Account() {
                         : plan === 'trial'
                           ? t('You have Pro free for {n} more days. After that you move to the free plan; nothing is deleted.', { n: trialDaysLeft() ?? 0 })
                           : plan === 'free'
-                            ? PAYMENTS_OPEN
+                            ? paymentsOpen()
                               ? t('You are on the free plan. Your older records stay, ready to view and export.')
                               : t('You are on the free plan: {limit}. Invite friends to earn Pro.', { limit: t(plans.find((p) => /^(RM|\$)0$/.test(p.price.myr))?.items[0] ?? edition.plans[0]?.items[0] ?? '').toLowerCase() })
                             : cancelled

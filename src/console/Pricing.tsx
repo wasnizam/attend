@@ -4,8 +4,7 @@ import { type Coupon, can, couponLabel, couponUsable, deleteCoupon, saveCoupon, 
 import { type EditionId, EDITIONS as EDITION_LIST } from '../lib/editions'
 import { addDays, formatDate, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
-import { type Catalog, type CatalogPlan, CYCLE_LABEL, type Cycle, type Launch, type StartPlan, defaultCatalog, toPlanCard, useCatalog, useLaunch } from '../lib/pricing'
-import { PAYMENTS_OPEN } from '../lib/plan'
+import { type Catalog, type CatalogPlan, CYCLE_LABEL, type Cycle, type Launch, type StartPlan, type Switches, defaultCatalog, toPlanCard, useCatalog, useLaunch, useSwitches } from '../lib/pricing'
 import { useLive } from '../hooks/useLive'
 import { useOwner } from './context'
 import { GiftCodes } from './GiftCodes'
@@ -34,13 +33,16 @@ function Plans() {
   const [draft, setDraft] = useState<Catalog>(live)
   const liveLaunch = useLaunch()
   const [launch, setLaunch] = useState<Launch>(liveLaunch)
+  const liveSwitches = useSwitches()
+  const [switches, setSwitches] = useState<Switches>(liveSwitches)
   const [dirty, setDirty] = useState(false)
   useEffect(() => {
     if (!dirty) {
       setDraft(live)
       setLaunch(liveLaunch)
+      setSwitches(liveSwitches)
     }
-  }, [live, liveLaunch, dirty])
+  }, [live, liveLaunch, liveSwitches, dirty])
   const edit = can(me.role, 'settings')
   const plans = draft[edition] ?? []
   const set = (next: CatalogPlan[]) => {
@@ -57,7 +59,7 @@ function Plans() {
   const save = () => {
     for (const list of Object.values(draft)) if (list.some((p) => !p.name.trim())) return setError(t('Every plan needs a name.'))
     run('save', async () => {
-      await savePricing(draft, me, `Price list saved (${EDITION_LIST.map((e) => `${e.label}: ${draft[e.id].filter((p) => !p.hidden).map((p) => `${p.name} RM${p.priceMyr}`).join(', ')}; new accounts start ${launch[e.id] === 'free' ? 'free' : 'on early access'}`).join(' · ')})`, launch)
+      await savePricing(draft, me, `Price list saved (${EDITION_LIST.map((e) => `${e.label}: ${draft[e.id].filter((p) => !p.hidden).map((p) => `${p.name} RM${p.priceMyr}`).join(', ')}; new accounts start ${launch[e.id] === 'free' ? 'free' : 'on early access'}`).join(' · ')}; paid plans ${switches.paymentsOpen ? 'OPEN' : 'closed'}${switches.trial ? '; 14-day trial for new accounts' : ''})`, { ...launch, ...switches })
       setDirty(false)
     }, t('Prices saved. The website shows them now.'))
   }
@@ -77,16 +79,39 @@ function Plans() {
       </div>
       {!edit && <p className="text-sm text-muted">{t('Your role can see the prices but not change them.')}</p>}
       <Section
-        title={t('While payment is not connected')}
-        sub={PAYMENTS_OPEN ? t('Online payment is open: new accounts start a 14-day Pro trial.') : t('Customers cannot pay in the app yet. The website shows these prices as “opens soon”. Record bank transfers under Billing, and upgrade a customer by hand.')}
+        title={t('Paid plans')}
+        sub={t('The one switch between a free launch and selling. Flip it, then Save and publish: it takes effect for everyone within seconds.')}
+        actions={<span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${switches.paymentsOpen ? 'bg-good-soft text-good' : 'bg-slate-100 text-slate-700'}`}>{switches.paymentsOpen ? t('Open') : t('Closed')}</span>}
       >
+        <label className="flex items-start gap-3">
+          <input type="checkbox" disabled={!edit} checked={switches.paymentsOpen} onChange={(e) => { setSwitches({ ...switches, paymentsOpen: e.target.checked }); setDirty(true) }} className="peer sr-only" />
+          <span aria-hidden className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-slate-300 transition peer-checked:bg-emerald-500 peer-focus-visible:ring-4 peer-focus-visible:ring-accent/20 peer-disabled:opacity-50 after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-full after:bg-white after:shadow after:transition peer-checked:after:translate-x-5" />
+          <span className="text-sm">
+            <span className="block font-medium">{switches.paymentsOpen ? t('Paid plans are open') : t('Paid plans are closed')}</span>
+            <span className="block text-muted">
+              {switches.paymentsOpen
+                ? t('The website shows every plan and its price, and customers can pay, switch and cancel in the app.')
+                : t('No prices anywhere. Dobry is free to use, and Pro is earned by inviting friends. Customers tagged pay-test can still try paying.')}
+            </span>
+          </span>
+        </label>
+        <label className="mt-4 flex items-start gap-3 border-t border-line pt-4">
+          <input type="checkbox" disabled={!edit} checked={switches.trial} onChange={(e) => { setSwitches({ ...switches, trial: e.target.checked }); setDirty(true) }} className="mt-1 size-4 accent-accent" />
+          <span className="text-sm">
+            <span className="block font-medium">{t('Give every new account Pro free for 14 days first')}</span>
+            <span className="block text-muted">{t('Off: a new account starts straight on the plan chosen below. On: it starts with a trial, then moves to the free plan.')}</span>
+          </span>
+        </label>
+        <p className="mt-4 border-t border-line pt-4 text-xs text-muted">{t('Before opening: the payment keys under Settings must be live keys. The free plan’s limits apply either way.')}</p>
+      </Section>
+      <Section title={t('New accounts')} sub={t('What an account starts on when someone signs up.')}>
         <p className="text-xs font-medium text-muted">{t('When a new account signs up, it starts on')}</p>
         <div className="mt-2 grid gap-2 sm:grid-cols-3">
           {EDITION_LIST.map((e) => (
             <label key={e.id} className="block text-sm">
               <span className="font-medium">{e.label}</span>
               <select
-                disabled={!edit || PAYMENTS_OPEN}
+                disabled={!edit || switches.trial}
                 value={launch[e.id]}
                 onChange={(x) => { setLaunch({ ...launch, [e.id]: x.target.value as StartPlan }); setDirty(true) }}
                 className={`${inputClass} mt-1`}

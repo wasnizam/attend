@@ -1,5 +1,5 @@
 import { t } from '../lib/i18n'
-import { PAYMENTS_OPEN, activePlan, limitFor, overLimit } from '../lib/plan'
+import { activePlan, limitFor, overLimit, paymentsOpen } from '../lib/plan'
 import { refreshUsage } from './billing'
 import { collection, doc, getDoc, getDocs, increment, onSnapshot, query, where, writeBatch } from 'firebase/firestore'
 import { db } from '../lib/firebase'
@@ -73,7 +73,7 @@ export async function addToRoster(cls: WeeklyClass, entries: RosterEntry[], exis
     if (everyone) for (const e of [...existing, ...entries]) everyone.add(e.studentKey)
     if (overLimit('staff', company?.staffWith ?? everyone?.size ?? 0))
       throw new Error(
-        PAYMENTS_OPEN
+        paymentsOpen()
           ? t('Your plan includes up to {n} staff. Upgrade to add more.', { n: limitFor('staff') ?? 0 })
           : t('The free plan includes up to {n} staff. Invite friends from your Account page to earn Pro and add more.', { n: limitFor('staff') ?? 0 }),
       )

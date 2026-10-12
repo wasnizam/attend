@@ -1,12 +1,18 @@
 import { type Purpose, getPurpose } from './purpose'
 
 /**
- * Whether customers can pay. Set by VITE_PAYMENTS_OPEN=true when the site is built (in Vercel's
- * settings), together with the payment keys. While it is off every new organisation is created
- * on its edition's starting plan and no Upgrade button works; once on, a new organisation
- * starts a 14-day Pro trial and drops to Free when it ends.
+ * Whether paid plans are open: prices show on the website and in the app, and customers can pay.
+ * Switched on and off from the Console (Pricing), and takes effect at once, with nothing to
+ * rebuild. While it is off, Dobry is free to use and Pro is earned by inviting friends.
+ * (VITE_PAYMENTS_OPEN=true in the build settings forces it on, as before.)
  */
-export const PAYMENTS_OPEN = import.meta.env.VITE_PAYMENTS_OPEN === 'true'
+const FORCED_OPEN = import.meta.env.VITE_PAYMENTS_OPEN === 'true'
+let open = FORCED_OPEN
+export const paymentsOpen = () => open
+/** Called with the Console's switch whenever the price list is read. */
+export const setPaymentsOpen = (on: boolean) => {
+  open = FORCED_OPEN || on
+}
 
 const PAY_TEST = 'attend.payTest'
 let fields: PlanFields = {}
@@ -20,7 +26,7 @@ export const PAY_TEST_TAG = 'pay-test'
  * for one browser only.
  */
 export function canPay(): boolean {
-  if (PAYMENTS_OPEN) return true
+  if (open) return true
   if (fields.tags?.includes(PAY_TEST_TAG)) return true
   try {
     if (new URLSearchParams(window.location.search).get('pay') === 'test') localStorage.setItem(PAY_TEST, '1')

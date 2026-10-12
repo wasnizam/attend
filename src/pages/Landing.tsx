@@ -1,4 +1,4 @@
-import { useLaunch, usePlans } from '../lib/pricing'
+import { usePlans, useSwitches } from '../lib/pricing'
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -8,7 +8,6 @@ import { Logo, buttonClass } from '../components/ui'
 import { inMalaysia, setCurrency, useCurrency } from '../lib/currency'
 import { EDITIONS, type Edition, type EditionId, editionById, rememberEdition } from '../lib/editions'
 import { t } from '../lib/i18n'
-import { PAYMENTS_OPEN } from '../lib/plan'
 import { setPurpose } from '../lib/purpose'
 
 const FAQ = [
@@ -129,8 +128,8 @@ export function Landing({ show }: { show?: EditionId }) {
   // Prices come from the back office's price list (the code's prices until one is saved).
   const plans = usePlans(edition)
   // Before payment opens: what a new account of this edition gets now (free plan, or early access).
-  const startsOn = useLaunch()[edition.id]
-  const freeLimit = plans.find((p) => /^(RM|\$)0$/.test(p.price.myr))?.items[0] ?? edition.plans[0]?.items[0] ?? ''
+  // Flipped in the Console: prices and payment when on, free with Pro by invitation when off.
+  const { paymentsOpen: PAYMENTS_OPEN, trial } = useSwitches()
   const signup = `/signup?for=${edition.id}`
   const currency = useCurrency()
   // The page is written in each group's own words already; no vocabulary swaps on top.
@@ -372,11 +371,9 @@ export function Landing({ show }: { show?: EditionId }) {
               ))}
             </div>
             <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-balance text-muted">
-              {PAYMENTS_OPEN
+              {trial
                 ? t('Every new account gets Pro free for 14 days. No card needed. Stop paying and your records stay, ready to view and export.')
-                : startsOn === 'free'
-                  ? t('Paid plans open soon; the prices above are what they will cost. Until then you start free: {limit}. You will be told before anything changes.', { limit: t(freeLimit).toLowerCase() })
-                  : t('Payment is not open yet, so everything is free for now. When it opens, every account gets Pro free for 14 days first.')}
+                : t('Start on the free plan, with no card. Choose a paid plan when you need more; cancel at any time and your records stay.')}
             </p>
           </div>
         </section>

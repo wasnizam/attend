@@ -25,7 +25,6 @@ import {
 import { auth } from '../lib/auth'
 import { db } from '../lib/firebase'
 import { randomToken } from '../lib/format'
-import { PAYMENTS_OPEN } from '../lib/plan'
 import { takeRef } from '../lib/referral'
 import { claimInvite, refreshUsage, sendWelcome } from './billing'
 import { startPlanFor } from '../lib/pricing'
@@ -98,13 +97,14 @@ export async function createOrganisationProfile(name: string, organisationName: 
   if (!user) throw new Error('Not signed in')
   const orgRef = doc(collection(db, 'organisations'))
   const inviteCode = randomToken(8)
+  // What the Console sets for a new account of this edition: the free plan, early access, or
+  // (when new accounts are being given one) a 14-day Pro trial first.
+  const start = await startPlanFor(purpose)
   await setDoc(orgRef, {
     name: organisationName.trim(),
     ownerId: user.uid,
     purpose,
-    // Before payment opens a new organisation starts on what the back office sets for its edition
-    // (the free plan, or early access); afterwards it starts a trial.
-    ...(PAYMENTS_OPEN ? { plan: 'trial', trialStarted: serverTimestamp() } : { plan: await startPlanFor(purpose) }),
+    ...(start === 'trial' ? { plan: 'trial', trialStarted: serverTimestamp() } : { plan: start }),
     inviteCode,
     createdAt: serverTimestamp(),
   })

@@ -2,6 +2,7 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore'
 import { useEffect, useState } from 'react'
 import { type Edition, type EditionId, EDITIONS, type PlanCard } from './editions'
 import { db } from './firebase'
+import { setPaymentsOpen } from './plan'
 
 /**
  * The price list, managed in the back office (platformConfig/pricing) and shown on the website and
@@ -38,6 +39,16 @@ export type Catalog = Record<EditionId, CatalogPlan[]>
 export type StartPlan = 'free' | 'early'
 export type Launch = Record<EditionId, StartPlan>
 export const DEFAULT_LAUNCH: Launch = { lecturers: 'early', trainers: 'early', workplace: 'free' }
+
+/**
+ * The Console's switches, saved beside the launch settings: whether paid plans are open, and
+ * whether a new account gets Pro free for 14 days before its starting plan applies.
+ */
+export interface Switches {
+  paymentsOpen: boolean
+  trial: boolean
+}
+const switchesOf = (data: { launch?: Partial<Switches> } | undefined): Switches => ({ paymentsOpen: data?.launch?.paymentsOpen === true, trial: data?.launch?.trial === true })
 export const editionKey = (purpose: string | undefined): EditionId => (purpose === 'workplace' ? 'workplace' : purpose === 'training' ? 'trainers' : 'lecturers')
 
 export const CYCLE_LABEL: Record<Cycle, string> = { free: 'Free forever', month: 'a month', semester: 'per semester', year: 'a year' }
@@ -94,8 +105,13 @@ export const toPlanCard = (p: CatalogPlan): PlanCard => ({
 
 let cache: Catalog | null = null
 let launchCache: Launch = DEFAULT_LAUNCH
+let switchCache: Switches = { paymentsOpen: false, trial: false }
 const listeners = new Set<(c: Catalog) => void>()
-const launchOf = (data: { launch?: Partial<Launch> } | undefined): Launch => ({ ...DEFAULT_LAUNCH, ...(data?.launch ?? {}) })
+const launchOf = (data: { launch?: Partial<Launch> } | undefined): Launch => ({
+  lecturers: data?.launch?.lecturers === 'free' ? 'free' : data?.launch?.lecturers === 'early' ? 'early' : DEFAULT_LAUNCH.lecturers,
+  trainers: data?.launch?.trainers === 'free' ? 'free' : data?.launch?.trainers === 'early' ? 'early' : DEFAULT_LAUNCH.trainers,
+  workplace: data?.launch?.workplace === 'early' ? 'early' : data?.launch?.workplace === 'free' ? 'free' : DEFAULT_LAUNCH.workplace,
+})
 let started = false
 
 function start() {
@@ -104,6 +120,8 @@ function start() {
   // Read once quickly, then keep in step, so a price change shows without a reload.
   const take = (data: object | undefined) => {
     launchCache = launchOf(data as { launch?: Partial<Launch> })
+    switchCache = switchesOf(data as { launch?: Partial<Switches> })
+    setPaymentsOpen(switchCache.paymentsOpen)
     publish(data ? merge(data as Partial<Catalog>) : defaultCatalog())
   }
   getDoc(doc(db, 'platformConfig', 'pricing'))
@@ -137,11 +155,21 @@ export function useLaunch(): Launch {
   return launchCache
 }
 
-/** Read once, for sign-up: the plan a new organisation of this purpose starts on. */
-export async function startPlanFor(purpose: string | undefined): Promise<StartPlan> {
+/** The Console's switches, live: redraws when one is flipped. */
+export function useSwitches(): Switches {
+  useCatalog()
+  return switchCache
+}
+
+/**
+ * Read once, for sign-up: the plan a new organisation of this purpose starts on, or 'trial' when
+ * new accounts are being given Pro free for 14 days first.
+ */
+export async function startPlanFor(purpose: string | undefined): Promise<StartPlan | 'trial'> {
   try {
     const snap = await getDoc(doc(db, 'platformConfig', 'pricing'))
-    return launchOf(snap.exists() ? (snap.data() as { launch?: Partial<Launch> }) : undefined)[editionKey(purpose)]
+    const data = snap.exists() ? (snap.data() as { launch?: Partial<Launch> & Partial<Switches> }) : undefined
+    return switchesOf(data).trial ? 'trial' : launchOf(data)[editionKey(purpose)]
   } catch {
     return DEFAULT_LAUNCH[editionKey(purpose)]
   }
