@@ -2,7 +2,7 @@
  * The emails Dobry sends to a customer, as plain words. No imports: tested on its own, and the
  * same text makes the HTML and the plain-text copy. Dates arrive as YYYY-MM-DD.
  */
-export type EmailKind = 'welcome' | 'trialEnding' | 'trialEnded' | 'paymentFailed' | 'paymentReceived' | 'planCancelled' | 'planResumed' | 'planChanged' | 'planEnded' | 'test'
+export type EmailKind = 'welcome' | 'trialEnding' | 'trialEnded' | 'paymentFailed' | 'paymentReceived' | 'planCancelled' | 'planResumed' | 'planChanged' | 'planEnded' | 'referralReward' | 'test'
 
 export interface EmailText {
   subject: string
@@ -140,6 +140,18 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
           'You can choose a plan again at any time from the Account page.',
         ],
         button: { label: 'See the plans', path: '/app/account#plan' },
+      }
+    case 'referralReward':
+      return {
+        subject: 'You have earned Dobry Pro',
+        heading: 'Pro is yours. Thank you for sharing Dobry',
+        lines: [
+          hello,
+          `${data.friends || 'Several'} of the friends you invited now use Dobry, so ${who.organisation || 'your account'} has Pro free for ${data.months === '1' ? '1 month' : `${data.months || 'some'} months`}.`,
+          data.until ? `It runs until ${longDate(data.until)}. There is nothing to pay and nothing to cancel: after that the account goes back to the free plan, with nothing deleted.` : 'There is nothing to pay and nothing to cancel.',
+          'Keep inviting: every 5 friends who start using Dobry earn you more.',
+        ],
+        button: { label: 'Open Dobry', path: '/app/account#invite' },
       }
     case 'test':
       return {

@@ -110,10 +110,11 @@ export function planOf(org: PlanFields, now = Date.now()): { active: ActivePlan;
 export type Feature = 'pdf' | 'export' | 'overtime' | 'leave' | 'offices' | 'shifts' | 'geofence' | 'phoneCheck'
 
 /**
- * Whether the free plan's limits are being applied: only once customers can pay (or in a browser
- * trying payments out), so nobody is locked out of something with no way to get it back.
+ * Whether the free plan's limits are being applied. They always are: Dobry launches on the free
+ * plan, and Pro is earned by inviting friends until paid plans open. (Early access, given to
+ * those who joined first, has no limits and is not touched by any of this.)
  */
-export const locksOn = () => canPay()
+export const locksOn = () => true
 
 /**
  * Whether the organisation's plan includes a feature. On the free plan a workplace is held back

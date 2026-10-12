@@ -7,6 +7,7 @@ import { useCurrency } from '../lib/currency'
 import { editionForPurpose } from '../lib/editions'
 import { GRACE_DAYS, PAYMENTS_OPEN, PLAN_LABEL, activePlan, allows, canPay, paidUntil, solo, trialDaysLeft } from '../lib/plan'
 import { InstallApp } from '../components/InstallApp'
+import { InviteFriends } from '../components/InviteFriends'
 import { UpgradeNote } from '../components/Paid'
 import { openBilling, redeemCode, resumePlan, startCheckout, syncPlan } from '../data/billing'
 import { getPurpose } from '../lib/purpose'
@@ -179,6 +180,8 @@ export function Account() {
   const currency = useCurrency()
   // The plan they pay for, by name; when it ends or renews; and whether they have cancelled it.
   const myPlan = plan === 'pro' ? listed.find((p) => p.id === org?.stripePlanId) : undefined
+  // What there is to earn: the plan we would pick for most people.
+  const pro = plans.find((p) => p.best) ?? plans.find((p) => !/^(RM|\$)0$/.test(p.price.myr))
   const cancelled = plan === 'pro' && Boolean(org?.stripeCancelAtPeriodEnd)
   const longDate = (ms: number) => new Date(ms).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' })
   const until = longDate(paidUntil()?.toMillis() ?? 0)
@@ -425,7 +428,7 @@ export function Account() {
                           : plan === 'free'
                             ? PAYMENTS_OPEN
                               ? t('You are on the free plan. Your older records stay, ready to view and export.')
-                              : t('You are on the free plan: {limit}. Paid plans open soon; the prices below are what they will cost. You will be told before anything changes.', { limit: t(plans.find((p) => /^(RM|\$)0$/.test(p.price.myr))?.items[0] ?? edition.plans[0]?.items[0] ?? '').toLowerCase() })
+                              : t('You are on the free plan: {limit}. Invite friends to earn Pro.', { limit: t(plans.find((p) => /^(RM|\$)0$/.test(p.price.myr))?.items[0] ?? edition.plans[0]?.items[0] ?? '').toLowerCase() })
                             : cancelled
                               ? t('Cancelled. It stays on until {date}, then moves to the free plan.', { date: until })
                               : org?.stripeSubscriptionId
@@ -455,68 +458,91 @@ export function Account() {
                 {planNote && <p className="mb-4 rounded-lg bg-good-soft px-4 py-3 text-sm text-good">{planNote}</p>}
             {paidNotice && <p className="mb-4 rounded-lg bg-good-soft px-4 py-3 text-sm text-good">{plan === 'pro' ? t('Payment received. You are on Pro. Thank you.') : t('Payment received. Your plan will update in a few seconds.')}</p>}
 
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="font-semibold">{paying && plan === 'pro' ? t('Change plan') : t('Plans')}</h2>
-                  {yearOffer && paying && (
-                    <div role="group" aria-label={t('Billed')} className="inline-flex rounded-full bg-slate-100 p-0.5 text-xs font-semibold">
-                      {([false, true] as const).map((y) => (
-                        <button key={String(y)} type="button" aria-pressed={yearly === y} onClick={() => setYearly(y)} className={`rounded-full px-3 py-1.5 transition ${yearly === y ? 'bg-white text-ink shadow-card' : 'text-slate-600 hover:text-ink'}`}>
-                          {y ? t('Yearly') : t('Monthly')}
-                          {y && <span className="ml-1.5 rounded-full bg-good-soft px-1.5 py-0.5 text-[10px] text-good">{t('2 months free')}</span>}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <ul className="mt-3 space-y-2.5">
-                  {listed.map((cp) => {
-                    const p = toPlanCard(cp)
-                    const paid = cp.cycle !== 'free'
-                    const mine = plan === 'pro' ? org?.stripePlanId === cp.id : !paid && plan === 'free'
-                    const byYear = yearly && offersYear(cp)
-                    const least = cp.perSeat ? Math.max(1, cp.minSeats ?? 1) : 1
-                    const count = cp.perSeat ? Math.min(MAX_SEATS, Math.max(least, seats ?? (mine ? org?.seats ?? least : least))) : 1
-                    // On a per-lecturer plan already: the button changes how many lecturers it covers.
-                    const same = mine && (!cp.perSeat || count === (org?.seats ?? 1))
-                    return (
-                      <li key={cp.id} className={`rounded-xl px-4 py-3.5 ${mine ? 'bg-accent-soft/50 ring-2 ring-accent' : 'ring-1 ring-line'}`}>
-                        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-                          <div className="min-w-0 flex-1 basis-52">
-                            <p className="flex flex-wrap items-center gap-2 font-semibold">
-                              {t(p.name)}
-                              {mine && <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-white">{t('Your plan')}</span>}
-                            </p>
-                            <p className="mt-0.5 text-sm text-muted">{t(p.items[0])}</p>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <p className="tabular text-right leading-tight whitespace-nowrap">
-                              <span className="text-xl font-semibold tracking-tight">{byYear ? yearPrice(cp, currency, count) : cp.perSeat ? monthPrice(cp, currency, count) : p.price[currency]}</span>
-                              <span className="block text-xs text-muted">{!paid ? t(p.per) : byYear ? t('a year') : t('a month')}</span>
-                            </p>
-                            {paid && paying && !same && (
-                              <Button variant={plan === 'pro' ? 'secondary' : 'primary'} busy={busyPlan === cp.id} disabled={busyPlan !== null} onClick={() => choose(cp.id, byYear, count)} className="min-w-24">
-                                {mine ? t('Update') : plan === 'pro' ? t('Switch') : t('Choose')}
-                              </Button>
-                            )}
-                          </div>
+                {paying ? (
+                  <>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <h2 className="font-semibold">{paying && plan === 'pro' ? t('Change plan') : t('Plans')}</h2>
+                      {yearOffer && paying && (
+                        <div role="group" aria-label={t('Billed')} className="inline-flex rounded-full bg-slate-100 p-0.5 text-xs font-semibold">
+                          {([false, true] as const).map((y) => (
+                            <button key={String(y)} type="button" aria-pressed={yearly === y} onClick={() => setYearly(y)} className={`rounded-full px-3 py-1.5 transition ${yearly === y ? 'bg-white text-ink shadow-card' : 'text-slate-600 hover:text-ink'}`}>
+                              {y ? t('Yearly') : t('Monthly')}
+                              {y && <span className="ml-1.5 rounded-full bg-good-soft px-1.5 py-0.5 text-[10px] text-good">{t('2 months free')}</span>}
+                            </button>
+                          ))}
                         </div>
-                        {cp.perSeat && paying && (
-                          <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3 text-sm">
-                            <span className="text-muted">{t('Lecturers')}</span>
-                            <div className="inline-flex items-center rounded-lg ring-1 ring-line">
-                              <button type="button" aria-label={t('One fewer')} disabled={count <= least} onClick={() => setSeats(count - 1)} className="size-9 text-lg text-slate-600 hover:bg-slate-50 disabled:opacity-30">−</button>
-                              <input type="number" aria-label={t('Lecturers')} min={least} max={MAX_SEATS} step={1} value={seats ?? count} onChange={(e) => setSeats(Number(e.target.value))} onBlur={() => setSeats(count)} className="tabular h-9 w-14 border-x border-line bg-transparent text-center font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" />
-                              <button type="button" aria-label={t('One more')} disabled={count >= MAX_SEATS} onClick={() => setSeats(count + 1)} className="size-9 text-lg text-slate-600 hover:bg-slate-50 disabled:opacity-30">+</button>
+                      )}
+                    </div>
+
+                    <ul className="mt-3 space-y-2.5">
+                      {listed.map((cp) => {
+                        const p = toPlanCard(cp)
+                        const paid = cp.cycle !== 'free'
+                        const mine = plan === 'pro' ? org?.stripePlanId === cp.id : !paid && plan === 'free'
+                        const byYear = yearly && offersYear(cp)
+                        const least = cp.perSeat ? Math.max(1, cp.minSeats ?? 1) : 1
+                        const count = cp.perSeat ? Math.min(MAX_SEATS, Math.max(least, seats ?? (mine ? org?.seats ?? least : least))) : 1
+                        // On a per-lecturer plan already: the button changes how many lecturers it covers.
+                        const same = mine && (!cp.perSeat || count === (org?.seats ?? 1))
+                        return (
+                          <li key={cp.id} className={`rounded-xl px-4 py-3.5 ${mine ? 'bg-accent-soft/50 ring-2 ring-accent' : 'ring-1 ring-line'}`}>
+                            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                              <div className="min-w-0 flex-1 basis-52">
+                                <p className="flex flex-wrap items-center gap-2 font-semibold">
+                                  {t(p.name)}
+                                  {mine && <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-white">{t('Your plan')}</span>}
+                                </p>
+                                <p className="mt-0.5 text-sm text-muted">{t(p.items[0])}</p>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <p className="tabular text-right leading-tight whitespace-nowrap">
+                                  <span className="text-xl font-semibold tracking-tight">{byYear ? yearPrice(cp, currency, count) : cp.perSeat ? monthPrice(cp, currency, count) : p.price[currency]}</span>
+                                  <span className="block text-xs text-muted">{!paid ? t(p.per) : byYear ? t('a year') : t('a month')}</span>
+                                </p>
+                                {paid && paying && !same && (
+                                  <Button variant={plan === 'pro' ? 'secondary' : 'primary'} busy={busyPlan === cp.id} disabled={busyPlan !== null} onClick={() => choose(cp.id, byYear, count)} className="min-w-24">
+                                    {mine ? t('Update') : plan === 'pro' ? t('Switch') : t('Choose')}
+                                  </Button>
+                                )}
+                              </div>
                             </div>
-                            <span className="text-xs text-muted">{t('{price} for each lecturer', { price: byYear ? yearPrice(cp, currency) : monthPrice(cp, currency) })}</span>
-                          </div>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-                <ErrorNote>{payError}</ErrorNote>
+                            {cp.perSeat && paying && (
+                              <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3 text-sm">
+                                <span className="text-muted">{t('Lecturers')}</span>
+                                <div className="inline-flex items-center rounded-lg ring-1 ring-line">
+                                  <button type="button" aria-label={t('One fewer')} disabled={count <= least} onClick={() => setSeats(count - 1)} className="size-9 text-lg text-slate-600 hover:bg-slate-50 disabled:opacity-30">−</button>
+                                  <input type="number" aria-label={t('Lecturers')} min={least} max={MAX_SEATS} step={1} value={seats ?? count} onChange={(e) => setSeats(Number(e.target.value))} onBlur={() => setSeats(count)} className="tabular h-9 w-14 border-x border-line bg-transparent text-center font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" />
+                                  <button type="button" aria-label={t('One more')} disabled={count >= MAX_SEATS} onClick={() => setSeats(count + 1)} className="size-9 text-lg text-slate-600 hover:bg-slate-50 disabled:opacity-30">+</button>
+                                </div>
+                                <span className="text-xs text-muted">{t('{price} for each lecturer', { price: byYear ? yearPrice(cp, currency) : monthPrice(cp, currency) })}</span>
+                              </div>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                    <ErrorNote>{payError}</ErrorNote>
+                  </>
+                ) : plan === 'early' ? null : profile.role === 'admin' ? (
+                  <div id="invite" className="scroll-mt-24">
+                    <h2 className="font-semibold">{t('Earn Pro by inviting friends')}</h2>
+                    <div className="mt-2">
+                      <InviteFriends />
+                    </div>
+                    {plan !== 'pro' && pro && (
+                      <div className="mt-5 border-t border-line pt-4">
+                        <p className="text-sm font-semibold">{t('What Pro adds')}</p>
+                        <ul className="mt-2 grid gap-x-6 gap-y-1.5 text-sm text-slate-700 sm:grid-cols-2">
+                          {pro.items.filter((x) => !x.startsWith('✕')).slice(0, 8).map((x) => (
+                            <li key={x} className="flex gap-2"><span className="text-good" aria-hidden>✓</span>{t(x)}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted">{t('Your admin can earn Pro for everyone by inviting friends.')}</p>
+                )}
 
                 {profile.role === 'admin' && (
                   <p className="mt-3 text-xs text-muted">
@@ -525,7 +551,7 @@ export function Account() {
                       : plan === 'pro'
                         ? ''
                         : plan === 'free'
-                          ? t('Paid plans open soon. Need more now? Contact Dobry and we will set it up for you.')
+                          ? ''
                           : t('Payment is not open yet. You do not need to do anything.')}
                   </p>
                 )}

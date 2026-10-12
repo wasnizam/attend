@@ -1,4 +1,5 @@
 import { emailOrg } from './_lib/email.js'
+import { settleAll } from './_lib/referral.js'
 import { failure, firebase, json } from './_lib/server.js'
 
 const DAY = 86_400_000
@@ -25,7 +26,9 @@ export async function GET(): Promise<Response> {
       // Only for a trial that ended lately: nobody is told weeks after the fact.
       else if (left <= 0 && left > -7) sent += Number(await emailOrg(db, doc.id, 'trialEnded', { until: day }).catch(() => false))
     }
-    return json({ checked: trials.size, sent })
+    // Friends who have started using Dobry since yesterday: count them, and give any Pro earned.
+    const invites = await settleAll(db).catch(() => 0)
+    return json({ checked: trials.size, sent, invites })
   } catch (e) {
     return failure(e)
   }

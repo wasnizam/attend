@@ -75,6 +75,33 @@ export async function syncPlan(): Promise<boolean> {
   }
 }
 
+/** Where an account's invites stand. */
+export interface Invites {
+  code: string
+  link: string
+  joined: number
+  counted: number
+  toGo: number
+  rewards: number
+  maxRewards: number
+  friendsForPro: number
+  rewardMonths: number
+  proUntil: number | null
+}
+
+/** This account's invite link and progress. Asking also counts friends who have started, and gives any Pro earned. */
+export const myInvites = () => call<Invites>('/api/referral', { action: 'mine' })
+
+/** A new account says whose invite link it came from. Never fails: a missed invite is not an error for the newcomer. */
+export async function claimInvite(code: string): Promise<void> {
+  if (!code) return
+  try {
+    await call('/api/referral', { action: 'claim', code })
+  } catch {
+    // Not valid, or not new: nothing for them to do about it.
+  }
+}
+
 /** What the Console is told about the email set-up: never the key itself. */
 export interface EmailStatus {
   ready: boolean

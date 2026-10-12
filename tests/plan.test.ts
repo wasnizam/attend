@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { TRIAL_DAYS, activePlan, allows, limitFor, locksOn, overLimit, overPlan, setPlan, solo, trialDaysLeft } from '../src/lib/plan'
+import { TRIAL_DAYS, activePlan, allows, canPay, limitFor, locksOn, overLimit, overPlan, setPlan, solo, trialDaysLeft } from '../src/lib/plan'
 import { setPurpose } from '../src/lib/purpose'
 
 const DAY = 86_400_000
@@ -43,28 +43,30 @@ describe('plans', () => {
     setPlan({ plan: 'free' })
     expect(limitFor('staff')).toBe(5)
     expect(overLimit('staff', 6)).toBe(true)
-    expect(overLimit('classes', 10)).toBe(false)
+    // A free workplace is one office with one shift.
+    expect(overLimit('classes', 1)).toBe(false)
+    expect(overLimit('classes', 2)).toBe(true)
     setPlan({ plan: 'pro', paidUntil: at(now + DAY), seats: 20 })
+    expect(overLimit('classes', 10)).toBe(false)
     expect(overLimit('staff', 20)).toBe(false)
     expect(overLimit('staff', 21)).toBe(true)
   })
 })
 
 describe('what the free plan holds back', () => {
-  // The limits apply only where customers can pay: here, a browser that is trying payments out.
+  // The limits always apply to the free plan, whether or not this browser can start a payment.
   const storage = (on: boolean) => vi.stubGlobal('localStorage', { getItem: () => (on ? '1' : null), setItem: () => {} })
   const features = ['pdf', 'export', 'overtime', 'leave', 'offices', 'shifts', 'geofence', 'phoneCheck'] as const
   afterEach(() => vi.unstubAllGlobals())
 
-  it('locks nothing while customers have no way to pay', () => {
+  it('applies the free plan’s limits even while there is no way to pay', () => {
     storage(false)
     vi.stubGlobal('window', { location: { search: '' } })
     setPurpose('workplace')
     setPlan({ plan: 'free' })
-    expect(locksOn()).toBe(false)
-    for (const f of features) expect(allows(f)).toBe(true)
-    expect(limitFor('classes')).toBeUndefined()
-    // The staff limit of the free plan has always applied.
+    expect(locksOn()).toBe(true)
+    for (const f of features) expect(allows(f)).toBe(false)
+    expect(limitFor('classes')).toBe(1)
     expect(limitFor('staff')).toBe(5)
   })
 
@@ -122,18 +124,17 @@ describe('what the free plan holds back', () => {
     expect(limitFor('lecturers')).toBe(1)
   })
 
-  it('leaves a free lecturer as before while customers have no way to pay', () => {
+  it('holds a free lecturer to the same limits while there is no way to pay', () => {
     storage(false)
     vi.stubGlobal('window', { location: { search: '' } })
     setPurpose('education')
     setPlan({ plan: 'free' })
-    expect(allows('pdf')).toBe(true)
+    expect(allows('pdf')).toBe(false)
     expect(limitFor('classes')).toBe(1)
-    expect(limitFor('students')).toBeUndefined()
-    expect(limitFor('sessions')).toBeUndefined()
-    // One lecturer: the same as the security rules hold a join to.
+    expect(limitFor('students')).toBe(60)
+    expect(limitFor('sessions')).toBe(5)
     expect(limitFor('lecturers')).toBe(1)
-    expect(overPlan({ classes: 9, students: 900 })).toBeNull()
+    expect(overPlan({ classes: 9 })).toEqual({ kind: 'classes', have: 9, max: 1 })
   })
 
   it('gives one lecturer on Pro ten classes at a time and 300 students in each', () => {
@@ -199,12 +200,11 @@ describe('what the free plan holds back', () => {
     vi.stubGlobal('window', { location: { search: '' } })
     setPurpose('workplace')
     setPlan({ plan: 'free' })
-    expect(locksOn()).toBe(false)
+    expect(canPay()).toBe(false)
     setPlan({ plan: 'free', tags: ['vip', 'pay-test'] })
-    expect(locksOn()).toBe(true)
-    expect(allows('pdf')).toBe(false)
+    expect(canPay()).toBe(true)
     setPlan({ plan: 'free', tags: ['vip'] })
-    expect(locksOn()).toBe(false)
+    expect(canPay()).toBe(false)
   })
 
   it('knows one lecturer’s own account from a faculty’s', () => {

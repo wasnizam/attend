@@ -149,7 +149,7 @@ export function Landing({ show }: { show?: EditionId }) {
               <a href="#trust" className="hover:text-ink">{t('Why Dobry')}</a>
               <a href="#features" className="hover:text-ink">{t('Features')}</a>
               <a href="#how" className="hover:text-ink">{t('How it works')}</a>
-              <a href="#pricing" className="hover:text-ink">{t('Pricing')}</a>
+              <a href="#pricing" className="hover:text-ink">{PAYMENTS_OPEN ? t('Pricing') : t('Free and Pro')}</a>
             </nav>
           </div>
           <div className="flex items-center gap-2">
@@ -315,70 +315,109 @@ export function Landing({ show }: { show?: EditionId }) {
         </div>
       </section>
 
-      <section id="pricing" className="scroll-mt-16 border-y border-line bg-canvas py-20">
-        <div className="mx-auto max-w-6xl px-5">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold text-accent">{t('Pricing')} · {t(edition.label)}</p>
-            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">{t('Start free. Pay only when you need more.')}</h2>
-            {/* Ringgit is offered only in Malaysia; everyone else simply sees US dollars. */}
-            {inMalaysia() && <div className="mt-5">
-              <div role="group" aria-label={t('Currency')} className="inline-flex rounded-full bg-slate-100 p-0.5 text-xs font-semibold">
-                {(['myr', 'usd'] as const).map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-pressed={currency === c}
-                    onClick={() => setCurrency(c)}
-                    className={`rounded-full px-3 py-1 transition ${currency === c ? 'bg-white text-ink shadow-card' : 'text-slate-600 hover:text-ink'}`}
-                  >
-                    {c === 'myr' ? 'RM' : 'USD'}
-                  </button>
-                ))}
-              </div>
-            </div>}
-          </div>
-          <div className={`mt-12 grid gap-4 sm:grid-cols-2 ${plans.length > 3 ? 'lg:grid-cols-4' : plans.length === 3 ? 'lg:grid-cols-3' : 'mx-auto max-w-4xl'}`}>
-            {plans.map((plan) => (
-              <div key={plan.name} className={`flex flex-col rounded-2xl bg-white p-6 ${plan.best ? 'shadow-pop ring-2 ring-accent' : 'shadow-card'}`}>
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold tracking-tight">{t(plan.name)}</h3>
-                  {plan.best && <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-accent">{t('Most popular')}</span>}
+      {PAYMENTS_OPEN ? (
+        <section id="pricing" className="scroll-mt-16 border-y border-line bg-canvas py-20">
+          <div className="mx-auto max-w-6xl px-5">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-sm font-semibold text-accent">{t('Pricing')} · {t(edition.label)}</p>
+              <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">{t('Start free. Pay only when you need more.')}</h2>
+              {/* Ringgit is offered only in Malaysia; everyone else simply sees US dollars. */}
+              {inMalaysia() && <div className="mt-5">
+                <div role="group" aria-label={t('Currency')} className="inline-flex rounded-full bg-slate-100 p-0.5 text-xs font-semibold">
+                  {(['myr', 'usd'] as const).map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      aria-pressed={currency === c}
+                      onClick={() => setCurrency(c)}
+                      className={`rounded-full px-3 py-1 transition ${currency === c ? 'bg-white text-ink shadow-card' : 'text-slate-600 hover:text-ink'}`}
+                    >
+                      {c === 'myr' ? 'RM' : 'USD'}
+                    </button>
+                  ))}
                 </div>
-                <p className="mt-4 flex items-baseline gap-1.5">
-                  <span className="tabular text-4xl font-semibold tracking-tight">{plan.price[currency]}</span>
-                  <span className="text-sm text-muted">{t(plan.per)}</span>
-                </p>
-                {!PAYMENTS_OPEN && (
-                  // Kept as an empty space on the free plan, so every card's list starts on the same line.
-                  <span aria-hidden={/^(RM|\$)0$/.test(plan.price[currency]) || undefined} className={`mt-2 inline-flex w-fit rounded-full bg-[#fff4d6] px-2.5 py-0.5 text-xs font-semibold text-[#8a5a00] ${/^(RM|\$)0$/.test(plan.price[currency]) ? 'invisible' : ''}`}>{t('Opens soon')}</span>
-                )}
-                <p className="mt-1.5 min-h-5 text-sm text-muted">{plan.alt ? t(typeof plan.alt === 'string' ? plan.alt : plan.alt[currency]) : ''}</p>
-                <ul className="mt-5 flex-1 space-y-2.5 border-t border-line pt-5 text-sm text-slate-700">
-                  {plan.items.map((item) => {
-                    const no = item.startsWith('✕ ')
-                    return (
-                      <li key={item} className={`flex gap-2 ${no ? 'text-slate-400' : ''}`}>
-                        <span className={no ? '' : 'text-good'} aria-hidden>{no ? '✕' : '✓'}</span>
-                        {no ? <span><span className="sr-only">{t('Not included')}: </span>{t(item.slice(2))}</span> : t(item)}
-                      </li>
-                    )
-                  })}
-                </ul>
-                <Link to={signup} className={`${buttonClass({ size: 'lg', variant: plan.best ? 'primary' : 'secondary' })} mt-6`}>
-                  {t('Start Free')}
-                </Link>
-              </div>
-            ))}
+              </div>}
+            </div>
+            <div className={`mt-12 grid gap-4 sm:grid-cols-2 ${plans.length > 3 ? 'lg:grid-cols-4' : plans.length === 3 ? 'lg:grid-cols-3' : 'mx-auto max-w-4xl'}`}>
+              {plans.map((plan) => (
+                <div key={plan.name} className={`flex flex-col rounded-2xl bg-white p-6 ${plan.best ? 'shadow-pop ring-2 ring-accent' : 'shadow-card'}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-lg font-semibold tracking-tight">{t(plan.name)}</h3>
+                    {plan.best && <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-accent">{t('Most popular')}</span>}
+                  </div>
+                  <p className="mt-4 flex items-baseline gap-1.5">
+                    <span className="tabular text-4xl font-semibold tracking-tight">{plan.price[currency]}</span>
+                    <span className="text-sm text-muted">{t(plan.per)}</span>
+                  </p>
+                  {!PAYMENTS_OPEN && (
+                    // Kept as an empty space on the free plan, so every card's list starts on the same line.
+                    <span aria-hidden={/^(RM|\$)0$/.test(plan.price[currency]) || undefined} className={`mt-2 inline-flex w-fit rounded-full bg-[#fff4d6] px-2.5 py-0.5 text-xs font-semibold text-[#8a5a00] ${/^(RM|\$)0$/.test(plan.price[currency]) ? 'invisible' : ''}`}>{t('Opens soon')}</span>
+                  )}
+                  <p className="mt-1.5 min-h-5 text-sm text-muted">{plan.alt ? t(typeof plan.alt === 'string' ? plan.alt : plan.alt[currency]) : ''}</p>
+                  <ul className="mt-5 flex-1 space-y-2.5 border-t border-line pt-5 text-sm text-slate-700">
+                    {plan.items.map((item) => {
+                      const no = item.startsWith('✕ ')
+                      return (
+                        <li key={item} className={`flex gap-2 ${no ? 'text-slate-400' : ''}`}>
+                          <span className={no ? '' : 'text-good'} aria-hidden>{no ? '✕' : '✓'}</span>
+                          {no ? <span><span className="sr-only">{t('Not included')}: </span>{t(item.slice(2))}</span> : t(item)}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  <Link to={signup} className={`${buttonClass({ size: 'lg', variant: plan.best ? 'primary' : 'secondary' })} mt-6`}>
+                    {t('Start Free')}
+                  </Link>
+                </div>
+              ))}
+            </div>
+            <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-balance text-muted">
+              {PAYMENTS_OPEN
+                ? t('Every new account gets Pro free for 14 days. No card needed. Stop paying and your records stay, ready to view and export.')
+                : startsOn === 'free'
+                  ? t('Paid plans open soon; the prices above are what they will cost. Until then you start free: {limit}. You will be told before anything changes.', { limit: t(freeLimit).toLowerCase() })
+                  : t('Payment is not open yet, so everything is free for now. When it opens, every account gets Pro free for 14 days first.')}
+            </p>
           </div>
-          <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-balance text-muted">
-            {PAYMENTS_OPEN
-              ? t('Every new account gets Pro free for 14 days. No card needed. Stop paying and your records stay, ready to view and export.')
-              : startsOn === 'free'
-                ? t('Paid plans open soon; the prices above are what they will cost. Until then you start free: {limit}. You will be told before anything changes.', { limit: t(freeLimit).toLowerCase() })
-                : t('Payment is not open yet, so everything is free for now. When it opens, every account gets Pro free for 14 days first.')}
-          </p>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <section id="pricing" className="scroll-mt-16 border-y border-line bg-canvas py-20">
+          <div className="mx-auto max-w-5xl px-5">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-sm font-semibold text-accent">{t('Free')} · {t(edition.label)}</p>
+              <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">{t('Free to use. Invite friends to unlock Pro.')}</h2>
+              <p className="mt-3 text-slate-600">{t('No card and no bill. Start on the free plan today; Pro is earned by sharing Dobry, not bought.')}</p>
+            </div>
+            <div className="mt-12 grid gap-4 md:grid-cols-2">
+              <div className="flex flex-col rounded-2xl bg-white p-6 shadow-card">
+                <h3 className="text-lg font-semibold tracking-tight">{t('Free')}</h3>
+                <p className="mt-1 text-sm text-muted">{t('Yours from the first minute.')}</p>
+                <ul className="mt-5 flex-1 space-y-2.5 border-t border-line pt-5 text-sm text-slate-700">
+                  {(plans[0]?.items ?? []).filter((item) => !item.startsWith('✕ ')).map((item) => (
+                    <li key={item} className="flex gap-2"><span className="text-good" aria-hidden>✓</span>{t(item)}</li>
+                  ))}
+                </ul>
+                <Link to={signup} className={`${buttonClass({ size: 'lg' })} mt-6`}>{t('Start Free')}</Link>
+              </div>
+              <div className="relative isolate flex flex-col overflow-hidden rounded-2xl bg-night p-6 text-white shadow-pop">
+                <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(24rem_14rem_at_100%_0%,rgb(255_200_61/0.2),transparent_70%)]" />
+                <h3 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+                  Pro
+                  <span className="rounded-full bg-sun px-2 py-0.5 text-xs font-bold text-night">{t('Earned, not bought')}</span>
+                </h3>
+                <p className="mt-1 text-sm text-indigo-100/80">{t('Invite 5 friends who start using Dobry, and Pro is yours free for 3 months. Keep inviting to earn more.')}</p>
+                <ul className="mt-5 flex-1 space-y-2.5 border-t border-white/15 pt-5 text-sm text-indigo-50">
+                  {((plans.find((p) => p.best) ?? plans[1])?.items ?? []).filter((item) => !item.startsWith('✕ ')).map((item) => (
+                    <li key={item} className="flex gap-2"><span className="text-sun" aria-hidden>✓</span>{t(item)}</li>
+                  ))}
+                </ul>
+                <Link to={signup} className={`${buttonClass({ size: 'lg' })} mt-6 !bg-sun !text-night hover:!bg-sun-strong`}>{t('Start Free')}</Link>
+              </div>
+            </div>
+            <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-balance text-muted">{t('Your invite link is on your Account page as soon as you sign up. A friend counts once they have run their first real session.')}</p>
+          </div>
+        </section>
+      )}
 
       <section id="faq" className="scroll-mt-16 py-20">
         <div className="mx-auto max-w-3xl px-5">
@@ -435,7 +474,7 @@ export function Landing({ show }: { show?: EditionId }) {
             <p className="font-semibold">{t('Product')}</p>
             <ul className="mt-3 space-y-2 text-slate-600">
               <li><a href="#trust" className="hover:text-ink">{t('Why Dobry')}</a></li>
-              <li><a href="#pricing" className="hover:text-ink">{t('Pricing')}</a></li>
+              <li><a href="#pricing" className="hover:text-ink">{PAYMENTS_OPEN ? t('Pricing') : t('Free and Pro')}</a></li>
               <li><a href="#faq" className="hover:text-ink">{t('Questions')}</a></li>
               <li><Link to="/login" className="hover:text-ink">{t('Log in')}</Link></li>
             </ul>
