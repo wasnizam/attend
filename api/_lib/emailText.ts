@@ -2,7 +2,7 @@
  * The emails Dobry sends to a customer, as plain words. No imports: tested on its own, and the
  * same text makes the HTML and the plain-text copy. Dates arrive as YYYY-MM-DD.
  */
-export type EmailKind = 'welcome' | 'trialEnding' | 'trialEnded' | 'paymentFailed' | 'test'
+export type EmailKind = 'welcome' | 'trialEnding' | 'trialEnded' | 'paymentFailed' | 'paymentReceived' | 'test'
 
 export interface EmailText {
   subject: string
@@ -10,6 +10,7 @@ export interface EmailText {
   /** Paragraphs, in order. */
   lines: string[]
   /** One button: its words and where it goes (a path on the site). */
+  /** `path` is a path on the site, or a full address elsewhere (Stripe's page for an invoice). */
   button?: { label: string; path: string }
 }
 
@@ -77,6 +78,18 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
         ],
         button: { label: 'Update your card', path: '/app/account#plan' },
       }
+    case 'paymentReceived':
+      return {
+        subject: `Your Dobry receipt: ${data.amount || 'payment received'}`,
+        heading: 'Thank you. Your payment was received',
+        lines: [
+          hello,
+          `We received ${data.amount || 'your payment'} for ${who.organisation || 'your Dobry plan'}${data.number ? ` (invoice ${data.number})` : ''}.`,
+          data.until ? `Your plan is paid until ${longDate(data.until)}, and renews by itself. You can cancel at any time from the Account page.` : 'Your plan renews by itself. You can cancel at any time from the Account page.',
+          'On your bank statement this payment appears as DOBRY.',
+        ],
+        button: data.invoiceUrl ? { label: 'View your invoice', path: data.invoiceUrl } : { label: 'Open your account', path: '/app/account#plan' },
+      }
     case 'test':
       return {
         subject: 'Dobry email test',
@@ -90,7 +103,7 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 
 /** The email as HTML (simple, so every mail app shows it properly) and as plain text. */
 export function render(text: EmailText, site: string, company: string): { html: string; text: string } {
-  const link = text.button ? `${site}${text.button.path}` : ''
+  const link = text.button ? (/^https:\/\//.test(text.button.path) ? text.button.path : `${site}${text.button.path}`) : ''
   const html = `<!doctype html><html><body style="margin:0;background:#f8fafc;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:14px;border:1px solid #e2e8f0">

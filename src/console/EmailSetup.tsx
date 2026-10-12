@@ -8,6 +8,7 @@ import { Section, useAction } from './ui'
 const SENDS: [string, string][] = [
   ['Welcome', 'When someone makes an account.'],
   ['Trial ending', 'Three days before a Pro trial ends, and once when it has ended.'],
+  ['Payment received', 'A receipt for each payment, with a link to the invoice.'],
   ['Payment failed', 'The first time a card is refused, with the way to change it.'],
 ]
 
@@ -94,7 +95,7 @@ export function EmailSetup() {
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-xs text-muted">{t('Each goes to the account’s owner, once, and is noted in the audit log. Receipts for payments are sent by Stripe: switch them on in Stripe → Settings → Customer emails.')}</p>
+            <p className="mt-3 text-xs text-muted">{t('Each goes to the account’s owner, once, and is noted in the audit log.')}</p>
           </div>
         </div>
       )}

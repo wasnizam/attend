@@ -119,6 +119,21 @@ async function paid(invoice: Stripe.Invoice) {
     at: FieldValue.serverTimestamp(),
   })
   await audit(db, 'payment', `${money(invoice.amount_paid, invoice.currency)} by Stripe (${invoice.number ?? invoice.id})`, org.id, org.data().name)
+  // Dobry's own receipt, once per invoice: the Stripe account may serve other businesses, so its
+  // own customer emails are left as they are.
+  const end = invoice.lines?.data?.[0]?.period?.end
+  await emailOrg(
+    db,
+    org.id,
+    'paymentReceived',
+    {
+      amount: money(invoice.amount_paid, invoice.currency),
+      number: invoice.number ?? '',
+      until: end ? new Date(end * 1000).toISOString().slice(0, 10) : '',
+      invoiceUrl: invoice.hosted_invoice_url ?? '',
+    },
+    `paid_${invoice.id}`,
+  ).catch(() => {})
 }
 
 /**

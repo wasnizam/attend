@@ -46,4 +46,14 @@ describe('emails to customers', () => {
     expect(text).toContain('See the plans: https://dobry.app/app/account#plan')
     expect(text).toContain('Hello <b>Eve</b>,')
   })
+
+  it('sends a receipt with the amount, the invoice and Stripe’s own page for it', () => {
+    const e = emailText('paymentReceived', { name: 'Ali', organisation: 'MAXU' }, { amount: 'MYR 19.00', number: 'INV-0007', until: '2026-11-12', invoiceUrl: 'https://invoice.stripe.com/i/abc' })
+    expect(e.subject).toBe('Your Dobry receipt: MYR 19.00')
+    expect(e.lines.join(' ')).toMatch(/MYR 19\.00 for MAXU \(invoice INV-0007\)/)
+    expect(e.lines.join(' ')).toMatch(/paid until 12 November 2026/)
+    expect(render(e, 'https://dobry.app', 'Dobry').html).toContain('href="https://invoice.stripe.com/i/abc"')
+    // With no invoice page, the button goes to the account.
+    expect(render(emailText('paymentReceived', {}, {}), 'https://dobry.app', 'Dobry').html).toContain('href="https://dobry.app/app/account#plan"')
+  })
 })
