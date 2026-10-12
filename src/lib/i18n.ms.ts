@@ -1622,4 +1622,10 @@ export const ms: Record<string, string> = {
   "Refreshing…": "Menyegar semula…",
   "Let go to refresh": "Lepaskan untuk segar semula",
   "Pull to refresh": "Tarik untuk segar semula",
+  "Resume plan": "Sambung pelan",
+  "Cancel plan": "Batalkan pelan",
+  "Opening…": "Membuka…",
+  "Your plan is cancelled and will not renew. Pro stays on until the date above. Changed your mind? Choose Resume plan below.": "Pelan anda telah dibatalkan dan tidak akan diperbaharui. Pro kekal sehingga tarikh di atas. Berubah fikiran? Pilih Sambung pelan di bawah.",
+  "There is no paid plan to resume.": "Tiada pelan berbayar untuk disambung.",
+  "That plan has already ended. Choose a plan to start again.": "Pelan itu sudah tamat. Pilih pelan untuk bermula semula.",
 }

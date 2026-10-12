@@ -53,9 +53,14 @@ export async function refreshUsage(adding: string[] = []): Promise<Usage | null>
 }
 
 /** Opens Stripe's page for changing the card, seeing invoices or cancelling. */
-export async function openBilling(): Promise<void> {
-  const reply = await call<{ url?: string }>('/api/portal', {})
+export async function openBilling(flow?: 'cancel'): Promise<void> {
+  const reply = await call<{ url?: string }>('/api/portal', flow ? { flow } : {})
   if (reply.url) window.location.assign(reply.url)
+}
+
+/** Undoes a cancellation that has not taken effect yet: the plan renews as before. */
+export async function resumePlan(): Promise<void> {
+  await call<{ resumed?: boolean }>('/api/portal', { action: 'resume' })
 }
 
 /** What the Console is told about the Stripe keys: never the keys themselves. */

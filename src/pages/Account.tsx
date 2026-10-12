@@ -8,7 +8,7 @@ import { editionForPurpose } from '../lib/editions'
 import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, allows, canPay, paidUntil, trialDaysLeft } from '../lib/plan'
 import { InstallApp } from '../components/InstallApp'
 import { UpgradeNote } from '../components/Paid'
-import { openBilling, redeemCode, startCheckout } from '../data/billing'
+import { openBilling, redeemCode, resumePlan, startCheckout } from '../data/billing'
 import { getPurpose } from '../lib/purpose'
 import { useAuth, useProfile } from '../hooks/useAuth'
 import { LANGS, getLang, locale, setLang, t } from '../lib/i18n'
@@ -95,11 +95,23 @@ export function Account() {
       setBusyPlan(null)
     }
   }
-  const manage = async () => {
-    setBusyPlan('portal')
+  const resume = async () => {
+    setBusyPlan('resume')
     setPayError('')
     try {
-      await openBilling()
+      await resumePlan()
+      // Stripe tells the server, which updates the organisation a moment later.
+      setOrg((o) => (o ? { ...o, stripeCancelAtPeriodEnd: false } : o))
+    } catch (e) {
+      setPayError(e instanceof Error ? e.message : String(e))
+    }
+    setBusyPlan(null)
+  }
+  const manage = async (flow?: 'cancel') => {
+    setBusyPlan(flow ?? 'portal')
+    setPayError('')
+    try {
+      await openBilling(flow)
     } catch (e) {
       setPayError(e instanceof Error ? e.message : String(e))
       setBusyPlan(null)
@@ -305,7 +317,7 @@ export function Account() {
                   : t('You are on Pro until {date}. Thank you.', { date: new Date(paidUntil()?.toMillis() ?? 0).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) ?? '' })}
           </p>
           {paidNotice && <p className="mt-3 rounded-lg bg-good-soft px-4 py-3 text-sm text-good">{plan === 'pro' ? t('Payment received. You are on Pro. Thank you.') : t('Payment received. Your plan will update in a few seconds.')}</p>}
-          {org?.stripeCancelAtPeriodEnd && plan === 'pro' && <p className="mt-3 rounded-lg bg-[#fff4d6] px-4 py-3 text-sm text-[#8a5a00]">{t('Your plan is cancelled and will not renew. Pro stays on until the date above.')}</p>}
+          {org?.stripeCancelAtPeriodEnd && plan === 'pro' && <p className="mt-3 rounded-lg bg-[#fff4d6] px-4 py-3 text-sm text-[#8a5a00]">{t('Your plan is cancelled and will not renew. Pro stays on until the date above. Changed your mind? Choose Resume plan below.')}</p>}
           {yearOffer && paying && (
             <label className="mt-4 flex items-center gap-2 text-sm">
               <input type="checkbox" checked={yearly} onChange={(e) => setYearly(e.target.checked)} className="size-4 accent-accent" />
@@ -356,7 +368,16 @@ export function Account() {
               {paying ? (
                 <>
                   {org?.stripeCustomerId && (
-                    <Button variant="secondary" busy={busyPlan === 'portal'} disabled={busyPlan !== null} onClick={manage}>{t('Manage billing')}</Button>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                      <Button variant="secondary" busy={busyPlan === 'portal'} disabled={busyPlan !== null} onClick={() => manage()}>{t('Manage billing')}</Button>
+                      {plan === 'pro' && org.stripeSubscriptionId && (org.stripeCancelAtPeriodEnd ? (
+                        <Button busy={busyPlan === 'resume'} disabled={busyPlan !== null} onClick={resume}>{t('Resume plan')}</Button>
+                      ) : (
+                        <button type="button" disabled={busyPlan !== null} onClick={() => manage('cancel')} className="text-sm font-medium text-muted underline underline-offset-2 hover:text-bad disabled:opacity-50">
+                          {busyPlan === 'cancel' ? t('Opening…') : t('Cancel plan')}
+                        </button>
+                      ))}
+                    </div>
                   )}
                   <p className="mt-2 text-xs text-muted">{t('Payment is handled by Stripe. Dobry never sees your card. You can cancel at any time; your records stay.')}</p>
                 </>
