@@ -405,7 +405,7 @@ export function Landing({ show }: { show?: EditionId }) {
                   Pro
                   <span className="rounded-full bg-sun px-2 py-0.5 text-xs font-bold text-night">{t('Earned, not bought')}</span>
                 </h3>
-                <p className="mt-1 text-sm text-indigo-100/80">{t('Invite 5 friends who start using Dobry, and Pro is yours free for 3 months. Keep inviting to earn more.')}</p>
+                <p className="mt-1 text-sm text-indigo-100/80">{t('Invite 5 friends who start using Dobry, and Pro is yours free for a month. Every 5 more earn another month.')}</p>
                 <ul className="mt-5 flex-1 space-y-2.5 border-t border-white/15 pt-5 text-sm text-indigo-50">
                   {((plans.find((p) => p.best) ?? plans[1])?.items ?? []).filter((item) => !item.startsWith('✕ ')).map((item) => (
                     <li key={item} className="flex gap-2"><span className="text-sun" aria-hidden>✓</span>{t(item)}</li>

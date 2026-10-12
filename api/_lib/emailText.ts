@@ -149,7 +149,7 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
           hello,
           `${data.friends || 'Several'} of the friends you invited now use Dobry, so ${who.organisation || 'your account'} has Pro free for ${data.months === '1' ? '1 month' : `${data.months || 'some'} months`}.`,
           data.until ? `It runs until ${longDate(data.until)}. There is nothing to pay and nothing to cancel: after that the account goes back to the free plan, with nothing deleted.` : 'There is nothing to pay and nothing to cancel.',
-          'Keep inviting: every 5 friends who start using Dobry earn you more.',
+          'Keep inviting: every 5 more friends who start using Dobry earn you another month.',
         ],
         button: { label: 'Open Dobry', path: '/app/account#invite' },
       }

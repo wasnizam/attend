@@ -6,10 +6,10 @@
 
 /** Friends who must count before Pro is earned. */
 export const FRIENDS_FOR_PRO = 5
-/** Months of Pro earned each time. */
-export const REWARD_MONTHS = 3
+/** Months of Pro earned each time: one, so there is always a reason to keep inviting. */
+export const REWARD_MONTHS = 1
 /** How many times one account can earn it: a year of Pro at most. */
-export const MAX_REWARDS = 4
+export const MAX_REWARDS = 12
 /** A friend must make their account within this many days of opening the invite link's sign-up. */
 export const CLAIM_DAYS = 2
 /** Staff a workplace's earned Pro covers: the smallest paid size. */

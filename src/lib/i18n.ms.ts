@@ -1729,4 +1729,7 @@ export const ms: Record<string, string> = {
   "Earned, not bought": "Diperoleh, bukan dibeli",
   "Invite 5 friends who start using Dobry, and Pro is yours free for 3 months. Keep inviting to earn more.": "Jemput 5 rakan yang mula menggunakan Dobry, dan Pro menjadi milik anda percuma selama 3 bulan. Terus menjemput untuk mendapat lagi.",
   "Your invite link is on your Account page as soon as you sign up. A friend counts once they have run their first real session.": "Pautan jemputan anda ada di halaman Akaun sebaik sahaja anda mendaftar. Seorang rakan dikira selepas mereka menjalankan sesi sebenar yang pertama.",
+  "Invite {n} friends and get Pro free for a month. A friend counts once they have run their first real session.": "Jemput {n} rakan dan dapat Pro percuma selama sebulan. Seorang rakan dikira selepas mereka menjalankan sesi sebenar yang pertama.",
+  "Every {n} friends who count earn you another month, up to a year. Nothing to pay, and nothing to cancel.": "Setiap {n} rakan yang dikira memberi anda sebulan lagi, sehingga setahun. Tiada bayaran, dan tiada apa untuk dibatalkan.",
+  "Invite 5 friends who start using Dobry, and Pro is yours free for a month. Every 5 more earn another month.": "Jemput 5 rakan yang mula menggunakan Dobry, dan Pro menjadi milik anda percuma selama sebulan. Setiap 5 rakan lagi memberi sebulan lagi.",
 }

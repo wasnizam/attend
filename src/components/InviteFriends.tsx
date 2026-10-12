@@ -42,7 +42,7 @@ export function InviteFriends() {
   return (
     <div>
       <p className="text-sm text-slate-700">
-        {t('Invite {n} friends and get Pro free for {m} months. A friend counts once they have run their first real session.', { n: need, m: months })}
+        {t(months === 1 ? 'Invite {n} friends and get Pro free for a month. A friend counts once they have run their first real session.' : 'Invite {n} friends and get Pro free for {m} months. A friend counts once they have run their first real session.', { n: need, m: months })}
       </p>
 
       <div className="mt-4 flex items-center gap-1.5" role="img" aria-label={t('{n} of {m} friends count so far', { n: inRound, m: need })}>
@@ -73,7 +73,7 @@ export function InviteFriends() {
           <Button variant="secondary" onClick={share}>{t('Share another way')}</Button>
         )}
       </div>
-      <p className="mt-3 text-xs text-muted">{t('Each time {n} friends count, you earn {m} more months, up to a year. Nothing to pay, and nothing to cancel.', { n: need, m: months })}</p>
+      <p className="mt-3 text-xs text-muted">{t(months === 1 ? 'Every {n} friends who count earn you another month, up to a year. Nothing to pay, and nothing to cancel.' : 'Each time {n} friends count, you earn {m} more months, up to a year. Nothing to pay, and nothing to cancel.', { n: need, m: months })}</p>
     </div>
   )
 }

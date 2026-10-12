@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emailText } from '../api/_lib/emailText'
-import { CLAIM_DAYS, FRIENDS_FOR_PRO, MAX_REWARDS, claimProblem, friendsToGo, newRefCode, realSession, rewardsDue, rewardsEarned, tidyRefCode } from '../api/_lib/referralRules'
+import { CLAIM_DAYS, FRIENDS_FOR_PRO, MAX_REWARDS, REWARD_MONTHS, claimProblem, friendsToGo, newRefCode, realSession, rewardsDue, rewardsEarned, tidyRefCode } from '../api/_lib/referralRules'
 
 const DAY = 86_400_000
 const now = Date.UTC(2026, 9, 12)
@@ -44,7 +44,9 @@ describe('earning Pro', () => {
     expect([0, 3, 5, 7, 9].map(friendsToGo)).toEqual([5, 2, 5, 3, 1])
   })
 
-  it('stops at a year of Pro, however many friends', () => {
+  it('gives one month each time, and stops at a year of Pro, however many friends', () => {
+    expect(REWARD_MONTHS).toBe(1)
+    expect(REWARD_MONTHS * MAX_REWARDS).toBe(12)
     expect(rewardsEarned(FRIENDS_FOR_PRO * MAX_REWARDS)).toBe(MAX_REWARDS)
     expect(rewardsEarned(500)).toBe(MAX_REWARDS)
     expect(friendsToGo(500)).toBe(0)
@@ -83,10 +85,10 @@ describe('who can be put down as invited', () => {
 
 describe('the email for earning Pro', () => {
   it('says how many friends, how long, and that nothing needs paying or cancelling', () => {
-    const e = emailText('referralReward', { name: 'Ali', organisation: 'MAXU' }, { friends: '5', months: '3', until: '2027-01-12' })
+    const e = emailText('referralReward', { name: 'Ali', organisation: 'MAXU' }, { friends: '5', months: '1', until: '2026-11-12' })
     expect(e.subject).toBe('You have earned Dobry Pro')
-    expect(e.lines.join(' ')).toMatch(/5 of the friends you invited now use Dobry, so MAXU has Pro free for 3 months/)
-    expect(e.lines.join(' ')).toMatch(/until 12 January 2027/)
+    expect(e.lines.join(' ')).toMatch(/5 of the friends you invited now use Dobry, so MAXU has Pro free for 1 month\./)
+    expect(e.lines.join(' ')).toMatch(/until 12 November 2026/)
     expect(e.lines.join(' ')).toMatch(/nothing to pay and nothing to cancel/)
   })
 })
