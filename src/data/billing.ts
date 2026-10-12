@@ -63,6 +63,18 @@ export async function resumePlan(): Promise<void> {
   await call<{ resumed?: boolean }>('/api/portal', { action: 'resume' })
 }
 
+/**
+ * Has the server read the subscription from Stripe and set the account by it: after coming back
+ * from Stripe's page, where a plan may have been cancelled. Never fails; true when it was read.
+ */
+export async function syncPlan(): Promise<boolean> {
+  try {
+    return Boolean((await call<{ synced?: boolean }>('/api/portal', { action: 'sync' })).synced)
+  } catch {
+    return false
+  }
+}
+
 /** What the Console is told about the email set-up: never the key itself. */
 export interface EmailStatus {
   ready: boolean

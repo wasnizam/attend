@@ -1,6 +1,7 @@
 import type Stripe from 'stripe'
 import { BillingError, STATEMENT_NAME, chargeFor, subscriptionMetadata } from './_lib/billing.js'
 import { HttpError, caller, catalog, failure, firebase, json, origin, stripe } from './_lib/server.js'
+import { applySubscription } from './_lib/subscription.js'
 
 const missing = (e: unknown) => (e as { code?: string })?.code === 'resource_missing'
 
@@ -83,7 +84,9 @@ export async function POST(request: Request): Promise<Response> {
       })
       if (sub && ['active', 'trialing', 'past_due'].includes(sub.status)) {
         if (sub.currency !== currency) throw new HttpError(400, 'Your plan is paid in another currency. Choose the same currency, or contact Dobry to change it.')
-        await s.subscriptions.update(sub.id, { items: [{ id: sub.items.data[0].id, price_data, quantity: charge.quantity }], metadata, proration_behavior: 'create_prorations', cancel_at_period_end: false })
+        const changed = await s.subscriptions.update(sub.id, { items: [{ id: sub.items.data[0].id, price_data, quantity: charge.quantity }], metadata, proration_behavior: 'create_prorations', cancel_at_period_end: false })
+        // The account shows the new plan at once, without waiting to hear back from Stripe.
+        await applySubscription(changed)
         return json({ changed: true })
       }
     }

@@ -8,7 +8,7 @@ import { editionForPurpose } from '../lib/editions'
 import { GRACE_DAYS, PAYMENTS_OPEN, PLAN_LABEL, activePlan, allows, canPay, paidUntil, solo, trialDaysLeft } from '../lib/plan'
 import { InstallApp } from '../components/InstallApp'
 import { UpgradeNote } from '../components/Paid'
-import { openBilling, redeemCode, resumePlan, startCheckout } from '../data/billing'
+import { openBilling, redeemCode, resumePlan, startCheckout, syncPlan } from '../data/billing'
 import { getPurpose } from '../lib/purpose'
 import { useAuth, useProfile } from '../hooks/useAuth'
 import { LANGS, getLang, locale, setLang, t } from '../lib/i18n'
@@ -104,6 +104,20 @@ export function Account() {
     }, () => {})
   }, [profile.organisationId])
 
+  // The account as Stripe has it: read once on arriving here (they may be back from Stripe's
+  // page, where a plan can be cancelled), and again after a change made on this page.
+  const reloadOrg = () => getOrganisation(profile.organisationId).then((o) => o && setOrg(o), () => {})
+  const [synced, setSynced] = useState(false)
+  useEffect(() => {
+    if (synced || !org?.stripeSubscriptionId || profile.role !== 'admin') return
+    setSynced(true)
+    void syncPlan().then((read) => {
+      if (read) void reloadOrg()
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [org?.stripeSubscriptionId, synced, profile.role])
+  const [planNote, setPlanNote] = useState('')
+
   const verifySave = useSave()
   const edition = editionForPurpose(getPurpose())
   const catalog = useCatalog()
@@ -125,9 +139,15 @@ export function Account() {
   const choose = async (planId: string, byYear: boolean, quantity = 1) => {
     setBusyPlan(planId)
     setPayError('')
+    setPlanNote('')
     try {
       // 'leaving': the browser is on its way to Stripe, so the button keeps spinning.
-      if ((await startCheckout(planId, currency, byYear, quantity)) === 'changed') setBusyPlan(null)
+      if ((await startCheckout(planId, currency, byYear, quantity)) === 'changed') {
+        await reloadOrg()
+        setSeats(null)
+        setPlanNote(t('Your plan is changed. Stripe works out the difference on your next bill.'))
+        setBusyPlan(null)
+      }
     } catch (e) {
       setPayError(e instanceof Error ? e.message : String(e))
       setBusyPlan(null)
@@ -138,8 +158,8 @@ export function Account() {
     setPayError('')
     try {
       await resumePlan()
-      // Stripe tells the server, which updates the organisation a moment later.
-      setOrg((o) => (o ? { ...o, stripeCancelAtPeriodEnd: false } : o))
+      await reloadOrg()
+      setPlanNote(t('Your plan is resumed, and renews as before.'))
     } catch (e) {
       setPayError(e instanceof Error ? e.message : String(e))
     }
@@ -432,7 +452,8 @@ export function Account() {
               </div>
 
               <div className="p-5 sm:p-6">
-                {paidNotice && <p className="mb-4 rounded-lg bg-good-soft px-4 py-3 text-sm text-good">{plan === 'pro' ? t('Payment received. You are on Pro. Thank you.') : t('Payment received. Your plan will update in a few seconds.')}</p>}
+                {planNote && <p className="mb-4 rounded-lg bg-good-soft px-4 py-3 text-sm text-good">{planNote}</p>}
+            {paidNotice && <p className="mb-4 rounded-lg bg-good-soft px-4 py-3 text-sm text-good">{plan === 'pro' ? t('Payment received. You are on Pro. Thank you.') : t('Payment received. Your plan will update in a few seconds.')}</p>}
 
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="font-semibold">{paying && plan === 'pro' ? t('Change plan') : t('Plans')}</h2>

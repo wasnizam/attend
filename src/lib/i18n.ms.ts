@@ -1696,4 +1696,6 @@ export const ms: Record<string, string> = {
   "next try {date}": "cubaan seterusnya {date}",
   "no more tries": "tiada cubaan lagi",
   "Cancelled: will not renew": "Dibatalkan: tidak akan diperbaharui",
+  "Your plan is changed. Stripe works out the difference on your next bill.": "Pelan anda telah ditukar. Stripe mengira perbezaannya pada bil anda yang seterusnya.",
+  "Your plan is resumed, and renews as before.": "Pelan anda disambung semula, dan diperbaharui seperti biasa.",
 }

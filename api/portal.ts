@@ -1,4 +1,5 @@
 import { HttpError, caller, failure, json, origin, stripe } from './_lib/server.js'
+import { applySubscription } from './_lib/subscription.js'
 
 const missing = (e: unknown) => (e as { code?: string })?.code === 'resource_missing'
 
@@ -23,10 +24,30 @@ export async function POST(request: Request): Promise<Response> {
       })
       if (!sub || !['active', 'trialing', 'past_due'].includes(sub.status)) throw new HttpError(400, 'That plan has already ended. Choose a plan to start again.')
       // Stripe records a cancellation either as "at the end of the period" or as a date; clear whichever it used.
-      await s.subscriptions.update(subscription, sub.cancel_at && !sub.cancel_at_period_end ? { cancel_at: '' } : { cancel_at_period_end: false })
+      await applySubscription(await s.subscriptions.update(subscription, sub.cancel_at && !sub.cancel_at_period_end ? { cancel_at: '' } : { cancel_at_period_end: false }))
       return json({ resumed: true })
     }
 
+    // Back from Stripe's page (a cancel, a new card): read the subscription and set the account by it.
+    if (body.action === 'sync') {
+      if (!subscription) return json({ synced: false })
+      const sub = await s.subscriptions.retrieve(subscription).catch((e) => {
+        if (!missing(e)) throw e
+        return null
+      })
+      if (sub) await applySubscription(sub)
+      return json({ synced: Boolean(sub) })
+    }
+
+    // Already cancelled for the end of the period: Stripe refuses its cancel step, so make sure
+    // the account says so and send them back to it.
+    if (body.flow === 'cancel' && subscription) {
+      const sub = await s.subscriptions.retrieve(subscription).catch(() => null)
+      if (sub && (sub.cancel_at_period_end || sub.cancel_at)) {
+        await applySubscription(sub)
+        return json({ url: `${origin(request)}/app/account` })
+      }
+    }
     const back = `${origin(request)}/app/account`
     const session = await s.billingPortal.sessions.create({
       customer: me.org.stripeCustomerId,
