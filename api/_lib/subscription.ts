@@ -3,7 +3,7 @@ import type Stripe from 'stripe'
 import { patchFromSubscription } from './billing.js'
 import { emailOrg } from './email.js'
 import { withGift } from './gift.js'
-import { firebase } from './server.js'
+import { catalog, firebase } from './server.js'
 
 const auditEntry = (action: string, detail: string, organisationId: string, organisationName?: string) => ({
   actor: 'stripe',
@@ -31,7 +31,8 @@ export async function applySubscription(sub: Stripe.Subscription) {
   const paid = patchFromSubscription({ id: sub.id, status: sub.status, periodEnd, currency: sub.currency, metadata: sub.metadata })
   const cancelling = Boolean(sub.cancel_at_period_end || sub.cancel_at)
   // What to tell the customer afterwards, decided inside the step below so it happens once.
-  let tell: 'planCancelled' | 'planEnded' | null = null
+  let tell: 'planCancelled' | 'planResumed' | 'planChanged' | 'planEnded' | null = null
+  let details: Record<string, string> = {}
   let until = ''
   // In one step, so two messages arriving together change the plan once and log it once.
   await db.runTransaction(async (tx) => {
@@ -64,15 +65,32 @@ export async function applySubscription(sub: Stripe.Subscription) {
     until = periodEnd ? new Date(periodEnd * 1000).toISOString().slice(0, 10) : ''
     if (p.plan === 'pro' && cancelling !== was) {
       tx.set(db.collection('platformAudit').doc(), auditEntry('subscription', cancelling ? `Cancelled by the customer: will not renew${until ? `, on until ${until}` : ''}` : 'Resumed by the customer: will renew as before', orgId, org.name))
-      if (cancelling) tell = 'planCancelled'
+      tell = cancelling ? 'planCancelled' : 'planResumed'
     }
     if (org.plan === 'pro' && p.plan === 'free' && org.stripeSubscriptionId === sub.id) tell = 'planEnded'
+    // The same subscription moved to another plan, another size, or between monthly and yearly.
+    if (org.plan === 'pro' && p.plan === 'pro' && org.stripeSubscriptionId === sub.id && (org.stripePlanId !== p.planId || (org.seats ?? null) !== (p.seats ?? null) || org.price?.cycle !== p.price?.cycle)) {
+      tell = 'planChanged'
+      const people = org.purpose === 'workplace' ? 'staff' : 'lecturers'
+      details = {
+        planId: p.planId ?? '',
+        covers: p.seats ? `${p.seats} ${people}` : '',
+        price: p.price ? `${p.price.currency} ${p.price.amount.toFixed(2)} ${p.price.cycle === 'year' ? 'a year' : p.price.cycle === 'semester' ? 'a semester' : 'a month'}` : '',
+      }
+    }
     if (before !== after || org.stripeStatus !== p.stripeStatus) {
       tx.set(db.collection('platformAudit').doc(), auditEntry('subscription', `${before} → ${after} (${p.stripeStatus}${p.paidUntil ? `, until ${new Date(p.paidUntil).toDateString()}` : ''})`, orgId, org.name))
     }
   })
   // Each time it happens, not once ever: someone may cancel, resume and cancel again.
-  const kind = tell as 'planCancelled' | 'planEnded' | null
-  if (kind) await emailOrg(db, orgId, kind, { until }, `${kind}_${sub.id}_${Date.now()}`).catch(() => {})
+  const kind = tell as 'planCancelled' | 'planResumed' | 'planChanged' | 'planEnded' | null
+  if (!kind) return
+  const data: Record<string, string> = { until, ...details }
+  if (kind === 'planChanged' && details.planId) {
+    // The plan's name as customers know it, from the price list.
+    const plans = Object.values(await catalog(db).catch(() => ({}))).flat() as { id: string; name: string }[]
+    data.plan = plans.find((x) => x.id === details.planId)?.name ?? ''
+  }
+  await emailOrg(db, orgId, kind, data, `${kind}_${sub.id}_${Date.now()}`).catch(() => {})
 }
 

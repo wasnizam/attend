@@ -2,7 +2,7 @@
  * The emails Dobry sends to a customer, as plain words. No imports: tested on its own, and the
  * same text makes the HTML and the plain-text copy. Dates arrive as YYYY-MM-DD.
  */
-export type EmailKind = 'welcome' | 'trialEnding' | 'trialEnded' | 'paymentFailed' | 'paymentReceived' | 'planCancelled' | 'planEnded' | 'test'
+export type EmailKind = 'welcome' | 'trialEnding' | 'trialEnded' | 'paymentFailed' | 'paymentReceived' | 'planCancelled' | 'planResumed' | 'planChanged' | 'planEnded' | 'test'
 
 export interface EmailText {
   subject: string
@@ -102,6 +102,31 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
           'Changed your mind? You can resume the plan with one click on the Account page, any time before that date.',
           'If you did not ask for this, reply to this email straight away.',
         ],
+        button: { label: 'Open your account', path: '/app/account#plan' },
+      }
+    case 'planResumed':
+      return {
+        subject: 'Your Dobry plan is resumed',
+        heading: 'Your plan is back on',
+        lines: [
+          hello,
+          `The paid plan for ${who.organisation || 'your account'} is resumed. It carries on as before, with nothing lost.`,
+          data.until ? `It renews by itself on ${longDate(data.until)}. You can cancel at any time from the Account page.` : 'It renews by itself. You can cancel at any time from the Account page.',
+          'If you did not ask for this, reply to this email straight away.',
+        ],
+        button: { label: 'Open your account', path: '/app/account#plan' },
+      }
+    case 'planChanged':
+      return {
+        subject: `Your Dobry plan is now ${data.plan || 'changed'}`,
+        heading: 'Your plan is changed',
+        lines: [
+          hello,
+          `${who.organisation || 'Your account'} is now on ${data.plan || 'its new plan'}${data.covers ? `, covering ${data.covers}` : ''}.`,
+          data.price ? `From now on it costs ${data.price}. The change applies at once, and the difference for the time already paid is worked out on your next bill.` : 'The change applies at once, and the difference for the time already paid is worked out on your next bill.',
+          data.until ? `Your next bill is on ${longDate(data.until)}.` : '',
+          'If you did not ask for this, reply to this email straight away.',
+        ].filter(Boolean),
         button: { label: 'Open your account', path: '/app/account#plan' },
       }
     case 'planEnded':

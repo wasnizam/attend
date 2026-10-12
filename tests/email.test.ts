@@ -65,4 +65,19 @@ describe('emails to customers', () => {
     expect(e.lines.join(' ')).toMatch(/resume the plan with one click/)
     expect(emailText('planEnded', { organisation: 'X' }).lines.join(' ')).toMatch(/Nothing was deleted/)
   })
+
+  it('confirms a resumed plan and a changed plan, with what it covers and costs', () => {
+    const back = emailText('planResumed', { name: 'Ali', organisation: 'MAXU' }, { until: '2026-11-12' })
+    expect(back.subject).toBe('Your Dobry plan is resumed')
+    expect(back.lines.join(' ')).toMatch(/renews by itself on 12 November 2026/)
+    const moved = emailText('planChanged', { name: 'Ali', organisation: 'MAXU' }, { plan: 'Faculty', covers: '5 lecturers', price: 'MYR 75.00 a month', until: '2026-11-12' })
+    expect(moved.subject).toBe('Your Dobry plan is now Faculty')
+    expect(moved.lines.join(' ')).toMatch(/MAXU is now on Faculty, covering 5 lecturers\./)
+    expect(moved.lines.join(' ')).toMatch(/costs MYR 75\.00 a month/)
+    expect(moved.lines.join(' ')).toMatch(/next bill is on 12 November 2026/)
+    // With nothing known, it still reads properly and has no empty line.
+    const bare = emailText('planChanged', {}, {})
+    expect(bare.subject).toBe('Your Dobry plan is now changed')
+    expect(bare.lines.every((l) => l.length > 0)).toBe(true)
+  })
 })
