@@ -22,7 +22,8 @@ export async function POST(request: Request): Promise<Response> {
         return null
       })
       if (!sub || !['active', 'trialing', 'past_due'].includes(sub.status)) throw new HttpError(400, 'That plan has already ended. Choose a plan to start again.')
-      await s.subscriptions.update(subscription, { cancel_at_period_end: false })
+      // Stripe records a cancellation either as "at the end of the period" or as a date; clear whichever it used.
+      await s.subscriptions.update(subscription, sub.cancel_at && !sub.cancel_at_period_end ? { cancel_at: '' } : { cancel_at_period_end: false })
       return json({ resumed: true })
     }
 

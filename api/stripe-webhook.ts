@@ -84,7 +84,8 @@ async function apply(sub: Stripe.Subscription) {
       stripeSubscriptionId: p.stripeSubscriptionId ?? FieldValue.delete(),
       stripeStatus: p.stripeStatus,
       stripePlanId: p.planId ?? FieldValue.delete(),
-      stripeCancelAtPeriodEnd: sub.cancel_at_period_end || FieldValue.delete(),
+      // Cancelled for the end of the period, or for a set date: either way it will not renew.
+      stripeCancelAtPeriodEnd: sub.cancel_at_period_end || Boolean(sub.cancel_at) || FieldValue.delete(),
     })
     if (before !== after || org.stripeStatus !== p.stripeStatus) {
       tx.set(db.collection('platformAudit').doc(), auditEntry('subscription', `${before} → ${after} (${p.stripeStatus}${p.paidUntil ? `, until ${new Date(p.paidUntil).toDateString()}` : ''})`, orgId, org.name))
