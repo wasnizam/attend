@@ -69,3 +69,24 @@ export function useInstall(): { installed: boolean; way: InstallWay } {
   }, [])
   return { installed: done || isInstalled(), way: installWay() }
 }
+
+/**
+ * The Console is its own app on the home screen: while it is open, the page points at the
+ * Console's manifest (its own name, and it opens on the Console), and goes back to Dobry's
+ * when it is left. On an iPhone the name under the icon comes from a separate tag.
+ */
+export function useConsoleApp() {
+  useEffect(() => {
+    const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')
+    const title = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-title"]')
+    const before = { href: link?.getAttribute('href') ?? null, title: title?.getAttribute('content') ?? null, doc: document.title }
+    link?.setAttribute('href', '/console.webmanifest')
+    title?.setAttribute('content', 'Dobry Console')
+    document.title = 'Dobry Console'
+    return () => {
+      if (before.href) link?.setAttribute('href', before.href)
+      if (before.title) title?.setAttribute('content', before.title)
+      document.title = before.doc
+    }
+  }, [])
+}

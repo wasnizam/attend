@@ -7,6 +7,8 @@ import { ROLE_LABEL, type StaffRole, can, claimInvite, staffRoleOf } from '../da
 import { auth } from '../lib/auth'
 import { t } from '../lib/i18n'
 import { setPurpose } from '../lib/purpose'
+import { InstallApp } from '../components/InstallApp'
+import { useConsoleApp } from '../lib/install'
 import { OwnerDataProvider } from './context'
 
 const Dashboard = lazy(() => import('./Dashboard'))
@@ -28,6 +30,7 @@ const Pricing = lazy(() => import('./Pricing'))
  * and bundle. Only the team in platformOwners gets in, each with a role.
  */
 export default function ConsoleApp() {
+  useConsoleApp()
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [role, setRole] = useState<StaffRole | null | undefined>(undefined)
   useEffect(() => {
@@ -157,7 +160,10 @@ function Shell({ email, role, children }: { email: string; role: StaffRole; chil
         <Logo />
         <span className="rounded bg-ink px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-white uppercase">{t('Console')}</span>
       </header>
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
+      <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <div className="empty:hidden"><InstallApp name="Dobry Console" /></div>
+        {children}
+      </main>
     </div>
   )
 }

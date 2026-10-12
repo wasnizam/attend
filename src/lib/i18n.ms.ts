@@ -1682,4 +1682,5 @@ export const ms: Record<string, string> = {
   "Everyone at risk": "Semua yang berisiko",
   "{n} absent of {held}": "{n} tidak hadir daripada {held}",
   "No student matches.": "Tiada pelajar yang sepadan.",
+  "Get the {name} app": "Dapatkan aplikasi {name}",
 }

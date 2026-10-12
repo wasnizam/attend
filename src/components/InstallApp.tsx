@@ -39,7 +39,7 @@ function Steps({ way }: { way: 'ios' | 'menu' }) {
  * address and logging in. As a banner it can be closed, and stays closed on this device; on the
  * Account page (`always`) it is there whenever they want it. Never shown inside the app itself.
  */
-export function InstallApp({ always = false }: { always?: boolean }) {
+export function InstallApp({ always = false, name = 'Dobry' }: { always?: boolean; /** What is being installed: Dobry, or its Console. */ name?: string }) {
   const { installed, way } = useInstall()
   const [hidden, setHidden] = useState(wasDismissed)
   const [showSteps, setShowSteps] = useState(false)
@@ -78,7 +78,7 @@ export function InstallApp({ always = false }: { always?: boolean }) {
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-night px-4 py-3 text-white shadow-card print:hidden">
       <img src="/favicon.svg" alt="" className="size-9 shrink-0 rounded-lg" />
       <div className="min-w-0 flex-1 basis-48">
-        <p className="font-semibold">{t('Get the Dobry app')}</p>
+        <p className="font-semibold">{name === 'Dobry' ? t('Get the Dobry app') : t('Get the {name} app', { name })}</p>
         <p className="text-sm text-indigo-100/80">{t('One tap to open, and no logging in each time.')}</p>
         {showSteps && way !== 'button' && <div className="text-indigo-100/90"><Steps way={way} /></div>}
       </div>
