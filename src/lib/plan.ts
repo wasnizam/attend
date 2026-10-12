@@ -23,6 +23,9 @@ export function canPay(): boolean {
     return false
   }
 }
+// Noted the moment the site loads: someone not yet logged in is sent to the login page first,
+// and the address they opened (with ?pay=test) is gone by the time the Account page asks.
+if (typeof window !== 'undefined') canPay()
 export const TRIAL_DAYS = 14
 
 /**
