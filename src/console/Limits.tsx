@@ -5,7 +5,7 @@ import { isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import { csvDownload, editionName, statusLabel, useOwner } from './context'
 import { type LimitRow, type Standing, limitRows, standingOf } from './planUse'
-import { Kpi, PageHead, StatusBadge, Tabs, td, th } from './ui'
+import { Kpi, PageHead, RowCard, RowCards, StatusBadge, Tabs, td, th } from './ui'
 
 type View = 'over' | 'near' | 'ok' | 'none' | 'all'
 const KIND_LABEL: Record<LimitRow['kind'], string> = { lecturers: 'Lecturers', staff: 'Staff', classes: 'Classes at a time', students: 'Biggest class' }
@@ -77,7 +77,18 @@ export default function Limits() {
       {shown.length === 0 ? (
         <EmptyState title={t('Nothing here')} text={view === 'over' ? t('No customer holds more than their plan covers.') : t('No customers in this view.')} />
       ) : (
-        <Card className="overflow-x-auto">
+        <>
+        <RowCards>
+          {shown.map(({ c, limits }) => (
+            <RowCard key={c.org.id} title={c.org.name} sub={`${editionName(c.org)} · ${c.owner?.email ?? ''}`} right={<StatusBadge c={c} />} onClick={() => navigate(`/console/customers/${c.org.id}`)}>
+              {limits.length === 0 && <span>{t('No limits on this plan')}</span>}
+              {limits.map((r) => (
+                <span key={r.kind} className="inline-flex items-center gap-1.5">{t(KIND_LABEL[r.kind])} <LimitChip row={r} /></span>
+              ))}
+            </RowCard>
+          ))}
+        </RowCards>
+        <Card className="hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[52rem] text-sm">
             <thead className="bg-slate-50">
               <tr>
@@ -107,6 +118,7 @@ export default function Limits() {
             </tbody>
           </table>
         </Card>
+        </>
       )}
     </>
   )

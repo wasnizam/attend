@@ -1,6 +1,6 @@
 import { type User, onAuthStateChanged } from 'firebase/auth'
 import { type FormEvent, type ReactNode, Suspense, lazy, useEffect, useState } from 'react'
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Button, Card, ErrorNote, Field, Logo, PageLoader } from '../components/ui'
 import { resetPassword, signIn, signInWithGoogle, signOut } from '../data/account'
 import { ROLE_LABEL, type StaffRole, can, claimInvite, staffRoleOf } from '../data/platform'
@@ -110,64 +110,97 @@ const ICON: Record<string, string> = {
 }
 
 function Shell({ email, role, children }: { email: string; role: StaffRole; children: ReactNode }) {
-  const nav: [string, string, string][] = [
-    ['', t('Dashboard'), 'dashboard'],
-    ['customers', t('Customers'), 'customers'],
-    ['subscriptions', t('Subscriptions'), 'subscriptions'],
-    ['limits', t('Plan limits'), 'limits'],
-    ['billing', t('Billing'), 'billing'],
-    ['pricing', t('Pricing'), 'pricing'],
-    ['users', t('Users'), 'users'],
-    ['tasks', t('Tasks'), 'tasks'],
-    ['announcements', t('Announcements'), 'announcements'],
-    ['team', t('Team & roles'), 'team'],
-    ...(can(role, 'audit') ? ([['audit', t('Audit log'), 'audit']] as [string, string, string][]) : []),
-    ['settings', t('Settings'), 'settings'],
+  // Grouped by the question being asked: who are our customers, where is the money, who does what.
+  const groups: [string, [string, string, string][]][] = [
+    ['', [['', t('Dashboard'), 'dashboard']]],
+    [t('Customers'), [
+      ['customers', t('Customers'), 'customers'],
+      ['subscriptions', t('Subscriptions'), 'subscriptions'],
+      ['limits', t('Plan limits'), 'limits'],
+      ['users', t('Users'), 'users'],
+    ]],
+    [t('Money'), [
+      ['billing', t('Billing'), 'billing'],
+      ['pricing', t('Pricing'), 'pricing'],
+    ]],
+    [t('Team'), [
+      ['tasks', t('Tasks'), 'tasks'],
+      ['announcements', t('Announcements'), 'announcements'],
+      ['team', t('Team & roles'), 'team'],
+      ...(can(role, 'audit') ? ([['audit', t('Audit log'), 'audit']] as [string, string, string][]) : []),
+      ['settings', t('Settings'), 'settings'],
+    ]],
   ]
+  // On a phone: the four pages opened most, and the rest behind Menu.
+  const tabs: [string, string, string][] = [['', t('Home'), 'dashboard'], ['customers', t('Customers'), 'customers'], ['subscriptions', t('Plans'), 'subscriptions'], ['limits', t('Limits'), 'limits']]
   const [open, setOpen] = useState(false)
+  const { pathname } = useLocation()
+  const icon = (name: string, size = 'size-4.5') => (
+    <svg viewBox="0 0 24 24" className={`${size} shrink-0`} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d={ICON[name]} />
+    </svg>
+  )
   return (
-    <div className="min-h-dvh bg-canvas lg:pl-60">
-      <aside className={`fixed inset-y-0 left-0 z-40 w-60 flex-col bg-ink text-white lg:flex ${open ? 'flex' : 'hidden'}`}>
-        <div className="flex h-14 items-center gap-2 px-5">
+    <div className="min-h-dvh bg-canvas lg:pl-64">
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 flex-col bg-night text-white lg:flex ${open ? 'flex' : 'hidden'}`}>
+        <div className="flex h-16 items-center gap-2 px-5">
           <Logo className="text-white" />
-          <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase">{t('Console')}</span>
+          <span className="rounded bg-sun px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-night uppercase">{t('Console')}</span>
         </div>
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
-          {nav.map(([to, label, icon]) => (
-            <NavLink
-              key={to}
-              to={to ? `/console/${to}` : '/console'}
-              end={!to}
-              onClick={() => setOpen(false)}
-              className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
-            >
-              <svg viewBox="0 0 24 24" className="size-4.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                <path d={ICON[icon]} />
-              </svg>
-              {label}
-            </NavLink>
+        <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-3">
+          {groups.map(([heading, items]) => (
+            <div key={heading || 'top'}>
+              {heading && <p className="px-3 pb-1.5 text-[11px] font-semibold tracking-wider text-white/40 uppercase">{heading}</p>}
+              <div className="space-y-0.5">
+                {items.map(([to, label, name]) => (
+                  <NavLink
+                    key={to}
+                    to={to ? `/console/${to}` : '/console'}
+                    end={!to}
+                    onClick={() => setOpen(false)}
+                    className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${isActive ? 'bg-white/12 text-white shadow-[inset_3px_0_0_var(--color-sun)]' : 'text-white/65 hover:bg-white/6 hover:text-white'}`}
+                  >
+                    {icon(name)}
+                    {label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
-        <div className="border-t border-white/10 px-5 py-4 text-sm">
-          <NavLink to="/console/account" onClick={() => setOpen(false)} className={({ isActive }) => `-mx-2 block rounded-lg px-2 py-1.5 ${isActive ? 'bg-white/10' : 'hover:bg-white/5'}`}>
-            <p className="truncate text-white/90">{email}</p>
-            <p className="text-xs text-white/50">{t(ROLE_LABEL[role])} · {t('My account')}</p>
+        <div className="border-t border-white/10 px-4 py-4 text-sm">
+          <NavLink to="/console/account" onClick={() => setOpen(false)} className={({ isActive }) => `flex items-center gap-3 rounded-lg px-2 py-1.5 ${isActive ? 'bg-white/10' : 'hover:bg-white/6'}`}>
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sun text-xs font-bold text-night">{email.slice(0, 1).toUpperCase()}</span>
+            <span className="min-w-0">
+              <span className="block truncate text-white/90">{email}</span>
+              <span className="block text-xs text-white/50">{t(ROLE_LABEL[role])}</span>
+            </span>
           </NavLink>
-          <button type="button" onClick={() => signOut()} className="mt-2 text-xs font-medium text-white/70 hover:text-white">{t('Log out')}</button>
+          <button type="button" onClick={() => signOut()} className="mt-2 px-2 text-xs font-medium text-white/60 hover:text-white">{t('Log out')}</button>
         </div>
       </aside>
-      {open && <button type="button" aria-label={t('Close menu')} className="fixed inset-0 z-30 bg-black/30 lg:hidden" onClick={() => setOpen(false)} />}
-      <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-white px-4 lg:hidden">
-        <button type="button" onClick={() => setOpen(true)} aria-label={t('Open menu')} className="rounded-md p-1.5 hover:bg-canvas">
-          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
-        </button>
+      {open && <button type="button" aria-label={t('Close menu')} className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setOpen(false)} />}
+      <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-line bg-white/90 px-4 backdrop-blur lg:hidden">
         <Logo />
-        <span className="rounded bg-ink px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-white uppercase">{t('Console')}</span>
+        <span className="rounded bg-night px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-sun uppercase">{t('Console')}</span>
       </header>
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <div className="empty:hidden"><InstallApp name="Dobry Console" /></div>
+      <main className="mx-auto max-w-7xl space-y-5 px-4 pt-5 pb-28 sm:space-y-6 sm:px-6 lg:px-8 lg:py-8">
+        {/* Offered once, on the first page, not in the way of every other one. */}
+        {pathname.replace(/\/$/, '') === '/console' && <div className="empty:hidden"><InstallApp name="Dobry Console" /></div>}
         {children}
       </main>
+      <nav aria-label={t('Console')} className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+        {tabs.map(([to, label, name]) => (
+          <NavLink key={to} to={to ? `/console/${to}` : '/console'} end={!to} className={({ isActive }) => `flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${isActive ? 'text-accent' : 'text-slate-500'}`}>
+            {icon(name, 'size-5')}
+            {label}
+          </NavLink>
+        ))}
+        <button type="button" onClick={() => setOpen(true)} aria-label={t('Open menu')} className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-slate-500">
+          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+          {t('Menu')}
+        </button>
+      </nav>
     </div>
   )
 }

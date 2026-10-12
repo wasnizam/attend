@@ -11,7 +11,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       // Registered from src/lib/updates.ts, which also reloads when a new version arrives.
       injectRegister: false,
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'favicon.ico', 'favicon-32.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Dobry',
         short_name: 'Dobry',

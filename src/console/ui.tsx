@@ -42,10 +42,10 @@ export function PageHead({ title, sub, actions }: { title: string; sub?: string;
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {sub && <p className="mt-0.5 text-sm text-muted">{sub}</p>}
+        <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+        {sub && <p className="mt-1 max-w-2xl text-sm text-muted">{sub}</p>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
     </div>
   )
 }
@@ -67,17 +67,20 @@ export function Section({ title, sub, actions, children, className = '' }: { tit
 
 export function Kpi({ label, value, note, tone }: { label: string; value: ReactNode; note?: string; tone?: 'good' | 'warn' }) {
   return (
-    <div className="rounded-xl bg-white px-4 py-3.5 shadow-card">
-      <p className="text-xs font-medium text-muted">{label}</p>
-      <p className={`tabular mt-1 text-2xl font-semibold tracking-tight ${tone === 'good' ? 'text-good' : tone === 'warn' ? 'text-[#b25e00]' : ''}`}>{value}</p>
-      {note && <p className="mt-0.5 text-xs text-muted">{note}</p>}
+    <div className={`min-w-0 rounded-2xl bg-white px-4 py-4 shadow-card ${tone === 'warn' ? 'ring-1 ring-[#f3d38a]' : ''}`}>
+      <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
+        {tone && <span aria-hidden className={`size-1.5 rounded-full ${tone === 'good' ? 'bg-emerald-500' : 'bg-amber-500'}`} />}
+        <span className="truncate">{label}</span>
+      </p>
+      <p className={`tabular mt-1.5 truncate font-display text-[1.7rem] leading-none font-bold tracking-tight ${tone === 'good' ? 'text-good' : tone === 'warn' ? 'text-[#b25e00]' : ''}`}>{value}</p>
+      {note && <p className="mt-1.5 text-xs leading-snug text-muted">{note}</p>}
     </div>
   )
 }
 
 export function Tabs<T extends string>({ value, onChange, items }: { value: T; onChange: (v: T) => void; items: [T, string, number?][] }) {
   return (
-    <div className="flex flex-wrap gap-1 border-b border-line" role="tablist">
+    <div className="-mx-4 flex gap-1 overflow-x-auto border-b border-line px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden" role="tablist">
       {items.map(([v, label, count]) => (
         <button
           key={v}
@@ -85,7 +88,7 @@ export function Tabs<T extends string>({ value, onChange, items }: { value: T; o
           role="tab"
           aria-selected={value === v}
           onClick={() => onChange(v)}
-          className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${value === v ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+          className={`-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap ${value === v ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
         >
           {label}
           {count !== undefined && <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 text-xs text-muted">{count}</span>}
@@ -143,3 +146,28 @@ export function Spark({ values, max = 7 }: { values: number[]; max?: number }) {
 
 export const th = 'px-3 py-2.5 text-left text-xs font-medium text-muted first:pl-5 last:pr-5'
 export const td = 'px-3 py-2.5 first:pl-5 last:pr-5'
+
+/**
+ * A list for a phone, in place of a wide table: one card for each row, with what matters most
+ * on top. Shown below the `sm` width; the table it stands in for is hidden there.
+ */
+export function RowCards({ children }: { children: ReactNode }) {
+  return <ul className="space-y-2.5 sm:hidden">{children}</ul>
+}
+
+export function RowCard({ title, sub, right, children, onClick }: { title: ReactNode; sub?: ReactNode; right?: ReactNode; children?: ReactNode; onClick?: () => void }) {
+  return (
+    <li>
+      <button type="button" onClick={onClick} className="block w-full rounded-2xl bg-white px-4 py-3.5 text-left shadow-card active:bg-slate-50">
+        <span className="flex items-start justify-between gap-3">
+          <span className="min-w-0">
+            <span className="block truncate font-semibold text-ink">{title}</span>
+            {sub && <span className="mt-0.5 block truncate text-xs text-muted">{sub}</span>}
+          </span>
+          {right && <span className="shrink-0 text-right">{right}</span>}
+        </span>
+        {children && <span className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-line pt-2.5 text-xs text-muted">{children}</span>}
+      </button>
+    </li>
+  )
+}

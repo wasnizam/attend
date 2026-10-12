@@ -3,11 +3,12 @@ import { can } from '../data/platform'
 import { isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import { DAY, EDITIONS, dateOf, editionName, lastMonths, money, moneyMix, monthName, revenueByMonth, useOwner } from './context'
+import { limitRows, standingOf } from './planUse'
 import { HealthBadge, Kpi, PageHead, Section, StatusBadge, planUntil } from './ui'
 
 /** The morning view: money, growth, what is about to happen, and what needs doing. */
 export default function Dashboard() {
-  const { customers, billing, invoices, tasks, audit, me } = useOwner()
+  const { customers, billing, invoices, tasks, audit, me, users, classes } = useOwner()
   const now = Date.now()
   const today = isoDate()
   const count = (f: (c: (typeof customers)[number]) => boolean) => customers.filter(f).length
@@ -40,9 +41,41 @@ export default function Dashboard() {
   const atRisk = customers.filter((c) => (c.health === 'risk' || (c.health === 'inactive' && c.status !== 'suspended')) && (c.status === 'pro' || c.status === 'trial'))
   const myTasks = tasks.filter((x) => !x.done && (!x.assignee || x.assignee === me.id)).sort((a, b) => a.due.localeCompare(b.due))
 
+  // The few things worth acting on today, most urgent first. Each leads to where it is dealt with.
+  const failing = customers.filter((c) => c.org.paymentFailure || c.org.stripeStatus === 'past_due' || c.org.stripeStatus === 'unpaid')
+  const over = customers.filter((c) => standingOf(limitRows(c.org, users, classes, today)) === 'over')
+  const endingSoon = renewals.filter((c) => (c.until ?? 0) - now < 7 * DAY)
+  const lateTasks = myTasks.filter((x) => x.due < today)
+  const needs: [number, string, string, string][] = [
+    [failing.length, t('with a card that is failing'), '/console/subscriptions', 'bad'],
+    [overdue.length, t('invoices overdue'), '/console/billing', 'bad'],
+    [over.length, t('holding more than their plan covers'), '/console/limits', 'warn'],
+    [endingSoon.length, t('trials or plans ending within a week'), '/console/subscriptions', 'warn'],
+    [atRisk.length, t('paying customers hardly using Dobry'), '/console/customers', 'warn'],
+    [lateTasks.length, t('of your tasks overdue'), '/console/tasks', 'warn'],
+  ].filter(([n]) => (n as number) > 0) as [number, string, string, string][]
+
   return (
     <>
       <PageHead title={t('Dashboard')} sub={t('Dobry at a glance, {date}.', { date: dateOf(now) })} />
+      <section className={`rounded-2xl px-5 py-4 shadow-card ${needs.length ? 'bg-white' : 'bg-good-soft'}`}>
+        <h2 className="font-semibold">{needs.length ? t('Needs you today') : t('All clear today')}</h2>
+        {needs.length === 0 ? (
+          <p className="mt-0.5 text-sm text-good">{t('No failing cards, nobody over their plan, nothing overdue.')}</p>
+        ) : (
+          <ul className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {needs.map(([n, what, to, tone]) => (
+              <li key={what}>
+                <Link to={to} className="flex items-center gap-3 rounded-xl bg-canvas px-3 py-2.5 text-sm hover:bg-slate-100">
+                  <span className={`tabular flex size-9 shrink-0 items-center justify-center rounded-lg font-display text-base font-bold ${tone === 'bad' ? 'bg-bad-soft text-bad' : 'bg-[#fff4d6] text-[#8a5a00]'}`}>{n}</span>
+                  <span className="min-w-0 flex-1 text-slate-700">{what}</span>
+                  <span aria-hidden className="text-muted">›</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kpi label={t('Monthly recurring revenue')} value={moneyMix(mrr)} note={t('{n} paying customers', { n: paying })} />
         <Kpi label={t('Annual run rate')} value={moneyMix(arr)} note={arpa ? t('{amount} per customer a month', { amount: money(Math.round(arpa)) }) : undefined} />

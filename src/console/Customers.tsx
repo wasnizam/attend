@@ -4,7 +4,7 @@ import { Button, Card, EmptyState, inputClass } from '../components/ui'
 import { formatDate, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import { EDITIONS, type Status, csvDownload, dateOf, editionName, money, statusLabel, useOwner } from './context'
-import { HealthBadge, PageHead, Spark, StatusBadge, planUntil, td, th } from './ui'
+import { HealthBadge, PageHead, RowCard, RowCards, Spark, StatusBadge, planUntil, td, th } from './ui'
 
 export default function Customers() {
   const { customers, team, staffName } = useOwner()
@@ -16,6 +16,8 @@ export default function Customers() {
   const [tag, setTag] = useState('')
   const [manager, setManager] = useState('')
   const [sort, setSort] = useState<'joined' | 'name' | 'activity' | 'mrr'>('joined')
+  const [filters, setFilters] = useState(false)
+  const filtering = [edition, status, health, tag, manager].filter(Boolean).length
   const tags = [...new Set(customers.flatMap((c) => c.org.tags ?? []))].sort()
   const term = q.trim().toLowerCase()
   const shown = customers
@@ -37,7 +39,7 @@ export default function Customers() {
       ...shown.map((c) => [c.org.name, c.org.id, editionName(c.org), c.owner?.name ?? '', c.owner?.email ?? '', dateOf(c.joined), c.people, c.active30, c.lastSeen ?? '', c.health, statusLabel(c.status), dateOf(c.until), c.mrr ? Math.round(c.mrr * 100) / 100 : 0, c.org.price?.currency ?? '', (c.org.tags ?? []).join('; '), c.org.accountManager ? staffName(c.org.accountManager) : '']),
     ])
   const select = (value: string, set: (v: string) => void, all: string, options: [string, string][]) => (
-    <select value={value} onChange={(e) => set(e.target.value)} className={`${inputClass} w-auto`}>
+    <select value={value} onChange={(e) => set(e.target.value)} className={`${inputClass} !h-10 w-full text-sm sm:w-auto`}>
       <option value="">{all}</option>
       {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
     </select>
@@ -45,8 +47,14 @@ export default function Customers() {
   return (
     <>
       <PageHead title={t('Customers')} sub={t('{n} of {m} customers', { n: shown.length, m: customers.length })} actions={<Button variant="secondary" onClick={exportCsv} disabled={shown.length === 0}>{t('Export for Excel')}</Button>} />
-      <div className="flex flex-wrap gap-2">
-        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search company, contact, email, tag or ID')} className={`${inputClass} max-w-xs`} />
+      <div className="flex gap-2 sm:hidden">
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search')} aria-label={t('Search company, contact, email, tag or ID')} className={`${inputClass} !h-10 min-w-0 flex-1`} />
+        <button type="button" aria-expanded={filters} onClick={() => setFilters(!filters)} className={`shrink-0 rounded-lg px-3.5 text-sm font-medium shadow-card ${filters || filtering ? 'bg-accent text-white' : 'bg-white text-ink'}`}>
+          {t('Filters')}{filtering ? ` · ${filtering}` : ''}
+        </button>
+      </div>
+      <div className={`grid-cols-2 gap-2 sm:flex sm:flex-wrap ${filters ? 'grid' : 'hidden'}`}>
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search company, contact, email, tag or ID')} className={`${inputClass} !h-10 hidden max-w-xs text-sm sm:block`} />
         {select(edition, setEdition, t('All editions'), EDITIONS.map((e) => [e, e]))}
         {select(status, setStatus, t('Any plan'), (['pro', 'trial', 'early', 'free', 'suspended'] as Status[]).map((s) => [s, statusLabel(s)]))}
         {select(health, setHealth, t('Any health'), [['healthy', t('Healthy')], ['risk', t('At risk')], ['inactive', t('Inactive')]])}
@@ -57,7 +65,24 @@ export default function Customers() {
       {shown.length === 0 ? (
         <EmptyState title={t('No customers match')} text={t('Try another search or filter.')} />
       ) : (
-        <Card className="overflow-x-auto">
+        <>
+        <RowCards>
+          {shown.map((c) => (
+            <RowCard
+              key={c.org.id}
+              title={c.org.name}
+              sub={`${editionName(c.org)} · ${c.owner?.email ?? ''}`}
+              right={<StatusBadge c={c} />}
+              onClick={() => navigate(`/console/customers/${c.org.id}`)}
+            >
+              <HealthBadge c={c} />
+              <span>{c.lastSeen ? t('last {date}', { date: formatDate(c.lastSeen) }) : t('no activity')}</span>
+              {c.mrr ? <span className="tabular font-medium text-ink">{money(Math.round(c.mrr * 100) / 100, c.org.price?.currency)}</span> : null}
+              {planUntil(c) && <span>{planUntil(c)}</span>}
+            </RowCard>
+          ))}
+        </RowCards>
+        <Card className="hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[64rem] text-sm">
             <thead className="bg-slate-50">
               <tr>
@@ -95,6 +120,7 @@ export default function Customers() {
             </tbody>
           </table>
         </Card>
+        </>
       )}
     </>
   )

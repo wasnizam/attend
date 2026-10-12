@@ -4,7 +4,7 @@ import { Button, Card, EmptyState } from '../components/ui'
 import { isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import { DAY, csvDownload, dateOf, editionName, money, moneyMix, statusLabel, useOwner } from './context'
-import { Kpi, PageHead, StatusBadge, Tabs, planUntil, td, th } from './ui'
+import { Kpi, PageHead, RowCard, RowCards, StatusBadge, Tabs, planUntil, td, th } from './ui'
 
 type View = 'paying' | 'failed' | 'cancelling' | 'renewing' | 'trials' | 'lapsed' | 'all'
 
@@ -57,7 +57,23 @@ export default function Subscriptions() {
       {shown.length === 0 ? (
         <EmptyState title={t('Nothing here')} text={t('No subscriptions in this view.')} />
       ) : (
-        <Card className="overflow-x-auto">
+        <>
+        <RowCards>
+          {shown.map((c) => (
+            <RowCard
+              key={c.org.id}
+              title={c.org.name}
+              sub={`${editionName(c.org)} · ${c.org.price ? `${money(c.org.price.amount, c.org.price.currency)} / ${t(c.org.price.cycle)}` : t('no price set')}`}
+              right={<StatusBadge c={c} />}
+              onClick={() => navigate(`/console/customers/${c.org.id}`)}
+            >
+              {planUntil(c) && <span>{planUntil(c)}</span>}
+              {c.org.paymentFailure && <span className="font-medium text-bad">{t('Card failed {date}', { date: dateOf(c.org.paymentFailure.at?.toMillis() ?? null) })}</span>}
+              {c.status === 'pro' && c.org.stripeCancelAtPeriodEnd && <span className="font-medium text-[#b25e00]">{t('Cancelled: will not renew')}</span>}
+            </RowCard>
+          ))}
+        </RowCards>
+        <Card className="hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[52rem] text-sm">
             <thead className="bg-slate-50"><tr>{['Company', 'Edition', 'Plan', 'Price', 'Revenue / month', 'Staff covered', 'Ends or renews'].map((h) => <th key={h} className={th}>{t(h)}</th>)}</tr></thead>
             <tbody className="divide-y divide-line">
@@ -87,6 +103,7 @@ export default function Subscriptions() {
             </tbody>
           </table>
         </Card>
+        </>
       )}
     </>
   )
