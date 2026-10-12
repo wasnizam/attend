@@ -56,4 +56,13 @@ describe('emails to customers', () => {
     // With no invoice page, the button goes to the account.
     expect(render(emailText('paymentReceived', {}, {}), 'https://dobry.app', 'Dobry').html).toContain('href="https://dobry.app/app/account#plan"')
   })
+
+  it('confirms a cancellation with the date it stays on until, and how to undo it', () => {
+    const e = emailText('planCancelled', { name: 'Ali', organisation: 'DeepQalby HQ' }, { until: '2026-11-12' })
+    expect(e.subject).toBe('Your Dobry plan is cancelled')
+    expect(e.lines.join(' ')).toMatch(/DeepQalby HQ is cancelled and will not renew/)
+    expect(e.lines.join(' ')).toMatch(/stays on until 12 November 2026/)
+    expect(e.lines.join(' ')).toMatch(/resume the plan with one click/)
+    expect(emailText('planEnded', { organisation: 'X' }).lines.join(' ')).toMatch(/Nothing was deleted/)
+  })
 })

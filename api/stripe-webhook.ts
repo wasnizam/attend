@@ -65,8 +65,13 @@ async function apply(sub: Stripe.Subscription) {
   // Since 2025 the period end is on the subscription's item.
   const periodEnd = sub.items.data[0]?.current_period_end ?? (sub as unknown as { current_period_end?: number }).current_period_end ?? null
   const paid = patchFromSubscription({ id: sub.id, status: sub.status, periodEnd, currency: sub.currency, metadata: sub.metadata })
+  const cancelling = Boolean(sub.cancel_at_period_end || sub.cancel_at)
+  // What to tell the customer afterwards, decided inside the step below so it happens once.
+  let tell: 'planCancelled' | 'planEnded' | null = null
+  let until = ''
   // In one step, so two messages arriving together change the plan once and log it once.
   await db.runTransaction(async (tx) => {
+    tell = null
     const org = (await tx.get(ref)).data()
     if (!org) return
     // A cancelled old subscription must not switch off a newer one the organisation has since bought.
@@ -88,12 +93,23 @@ async function apply(sub: Stripe.Subscription) {
       stripeStatus: p.stripeStatus,
       stripePlanId: p.planId ?? FieldValue.delete(),
       // Cancelled for the end of the period, or for a set date: either way it will not renew.
-      stripeCancelAtPeriodEnd: sub.cancel_at_period_end || Boolean(sub.cancel_at) || FieldValue.delete(),
+      stripeCancelAtPeriodEnd: cancelling || FieldValue.delete(),
     })
+    // Cancelling, or changing their mind, changes no plan yet: it is logged in its own words.
+    const was = Boolean(org.stripeCancelAtPeriodEnd)
+    until = periodEnd ? new Date(periodEnd * 1000).toISOString().slice(0, 10) : ''
+    if (p.plan === 'pro' && cancelling !== was) {
+      tx.set(db.collection('platformAudit').doc(), auditEntry('subscription', cancelling ? `Cancelled by the customer: will not renew${until ? `, on until ${until}` : ''}` : 'Resumed by the customer: will renew as before', orgId, org.name))
+      if (cancelling) tell = 'planCancelled'
+    }
+    if (org.plan === 'pro' && p.plan === 'free' && org.stripeSubscriptionId === sub.id) tell = 'planEnded'
     if (before !== after || org.stripeStatus !== p.stripeStatus) {
       tx.set(db.collection('platformAudit').doc(), auditEntry('subscription', `${before} → ${after} (${p.stripeStatus}${p.paidUntil ? `, until ${new Date(p.paidUntil).toDateString()}` : ''})`, orgId, org.name))
     }
   })
+  // Each time it happens, not once ever: someone may cancel, resume and cancel again.
+  const kind = tell as 'planCancelled' | 'planEnded' | null
+  if (kind) await emailOrg(db, orgId, kind, { until }, `${kind}_${sub.id}_${Date.now()}`).catch(() => {})
 }
 
 /** A payment that went through: one line in the billing history, written once per Stripe invoice. */

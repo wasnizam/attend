@@ -2,7 +2,7 @@
  * The emails Dobry sends to a customer, as plain words. No imports: tested on its own, and the
  * same text makes the HTML and the plain-text copy. Dates arrive as YYYY-MM-DD.
  */
-export type EmailKind = 'welcome' | 'trialEnding' | 'trialEnded' | 'paymentFailed' | 'paymentReceived' | 'test'
+export type EmailKind = 'welcome' | 'trialEnding' | 'trialEnded' | 'paymentFailed' | 'paymentReceived' | 'planCancelled' | 'planEnded' | 'test'
 
 export interface EmailText {
   subject: string
@@ -89,6 +89,32 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
           'On your bank statement this payment appears as DOBRY.',
         ],
         button: data.invoiceUrl ? { label: 'View your invoice', path: data.invoiceUrl } : { label: 'Open your account', path: '/app/account#plan' },
+      }
+    case 'planCancelled':
+      return {
+        subject: 'Your Dobry plan is cancelled',
+        heading: 'Your plan is cancelled',
+        lines: [
+          hello,
+          `As you asked, the paid plan for ${who.organisation || 'your account'} is cancelled and will not renew. You will not be charged again.`,
+          data.until ? `Everything in your plan stays on until ${longDate(data.until)}. After that the account moves to the free plan.` : 'Everything in your plan stays on until the end of the period you paid for. After that the account moves to the free plan.',
+          'Nothing is deleted: your records stay, ready to view.',
+          'Changed your mind? You can resume the plan with one click on the Account page, any time before that date.',
+          'If you did not ask for this, reply to this email straight away.',
+        ],
+        button: { label: 'Open your account', path: '/app/account#plan' },
+      }
+    case 'planEnded':
+      return {
+        subject: 'Your Dobry plan has ended',
+        heading: 'You are now on the free plan',
+        lines: [
+          hello,
+          `The paid plan for ${who.organisation || 'your account'} has ended, so the account is on the free plan now.`,
+          'Nothing was deleted. Your records are all there, ready to view.',
+          'You can choose a plan again at any time from the Account page.',
+        ],
+        button: { label: 'See the plans', path: '/app/account#plan' },
       }
     case 'test':
       return {

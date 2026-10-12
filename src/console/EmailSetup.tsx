@@ -10,6 +10,7 @@ const SENDS: [string, string][] = [
   ['Trial ending', 'Three days before a Pro trial ends, and once when it has ended.'],
   ['Payment received', 'A receipt for each payment, with a link to the invoice.'],
   ['Payment failed', 'The first time a card is refused, with the way to change it.'],
+  ['Plan cancelled', 'When a customer cancels, saying until when it stays on; and once when it has ended.'],
 ]
 
 /**
