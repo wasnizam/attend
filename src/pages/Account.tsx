@@ -5,7 +5,7 @@ import { Button, Card, ErrorNote, Field, friendlyError, inputClass } from '../co
 import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, setPhoneCheckFor, setOrgSetting, setShifts, signOut } from '../data/account'
 import { useCurrency } from '../lib/currency'
 import { editionForPurpose } from '../lib/editions'
-import { PAYMENTS_OPEN, PLAN_LABEL, activePlan, allows, canPay, paidUntil, trialDaysLeft } from '../lib/plan'
+import { GRACE_DAYS, PAYMENTS_OPEN, PLAN_LABEL, activePlan, allows, canPay, paidUntil, trialDaysLeft } from '../lib/plan'
 import { InstallApp } from '../components/InstallApp'
 import { UpgradeNote } from '../components/Paid'
 import { openBilling, redeemCode, resumePlan, startCheckout } from '../data/billing'
@@ -119,6 +119,13 @@ export function Account() {
   }
   const plan = activePlan()
   const currency = useCurrency()
+  // The plan they pay for, by name; when it ends or renews; and whether they have cancelled it.
+  const myPlan = plan === 'pro' ? listed.find((p) => p.id === org?.stripePlanId) : undefined
+  const cancelled = plan === 'pro' && Boolean(org?.stripeCancelAtPeriodEnd)
+  const longDate = (ms: number) => new Date(ms).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' })
+  const until = longDate(paidUntil()?.toMillis() ?? 0)
+  // What is stored runs a few days past the paid period, while a failed card is retried.
+  const renews = longDate((paidUntil()?.toMillis() ?? 0) - GRACE_DAYS * 86_400_000)
 
   const submitPassword = (e: FormEvent) => {
     e.preventDefault()
@@ -297,124 +304,161 @@ export function Account() {
       </Card>
 
       {edition && (
-        <Card className="p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="font-semibold">{t('Your plan')}</h2>
-              <p className="mt-0.5 text-sm text-muted">Dobry · {t(edition.label)}</p>
-            </div>
-            <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">{t(PLAN_LABEL[plan])}</span>
-          </div>
-          <p className="mt-3 text-sm text-slate-700">
-            {plan === 'early'
-              ? t('You joined during early access, so everything is free and without limits for now. We will tell you before that changes.')
-              : plan === 'trial'
-                ? t('You have Pro free for {n} more days. After that you move to the free plan; nothing is deleted.', { n: trialDaysLeft() ?? 0 })
-                : plan === 'free'
-                  ? PAYMENTS_OPEN
-                    ? t('You are on the free plan. Your older records stay, ready to view and export.')
-                    : t('You are on the free plan: {limit}. Paid plans open soon; the prices below are what they will cost. You will be told before anything changes.', { limit: t(plans.find((p) => /^(RM|\$)0$/.test(p.price.myr))?.items[0] ?? edition.plans[0]?.items[0] ?? '').toLowerCase() })
-                  : t('You are on Pro until {date}. Thank you.', { date: new Date(paidUntil()?.toMillis() ?? 0).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) ?? '' })}
-          </p>
-          {paidNotice && <p className="mt-3 rounded-lg bg-good-soft px-4 py-3 text-sm text-good">{plan === 'pro' ? t('Payment received. You are on Pro. Thank you.') : t('Payment received. Your plan will update in a few seconds.')}</p>}
-          {org?.stripeCancelAtPeriodEnd && plan === 'pro' && <p className="mt-3 rounded-lg bg-[#fff4d6] px-4 py-3 text-sm text-[#8a5a00]">{t('Your plan is cancelled and will not renew. Pro stays on until the date above. Changed your mind? Choose Resume plan below.')}</p>}
-          {yearOffer && paying && (
-            <label className="mt-4 flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={yearly} onChange={(e) => setYearly(e.target.checked)} className="size-4 accent-accent" />
-              {t('Pay by the year: 12 months for the price of 10')}
-            </label>
-          )}
-          <ul className="mt-4 divide-y divide-line rounded-lg border border-line text-sm">
-            {listed.map((cp) => {
-              const p = toPlanCard(cp)
-              const paid = cp.cycle !== 'free'
-              const mine = plan === 'pro' && org?.stripePlanId === cp.id
-              const byYear = yearly && offersYear(cp)
-              const least = cp.perSeat ? Math.max(1, cp.minSeats ?? 1) : 1
-              const count = cp.perSeat ? Math.min(MAX_SEATS, Math.max(least, seats ?? (mine ? org?.seats ?? least : least))) : 1
-              // On a per-lecturer plan already: the button changes how many lecturers it covers.
-              const same = mine && (!cp.perSeat || count === (org?.seats ?? 1))
-              return (
-                <li key={cp.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2.5">
-                  <span>
-                    <span className="font-semibold">{t(p.name)}</span>
-                    <span className="text-muted"> · {t(p.items[0])}</span>
-                  </span>
-                  <span className="flex items-center gap-3">
-                    <span className="tabular whitespace-nowrap">
-                      <span className="font-semibold">{byYear ? yearPrice(cp, currency, count) : cp.perSeat ? monthPrice(cp, currency, count) : p.price[currency]}</span> <span className="text-muted">{byYear ? t('a year') : cp.perSeat ? t('a month') : t(p.per)}</span>
-                    </span>
-                    {cp.perSeat && paying && (
-                      <label className="flex items-center gap-1.5 text-xs text-muted">
-                        {t('Lecturers')}
-                        <input type="number" min={least} max={MAX_SEATS} step={1} value={seats ?? count} onChange={(e) => setSeats(Number(e.target.value))} onBlur={() => setSeats(count)} className={`${inputClass} !w-20 !py-1.5`} />
-                      </label>
-                    )}
-                    {paid && paying && (same ? (
-                      <span className="rounded-full bg-good-soft px-2.5 py-1 text-xs font-semibold text-good">{t('Your plan')}</span>
-                    ) : (
-                      <Button variant={plan === 'pro' ? 'secondary' : 'primary'} busy={busyPlan === cp.id} disabled={busyPlan !== null} onClick={() => choose(cp.id, byYear, count)}>
-                        {mine ? t('Change') : plan === 'pro' ? t('Switch') : t('Choose')}
-                      </Button>
-                    ))}
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
-          <ErrorNote>{payError}</ErrorNote>
-          {profile.role === 'admin' && (
-            <div className="mt-4">
-              {paying ? (
-                <>
-                  {org?.stripeCustomerId && (
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                      <Button variant="secondary" busy={busyPlan === 'portal'} disabled={busyPlan !== null} onClick={() => manage()}>{t('Manage billing')}</Button>
-                      {plan === 'pro' && org.stripeSubscriptionId && (org.stripeCancelAtPeriodEnd ? (
-                        <Button busy={busyPlan === 'resume'} disabled={busyPlan !== null} onClick={resume}>{t('Resume plan')}</Button>
-                      ) : (
-                        <button type="button" disabled={busyPlan !== null} onClick={() => manage('cancel')} className="text-sm font-medium text-muted underline underline-offset-2 hover:text-bad disabled:opacity-50">
-                          {busyPlan === 'cancel' ? t('Opening…') : t('Cancel plan')}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <p className="mt-2 text-xs text-muted">{t('Payment is handled by Stripe. Dobry never sees your card. You can cancel at any time; your records stay.')}</p>
-                </>
-              ) : plan !== 'pro' ? (
-                <>
-                  <Button disabled>{t('Upgrade to Pro')}</Button>
-                  <p className="mt-2 text-xs text-muted">{plan === 'free' ? t('Paid plans open soon. Need more now? Contact Dobry and we will set it up for you.') : t('Payment is not open yet. You do not need to do anything.')}</p>
-                </>
-              ) : null}
-            </div>
-          )}
-          {profile.role === 'admin' && (
-            <form
-              className="mt-5 border-t border-line pt-4"
-              onSubmit={async (e) => {
-                e.preventDefault()
-                setCodeBusy(true)
-                setCodeNote(null)
-                try {
-                  const { until } = await redeemCode(code)
-                  setCode('')
-                  setCodeNote({ ok: true, text: t('Code accepted. You have Pro until {date}.', { date: new Date(until).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) }) })
-                } catch (err) {
-                  setCodeNote({ ok: false, text: err instanceof Error ? err.message : String(err) })
-                } finally {
-                  setCodeBusy(false)
-                }
-              }}
-            >
-              <label className="block text-sm font-medium" htmlFor="gift-code">{t('Have a code?')}</label>
-              <div className="mt-1.5 flex gap-2">
-                <input id="gift-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={40} autoComplete="off" placeholder="DOB-XXXX-XXXX" className={`${inputClass} font-mono`} />
-                <Button type="submit" variant="secondary" busy={codeBusy} disabled={!code.trim()}>{t('Use code')}</Button>
+        <Card className="overflow-hidden">
+          {/* What they have now, and what they can do about it. */}
+          <div className="relative isolate bg-night px-5 py-5 text-white sm:px-6">
+            <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(28rem_12rem_at_100%_0%,rgb(255_200_61/0.16),transparent_70%)]" />
+            <p className="text-xs font-semibold tracking-wide text-white/60 uppercase">{t('Your plan')} · Dobry {t(edition.label)}</p>
+            <div className="mt-2 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+              <div className="min-w-0">
+                <p className="font-display text-3xl font-bold tracking-tight">
+                  {t(myPlan?.name ?? PLAN_LABEL[plan])}
+                  {myPlan?.perSeat && org?.seats ? <span className="ml-2 text-base font-medium text-white/70">{t('{n} lecturers', { n: org.seats })}</span> : null}
+                </p>
+                <p className="mt-1 max-w-md text-sm text-indigo-100/85">
+                  {plan === 'early'
+                    ? t('You joined during early access, so everything is free and without limits for now. We will tell you before that changes.')
+                    : plan === 'trial'
+                      ? t('You have Pro free for {n} more days. After that you move to the free plan; nothing is deleted.', { n: trialDaysLeft() ?? 0 })
+                      : plan === 'free'
+                        ? PAYMENTS_OPEN
+                          ? t('You are on the free plan. Your older records stay, ready to view and export.')
+                          : t('You are on the free plan: {limit}. Paid plans open soon; the prices below are what they will cost. You will be told before anything changes.', { limit: t(plans.find((p) => /^(RM|\$)0$/.test(p.price.myr))?.items[0] ?? edition.plans[0]?.items[0] ?? '').toLowerCase() })
+                        : cancelled
+                          ? t('Cancelled. It stays on until {date}, then moves to the free plan.', { date: until })
+                          : org?.stripeSubscriptionId
+                            ? t('Renews on {date}.', { date: renews })
+                            : t('On until {date}.', { date: until })}
+                </p>
               </div>
-              {codeNote && <p className={`mt-2 rounded-lg px-4 py-2.5 text-sm ${codeNote.ok ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>{codeNote.text}</p>}
-            </form>
-          )}
+              {paying && org?.stripeCustomerId && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  {plan === 'pro' && org.stripeSubscriptionId && cancelled && (
+                    <Button variant="sun" busy={busyPlan === 'resume'} disabled={busyPlan !== null} onClick={resume}>{t('Resume plan')}</Button>
+                  )}
+                  <Button variant="secondary" busy={busyPlan === 'portal'} disabled={busyPlan !== null} onClick={() => manage()} className="!bg-white/10 !text-white ring-1 ring-white/25 hover:!bg-white/15">
+                    {t('Manage billing')}
+                  </Button>
+                  {plan === 'pro' && org.stripeSubscriptionId && !cancelled && (
+                    <button type="button" disabled={busyPlan !== null} onClick={() => manage('cancel')} className="text-sm font-medium text-white/70 underline underline-offset-2 hover:text-white disabled:opacity-50">
+                      {busyPlan === 'cancel' ? t('Opening…') : t('Cancel plan')}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="p-5 sm:p-6">
+            {paidNotice && <p className="mb-4 rounded-lg bg-good-soft px-4 py-3 text-sm text-good">{plan === 'pro' ? t('Payment received. You are on Pro. Thank you.') : t('Payment received. Your plan will update in a few seconds.')}</p>}
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-semibold">{paying && plan === 'pro' ? t('Change plan') : t('Plans')}</h2>
+              {yearOffer && paying && (
+                <div role="group" aria-label={t('Billed')} className="inline-flex rounded-full bg-slate-100 p-0.5 text-xs font-semibold">
+                  {([false, true] as const).map((y) => (
+                    <button key={String(y)} type="button" aria-pressed={yearly === y} onClick={() => setYearly(y)} className={`rounded-full px-3 py-1.5 transition ${yearly === y ? 'bg-white text-ink shadow-card' : 'text-slate-600 hover:text-ink'}`}>
+                      {y ? t('Yearly') : t('Monthly')}
+                      {y && <span className="ml-1.5 rounded-full bg-good-soft px-1.5 py-0.5 text-[10px] text-good">{t('2 months free')}</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <ul className="mt-3 space-y-2.5">
+              {listed.map((cp) => {
+                const p = toPlanCard(cp)
+                const paid = cp.cycle !== 'free'
+                const mine = plan === 'pro' ? org?.stripePlanId === cp.id : !paid && plan === 'free'
+                const byYear = yearly && offersYear(cp)
+                const least = cp.perSeat ? Math.max(1, cp.minSeats ?? 1) : 1
+                const count = cp.perSeat ? Math.min(MAX_SEATS, Math.max(least, seats ?? (mine ? org?.seats ?? least : least))) : 1
+                // On a per-lecturer plan already: the button changes how many lecturers it covers.
+                const same = mine && (!cp.perSeat || count === (org?.seats ?? 1))
+                return (
+                  <li key={cp.id} className={`rounded-xl px-4 py-3.5 ${mine ? 'bg-accent-soft/50 ring-2 ring-accent' : 'ring-1 ring-line'}`}>
+                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                      <div className="min-w-0 flex-1 basis-52">
+                        <p className="flex flex-wrap items-center gap-2 font-semibold">
+                          {t(p.name)}
+                          {mine && <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-white">{t('Your plan')}</span>}
+                        </p>
+                        <p className="mt-0.5 text-sm text-muted">{t(p.items[0])}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <p className="tabular text-right leading-tight whitespace-nowrap">
+                          <span className="text-xl font-semibold tracking-tight">{byYear ? yearPrice(cp, currency, count) : cp.perSeat ? monthPrice(cp, currency, count) : p.price[currency]}</span>
+                          <span className="block text-xs text-muted">{!paid ? t(p.per) : byYear ? t('a year') : t('a month')}</span>
+                        </p>
+                        {paid && paying && !same && (
+                          <Button variant={plan === 'pro' ? 'secondary' : 'primary'} busy={busyPlan === cp.id} disabled={busyPlan !== null} onClick={() => choose(cp.id, byYear, count)} className="min-w-24">
+                            {mine ? t('Update') : plan === 'pro' ? t('Switch') : t('Choose')}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    {cp.perSeat && paying && (
+                      <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3 text-sm">
+                        <span className="text-muted">{t('Lecturers')}</span>
+                        <div className="inline-flex items-center rounded-lg ring-1 ring-line">
+                          <button type="button" aria-label={t('One fewer')} disabled={count <= least} onClick={() => setSeats(count - 1)} className="size-9 text-lg text-slate-600 hover:bg-slate-50 disabled:opacity-30">−</button>
+                          <input type="number" aria-label={t('Lecturers')} min={least} max={MAX_SEATS} step={1} value={seats ?? count} onChange={(e) => setSeats(Number(e.target.value))} onBlur={() => setSeats(count)} className="tabular h-9 w-14 border-x border-line bg-transparent text-center font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" />
+                          <button type="button" aria-label={t('One more')} disabled={count >= MAX_SEATS} onClick={() => setSeats(count + 1)} className="size-9 text-lg text-slate-600 hover:bg-slate-50 disabled:opacity-30">+</button>
+                        </div>
+                        <span className="text-xs text-muted">{t('{price} for each lecturer', { price: byYear ? yearPrice(cp, currency) : monthPrice(cp, currency) })}</span>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+            <ErrorNote>{payError}</ErrorNote>
+
+            {profile.role === 'admin' && (
+              <p className="mt-3 text-xs text-muted">
+                {paying
+                  ? t('Payment is handled by Stripe. Dobry never sees your card. You can cancel at any time; your records stay.')
+                  : plan === 'pro'
+                    ? ''
+                    : plan === 'free'
+                      ? t('Paid plans open soon. Need more now? Contact Dobry and we will set it up for you.')
+                      : t('Payment is not open yet. You do not need to do anything.')}
+              </p>
+            )}
+
+            {profile.role === 'admin' && (
+              <details className="group mt-4 border-t border-line pt-4" open={Boolean(codeNote) || undefined}>
+                <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-accent [&::-webkit-details-marker]:hidden">
+                  {t('Have a code?')}
+                  <span aria-hidden className="transition group-open:rotate-90">›</span>
+                </summary>
+                <form
+                  className="mt-3"
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    setCodeBusy(true)
+                    setCodeNote(null)
+                    try {
+                      const { until } = await redeemCode(code)
+                      setCode('')
+                      setCodeNote({ ok: true, text: t('Code accepted. You have Pro until {date}.', { date: new Date(until).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) }) })
+                    } catch (err) {
+                      setCodeNote({ ok: false, text: err instanceof Error ? err.message : String(err) })
+                    } finally {
+                      setCodeBusy(false)
+                    }
+                  }}
+                >
+                  <div className="flex gap-2">
+                    <input id="gift-code" aria-label={t('Have a code?')} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={40} autoComplete="off" placeholder="DOB-XXXX-XXXX" className={`${inputClass} font-mono`} />
+                    <Button type="submit" variant="secondary" busy={codeBusy} disabled={!code.trim()}>{t('Use code')}</Button>
+                  </div>
+                  {codeNote && <p className={`mt-2 rounded-lg px-4 py-2.5 text-sm ${codeNote.ok ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>{codeNote.text}</p>}
+                </form>
+              </details>
+            )}
+          </div>
         </Card>
       )}
 

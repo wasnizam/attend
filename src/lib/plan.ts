@@ -27,6 +27,8 @@ export function canPay(): boolean {
 // and the address they opened (with ?pay=test) is gone by the time the Account page asks.
 if (typeof window !== 'undefined') canPay()
 export const TRIAL_DAYS = 14
+/** The payment server keeps Pro on this many days past the paid period, while a failed card is retried. */
+export const GRACE_DAYS = 3
 
 /**
  * What is stored on the organisation. `early` = joined before payment opened, no limits.
