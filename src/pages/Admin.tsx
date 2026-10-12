@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { ExportButtons } from '../components/ExportButtons'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, StatusBadge, friendlyError, inputClass, buttonClass } from '../components/ui'
 import { UpgradeNote } from '../components/Paid'
-import { activePlan, allows, limitFor } from '../lib/plan'
+import { activePlan, allows, limitFor, solo } from '../lib/plan'
 import { getOrganisation, setUserRole, setUserStatus, subscribeOrgUsers } from '../data/account'
 import { subscribeOrgAttendance } from '../data/attendance'
 import { subscribeOrgSessions } from '../data/sessions'
@@ -32,7 +32,12 @@ function BigStat({ label, value }: { label: string; value: string | number }) {
   )
 }
 
+/** The organisation's page. One lecturer's own account has none: there is nobody else in it. */
 export default function Admin() {
+  return solo() ? <Navigate to="/app" replace /> : <AdminPage />
+}
+
+function AdminPage() {
   const profile = useProfile()
   const org = profile.organisationId
   useNow()

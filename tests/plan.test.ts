@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { TRIAL_DAYS, activePlan, allows, limitFor, locksOn, overLimit, overPlan, setPlan, trialDaysLeft } from '../src/lib/plan'
+import { TRIAL_DAYS, activePlan, allows, limitFor, locksOn, overLimit, overPlan, setPlan, solo, trialDaysLeft } from '../src/lib/plan'
 import { setPurpose } from '../src/lib/purpose'
 
 const DAY = 86_400_000
@@ -205,5 +205,30 @@ describe('what the free plan holds back', () => {
     expect(allows('pdf')).toBe(false)
     setPlan({ plan: 'free', tags: ['vip'] })
     expect(locksOn()).toBe(false)
+  })
+
+  it('knows one lecturer’s own account from a faculty’s', () => {
+    const paid = { toMillis: () => Date.now() + 86_400_000 }
+    setPurpose('education')
+    for (const org of [{}, { plan: 'free' as const }, { plan: 'pro' as const, paidUntil: paid }, { plan: 'pro' as const, paidUntil: paid, seats: 1 }]) {
+      setPlan(org)
+      expect(solo()).toBe(true)
+    }
+    // A faculty: the Faculty plan, a trial, or simply more than one lecturer in the account.
+    setPlan({ plan: 'pro', paidUntil: paid, seats: 5 })
+    expect(solo()).toBe(false)
+    setPlan({ plan: 'trial', trialStarted: { toMillis: () => Date.now() - 86_400_000 } })
+    expect(solo()).toBe(false)
+    setPlan({ usage: { lecturers: 3 } })
+    expect(solo()).toBe(false)
+    // A Faculty plan that has run out, with one lecturer left, is one lecturer's account again.
+    setPlan({ plan: 'pro', paidUntil: { toMillis: () => Date.now() - 1 }, seats: 5, usage: { lecturers: 1 } })
+    expect(solo()).toBe(true)
+    // Workplaces and trainers always keep their Admin page.
+    for (const purpose of ['workplace', 'training'] as const) {
+      setPurpose(purpose)
+      setPlan({ plan: 'free' })
+      expect(solo()).toBe(false)
+    }
   })
 })

@@ -6,7 +6,8 @@ import { InstallApp } from './InstallApp'
 import { PullToRefresh } from './PullToRefresh'
 import { useAuth, useProfile } from '../hooks/useAuth'
 import { t } from '../lib/i18n'
-import { has } from '../lib/purpose'
+import { solo } from '../lib/plan'
+import { getPurpose, has } from '../lib/purpose'
 import { Logo, buttonClass } from './ui'
 
 const icons = {
@@ -72,7 +73,8 @@ export function AppShell() {
   const students = item('/app/students', t('Students'), icons.students)
   const history = item('/app/history', t('History'), icons.history)
   const calendar = item('/app/calendar', t('Calendar'), icons.calendar)
-  const adminItem = profile.role === 'admin' ? [item('/admin', t('Admin'), icons.admin)] : []
+  // A lecturer on their own has nothing to administer; a faculty's page is named for what it is.
+  const adminItem = profile.role === 'admin' && !solo() ? [item('/admin', getPurpose() === 'education' ? t('Faculty') : t('Admin'), icons.admin)] : []
   // Timetable and class reports only exist for organisations that run repeating classes.
   const recurring = has('recurring')
     ? { timetable: [item('/app/timetable', t('Timetable'), icons.timetable)], reports: [item('/app/reports', t('Reports'), icons.reports)] }

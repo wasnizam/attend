@@ -5,7 +5,7 @@ import { Button, Card, ErrorNote, friendlyError, inputClass } from '../component
 import { changeName, changePassword, getOrganisation, renameOrganisation, resendVerification, setPhoneCheckFor, setOrgSetting, setShifts, signOut } from '../data/account'
 import { useCurrency } from '../lib/currency'
 import { editionForPurpose } from '../lib/editions'
-import { GRACE_DAYS, PAYMENTS_OPEN, PLAN_LABEL, activePlan, allows, canPay, paidUntil, trialDaysLeft } from '../lib/plan'
+import { GRACE_DAYS, PAYMENTS_OPEN, PLAN_LABEL, activePlan, allows, canPay, paidUntil, solo, trialDaysLeft } from '../lib/plan'
 import { InstallApp } from '../components/InstallApp'
 import { UpgradeNote } from '../components/Paid'
 import { openBilling, redeemCode, resumePlan, startCheckout } from '../data/billing'
@@ -175,6 +175,8 @@ export function Account() {
   }
 
   const work = profile.role === 'admin' && org && getPurpose() === 'workplace' ? org : null
+  // One lecturer's own account: no role to show, nobody to invite.
+  const alone = solo()
   const initials = profile.name.trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
   const sections: [string, string][] = [
     ['profile', 'Profile'],
@@ -196,7 +198,7 @@ export function Account() {
         </div>
         <div className="flex basis-full flex-wrap items-center gap-2 text-xs font-semibold md:basis-auto">
           {org?.name && <span className="max-w-full truncate rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{org.name}</span>}
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{profile.role === 'admin' ? t('Admin') : t('Lecturer')}</span>
+          {!alone && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{profile.role === 'admin' ? t('Admin') : t('Lecturer')}</span>}
           <span className="rounded-full bg-accent-soft px-2.5 py-1 text-accent">{t(myPlan?.name ?? PLAN_LABEL[plan])}</span>
         </div>
       </header>
@@ -266,7 +268,7 @@ export function Account() {
             )}
           </Section>
 
-          <Section id="organisation" title={t('Organisation')} text={profile.role === 'admin' ? t('The name people see when they join you, and on your reports.') : undefined}>
+          <Section id="organisation" title={t('Organisation')} text={alone ? t('The name on your reports and letters.') : profile.role === 'admin' ? t('The name people see when they join you, and on your reports.') : undefined}>
             <Row label={t('Organisation name')}>
               {profile.role === 'admin' && org ? (
                 <form
@@ -289,9 +291,18 @@ export function Account() {
               )}
               <Notes error={orgSave.error} done={orgSave.done} />
             </Row>
-            <Row label={t('Your role')}>
-              <p className="font-medium">{profile.role === 'admin' ? t('Admin') : t('Lecturer')}</p>
-            </Row>
+            {alone ? (
+              <Row label={t('Working with colleagues?')}>
+                <p className="text-sm text-slate-700">
+                  {t('This account is for one lecturer. The Faculty plan gives each colleague their own login, with every class in one view for the head of department.')}{' '}
+                  <a href="#plan" className="font-medium text-accent">{t('See plans')} ›</a>
+                </p>
+              </Row>
+            ) : (
+              <Row label={t('Your role')}>
+                <p className="font-medium">{profile.role === 'admin' ? t('Admin') : t('Lecturer')}</p>
+              </Row>
+            )}
           </Section>
 
           {work && (

@@ -193,3 +193,16 @@ export function overPlan(mine: { classes?: number; students?: number } = {}): Ov
   }
   return null
 }
+
+/**
+ * Lecturers: whether this is one lecturer's own account, not a faculty's. A lecturer on their own
+ * has no colleagues to invite or oversee, so the Admin page, the invite link and the "Admin" label
+ * are kept out of their way. A faculty is an account with more than one lecturer, the Faculty
+ * plan, or a trial (which may bring colleagues in to try it).
+ */
+export function solo(): boolean {
+  if (getPurpose() !== 'education') return false
+  if ((fields.usage?.lecturers ?? 1) > 1) return false
+  const active = activePlan()
+  return !(active === 'trial' || (active === 'pro' && (fields.seats ?? 1) > 1))
+}

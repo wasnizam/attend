@@ -1654,4 +1654,7 @@ export const ms: Record<string, string> = {
   "The name people see when they join you, and on your reports.": "Nama yang dilihat orang apabila menyertai anda, dan pada laporan anda.",
   "How your company clocks in and how hours are counted. Each change is saved as you make it.": "Cara syarikat anda merekod masuk dan cara jam dikira. Setiap perubahan disimpan sebaik sahaja dibuat.",
   "On": "Hidup",
+  "Working with colleagues?": "Bekerja dengan rakan sekerja?",
+  "This account is for one lecturer. The Faculty plan gives each colleague their own login, with every class in one view for the head of department.": "Akaun ini untuk seorang pensyarah. Pelan Fakulti memberi setiap rakan sekerja log masuk sendiri, dengan semua kelas dalam satu paparan untuk ketua jabatan.",
+  "The name on your reports and letters.": "Nama pada laporan dan surat anda.",
 }
