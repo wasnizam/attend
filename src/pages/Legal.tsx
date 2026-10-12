@@ -7,13 +7,13 @@ import { Logo } from '../components/ui'
  * promise to customers, and the people reading them are lecturers and shop owners, not lawyers.
  * English only, so there is one text to stand by.
  */
-const WHO = { company: 'Nixsavian', product: 'Dobry', site: 'dobry.app', email: 'hello@dobry.app', country: 'Malaysia', updated: '12 October 2026' }
+const WHO = { product: 'Dobry', site: 'dobry.app', email: 'hello@dobry.app', country: 'Malaysia', updated: '12 October 2026' }
 
 type Part = [title: string, paragraphs: (string | string[])[]]
 
 const TERMS: Part[] = [
   ['1. Who we are', [
-    `${WHO.product} is an attendance service run by ${WHO.company} (“we”, “us”), based in ${WHO.country}. These terms are the agreement between us and you, the person or organisation that makes a ${WHO.product} account.`,
+    `${WHO.product} (“we”, “us”) is an attendance service based in ${WHO.country}. These terms are the agreement between us and you, the person or organisation that makes a ${WHO.product} account.`,
     'By making an account or using Dobry, you agree to these terms. If you use Dobry for an organisation, you confirm you are allowed to agree on its behalf.',
   ]],
   ['2. Your account', [
@@ -64,7 +64,7 @@ const PRIVACY: Part[] = [
     'Dobry records attendance. We collect only what that needs, we do not sell it, we do not show adverts, and we do not use it for anything except running Dobry for the organisation that collected it.',
   ]],
   ['2. Who is responsible', [
-    `${WHO.product} is run by ${WHO.company}, in ${WHO.country}.`,
+    `${WHO.product} is based in ${WHO.country}.`,
     'For attendance records, the lecturer, trainer or employer who uses Dobry decides what is collected and why. They are responsible for those records; we look after them on their behalf. If you are a student, participant or staff member with a question about your attendance record, please ask them first.',
     'For account details of the people who log in to Dobry (lecturers, trainers, managers), we are responsible.',
   ]],
@@ -122,7 +122,7 @@ export function Legal({ doc }: { doc: 'terms' | 'privacy' }) {
       </header>
       <main className="mx-auto max-w-3xl px-5 py-12">
         <h1 className="font-display text-4xl font-bold tracking-tight">{title}</h1>
-        <p className="mt-2 text-sm text-muted">Last updated {WHO.updated} · {WHO.product} by {WHO.company}</p>
+        <p className="mt-2 text-sm text-muted">Last updated {WHO.updated}</p>
         <div className="mt-8 space-y-8">
           {(terms ? TERMS : PRIVACY).map(([heading, paragraphs]) => (
             <section key={heading}>
@@ -144,7 +144,7 @@ export function Legal({ doc }: { doc: 'terms' | 'privacy' }) {
       </main>
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-5 py-6 text-sm text-muted">
-          <span>© {new Date().getFullYear()} {WHO.product} by {WHO.company}</span>
+          <span>© {new Date().getFullYear()} {WHO.product}</span>
           <span className="flex gap-4">
             <Link to="/terms" className="hover:text-ink">Terms</Link>
             <Link to="/privacy" className="hover:text-ink">Privacy</Link>
