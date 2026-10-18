@@ -211,7 +211,7 @@ async function savePdf(report: PdfReport, setBusy: (b: boolean) => void) {
 }
 
 /** Attendance for everyone over a week, month, year or any dates: charts, exceptions, totals and the payroll sheet. */
-export function Payroll() {
+export function Payroll({ payFirst = false }: { payFirst?: boolean } = {}) {
   const profile = useProfile()
   const mySessions = useMySessions()
   const classes = useEditableClasses()
@@ -239,7 +239,7 @@ export function Payroll() {
     }
   }
   const [person, setPerson] = useState<string | null>(null)
-  const [payOpen, setPayOpen] = useState(false)
+  const [payOpen, setPayOpen] = useState(payFirst)
   const [making, setMaking] = useState(false)
   const [org, setOrg] = useState<Organisation | null>(null)
   const company = org?.name ?? ''
@@ -504,10 +504,10 @@ export function Payroll() {
     <div className="report-wide space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{payFirst ? t('Pay and payslips') : title}</h1>
           <p className="text-sm text-muted">
             <span className="hidden print:inline">{[periodFull, office, department].filter(Boolean).join(' · ')} · </span>
-            {t('Days, hours, overtime and lateness for each person. Ready for payroll.')}
+            {payFirst ? t('Salary, overtime pay, allowances and deductions from this attendance, with a payslip for each person.') : t('Days, hours, overtime and lateness for each person. Ready for payroll.')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">

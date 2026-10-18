@@ -125,6 +125,7 @@ export default function Staff() {
             <Route path="/app/students" element={<Students />} />
             <Route path="/app/reports" element={<Reports />} />
             <Route path="/app/reports/monthly" element={<Payroll />} />
+            <Route path="/app/pay" element={<Payroll key="pay" payFirst />} />
             <Route path="/app/plan" element={<Schedule />} />
             <Route path="/app/reports/subject/:subjectKey" element={<SubjectReport />} />
             <Route path="/app/history" element={<History />} />

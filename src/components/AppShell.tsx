@@ -19,6 +19,7 @@ const icons = {
   reports: 'M4 20v-7M10 20V4M16 20v-10M22 20H2',
   admin: 'M12 3l7 3v5c0 4.500-3 8-7 10-4-2-7-5.500-7-10V6l7-3Z',
   plus: 'M12 5v14M5 12h14',
+  pay: 'M3 7h18v11H3zM3 11h18M7 15h3',
 }
 
 function Icon({ d, className = 'size-5' }: { d: string; className?: string }) {
@@ -87,7 +88,9 @@ export function AppShell() {
   const door = has('clock')
     ? [...(has('shifts') ? [item('/app/plan', t('Shift plan'), icons.calendar)] : [])]
     : []
-  const sidebar = [today, ...door, calendar, ...recurring.timetable, students, ...recurring.reports, history, ...adminItem]
+  // A workplace's admins work out pay from the month's attendance; managers never see salaries.
+  const pay = has('clock') && profile.role === 'admin' ? [item('/app/pay', t('Pay'), icons.pay)] : []
+  const sidebar = [today, ...door, calendar, ...recurring.timetable, students, ...recurring.reports, ...pay, history, ...adminItem]
 
   return (
     <div className="min-h-dvh md:pl-60 print:!pl-0">
