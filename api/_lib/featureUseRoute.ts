@@ -1,4 +1,4 @@
-import { failure, firebase, json, staff } from './_lib/server.js'
+import { failure, firebase, json, staff } from './server.js'
 
 /**
  * For Dobry's team: how much the features that keep customers are used. Certificates issued and

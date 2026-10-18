@@ -11,6 +11,22 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/certificate",
+      "destination": "/api/app?fn=certificate"
+    },
+    {
+      "source": "/api/pay",
+      "destination": "/api/app?fn=pay"
+    },
+    {
+      "source": "/api/feature-use",
+      "destination": "/api/app?fn=feature-use"
+    },
+    {
+      "source": "/api/health",
+      "destination": "/api/app?fn=health"
+    },
+    {
       "source": "/__/auth/:path*",
       "destination": "https://attend-d2744.firebaseapp.com/__/auth/:path*"
     },

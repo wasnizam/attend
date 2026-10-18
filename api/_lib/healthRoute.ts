@@ -1,4 +1,4 @@
-import { failure, json, modeOf, stripeSettings } from './_lib/server.js'
+import { failure, json, modeOf, stripeSettings } from './server.js'
 
 /** Which settings are in place, without showing any of them: for checking the set-up. */
 export async function GET(): Promise<Response> {

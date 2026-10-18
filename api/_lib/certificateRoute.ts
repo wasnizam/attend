@@ -1,5 +1,5 @@
-import { type PublicCertificate, earns, newCode, tally, tidyCode, tidyText } from './_lib/certificate.js'
-import { HttpError, failure, firebase, json, member } from './_lib/server.js'
+import { type PublicCertificate, earns, newCode, tally, tidyCode, tidyText } from './certificate.js'
+import { HttpError, failure, firebase, json, member } from './server.js'
 
 /**
  * Certificates of attendance, kept in `certificates/{code}`, a place no browser can read or

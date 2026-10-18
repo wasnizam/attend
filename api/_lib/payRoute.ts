@@ -1,5 +1,5 @@
-import { DEFAULT_RULES, tidyAdjustments, tidyPeriod, tidyRules, tidyStaff } from './_lib/pay.js'
-import { HttpError, caller, failure, firebase, json } from './_lib/server.js'
+import { DEFAULT_RULES, tidyAdjustments, tidyPeriod, tidyRules, tidyStaff } from './pay.js'
+import { HttpError, caller, failure, firebase, json } from './server.js'
 
 /**
  * Salaries and pay rules, for the company's admins only. Kept in `paySettings/{orgId}` and
