@@ -27,7 +27,7 @@ describe('the payment server’s price list', () => {
 describe('what a customer is charged', () => {
   it('charges a workplace plan by the month, in sen or cents, with its staff limit', () => {
     expect(charge('workplace', 'workplace-1', 'myr')).toMatchObject({ unitAmount: 4900, currency: 'myr', interval: 'month', intervalCount: 1, seats: 20, cycle: 'month', productId: 'dobry_workplace_workplace-1' })
-    expect(charge('workplace', 'workplace-3', 'usd')).toMatchObject({ unitAmount: 4500, currency: 'usd', seats: 100 })
+    expect(charge('workplace', 'workplace-3', 'usd')).toMatchObject({ unitAmount: 9900, currency: 'usd', seats: 100 })
   })
 
   it('charges one lecturer by the month, or by the year for the price of ten months', () => {

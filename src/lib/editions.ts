@@ -312,9 +312,9 @@ export const EDITIONS: Edition[] = [
     ],
     plans: [
       { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free to start', items: ['Up to 5 staff', ...WORK_BASICS, ...WORK_PRO.map((x) => `✕ ${x}`)] },
-      { name: 'Pro 20', price: { myr: 'RM49', usd: '$12' }, per: 'a month', items: ['Up to 20 staff', ...WORK_BASICS, ...WORK_PRO], best: true },
-      { name: 'Pro 50', price: { myr: 'RM99', usd: '$24' }, per: 'a month', items: ['Up to 50 staff', ...WORK_BASICS, ...WORK_PRO] },
-      { name: 'Pro 100', price: { myr: 'RM179', usd: '$45' }, per: 'a month', items: ['Up to 100 staff', ...WORK_BASICS, ...WORK_PRO] },
+      { name: 'Pro 20', price: { myr: 'RM49', usd: '$29' }, per: 'a month', items: ['Up to 20 staff', ...WORK_BASICS, ...WORK_PRO], best: true },
+      { name: 'Pro 50', price: { myr: 'RM99', usd: '$59' }, per: 'a month', items: ['Up to 50 staff', ...WORK_BASICS, ...WORK_PRO] },
+      { name: 'Pro 100', price: { myr: 'RM179', usd: '$99' }, per: 'a month', items: ['Up to 100 staff', ...WORK_BASICS, ...WORK_PRO] },
     ],
   },
 ]
