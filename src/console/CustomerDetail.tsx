@@ -11,6 +11,7 @@ import { PLAN_LABEL, TRIAL_DAYS } from '../lib/plan'
 import { DAY, dateOf, editionName, money, statusLabel, useOwner } from './context'
 import { InvoiceForm, PaymentForm } from './forms'
 import { TheirView } from './TheirView'
+import { useFeatureUse } from './featureUse'
 import { HealthBadge, Kpi, Section, StatusBadge, Tabs, planUntil, td, th, useAction } from './ui'
 
 type Tab = 'overview' | 'view' | 'subscription' | 'billing' | 'users' | 'activity' | 'notes' | 'audit'
@@ -94,6 +95,9 @@ function Overview({ c }: { c: C }) {
     if (!c.lastSeen) fetchLastActivity(org.id).then(setLastSeen, () => setLastSeen(null))
   }, [org.id, c.lastSeen])
   const support = can(me.role, 'support')
+  const use = useFeatureUse()
+  const certs = use?.certificates.byOrg[org.id] ?? 0
+  const paid = use?.pay.byOrg[org.id] ?? 0
   const tags = org.tags ?? []
   const saveTags = (next: string[]) => run('tags', () => updateCustomer(org, { tags: next }, me, 'tags', `Tags: ${next.join(', ') || 'none'}`), t('Tags saved.'))
   return (
@@ -110,6 +114,15 @@ function Overview({ c }: { c: C }) {
           <dl className="space-y-2 text-sm">
             <div><dt className="text-xs text-muted">{t('Account owner')}</dt><dd>{c.owner?.name ?? '—'} · <a className="text-accent" href={`mailto:${c.owner?.email}`}>{c.owner?.email}</a></dd></div>
             <div><dt className="text-xs text-muted">{t('Accounts')}</dt><dd>{t('{n} admins, {m} managers', { n: c.users.filter((u) => u.role === 'admin').length, m: c.users.filter((u) => u.role !== 'admin').length })}</dd></div>
+            <div>
+              <dt className="text-xs text-muted">{t('Features that keep them')}</dt>
+              <dd>
+                {!use ? '—' : [
+                  org.purpose !== 'workplace' ? t(certs === 1 ? '1 certificate issued' : '{n} certificates issued', { n: certs }) : '',
+                  org.purpose === 'workplace' ? (paid ? t('Pay worked out for {n} staff', { n: paid }) : t('Pay not set up yet')) : '',
+                ].filter(Boolean).join(' · ')}
+              </dd>
+            </div>
           </dl>
         </Section>
         <Section title={t('Account management')}>

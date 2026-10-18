@@ -3,12 +3,14 @@ import { can } from '../data/platform'
 import { isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import { DAY, EDITIONS, dateOf, editionName, lastMonths, money, moneyMix, monthName, revenueByMonth, useOwner } from './context'
+import { useFeatureUse } from './featureUse'
 import { limitRows, standingOf } from './planUse'
 import { HealthBadge, Kpi, PageHead, Section, StatusBadge, planUntil } from './ui'
 
 /** The morning view: money, growth, what is about to happen, and what needs doing. */
 export default function Dashboard() {
   const { customers, billing, invoices, tasks, audit, me, users, classes } = useOwner()
+  const use = useFeatureUse()
   const now = Date.now()
   const today = isoDate()
   const count = (f: (c: (typeof customers)[number]) => boolean) => customers.filter(f).length
@@ -83,6 +85,13 @@ export default function Dashboard() {
         <Kpi label={t('Customers')} value={customers.length} note={t('{n} new in 30 days', { n: count((c) => Boolean(c.joined && now - c.joined < 30 * DAY)) })} />
         <Kpi label={t('Churn (30 days)')} value={`${churnRate}%`} note={t('{n} did not renew', { n: churned })} tone={churnRate > 5 ? 'warn' : undefined} />
         <Kpi label={t('Trial conversion')} value={conversion === null ? '—' : `${conversion}%`} note={t('{n} of {m} finished trials', { n: converted, m: trialsDone.length })} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Kpi label={t('Certificates issued (30 days)')} value={use ? use.certificates.last30 : '—'} note={use ? t('{n} in all; each link shows Dobry to someone new', { n: use.certificates.total }) : undefined} />
+        <Kpi label={t('Customers giving certificates')} value={use ? Object.keys(use.certificates.byOrg).length : '—'} note={t('of {n} lecturer and trainer customers', { n: count((c) => c.org.purpose !== 'workplace') })} />
+        <Kpi label={t('Companies working out pay')} value={use ? use.pay.companies : '—'} note={use ? t('{n} staff paid with Dobry', { n: use.pay.staff }) : undefined} />
+        <Kpi label={t('Workplaces using pay')} value={use ? `${count((c) => c.org.purpose === 'workplace') ? Math.round((use.pay.companies / count((c) => c.org.purpose === 'workplace')) * 100) : 0}%` : '—'} note={t('of workplace customers')} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">

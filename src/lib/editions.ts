@@ -58,6 +58,7 @@ const WORK_PRO = [
   'Night, rotating and planned shifts',
   'Download reports as PDF',
   'Export to Excel for payroll',
+  'Pay and payslips from attendance',
   'Overtime, rest day and holiday hours',
   'Leave and sick leave tracking',
   'Location check (geofence)',
@@ -165,13 +166,13 @@ export const EDITIONS: Edition[] = [
       ['Is it allowed?', 'Dobry is your own tool, like Excel or a quiz app. The official record still goes into your university system. If your university has rules on student data, check them; Dobry keeps only the ID and name from your class list.'],
     ],
     plans: [
-      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free to start', items: ['1 class', 'Up to 60 students in a class', '5 single sessions a month', 'QR attendance and live list', 'Reports on screen', '✕ Export to your university system', '✕ Warning letters and barring list', '✕ Download reports as PDF'] },
+      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free to start', items: ['1 class', 'Up to 60 students in a class', '5 single sessions a month', 'QR attendance and live list', 'Reports on screen', 'Certificates for workshops and short courses', '✕ Export to your university system', '✕ Warning letters and barring list', '✕ Download reports as PDF'] },
       {
         name: 'Pro',
         price: { myr: 'RM19', usd: '$5' },
         per: 'a month',
         alt: { myr: 'Or RM190 a year: 12 months for the price of 10.', usd: 'Or $50 a year: 12 months for the price of 10.' },
-        items: ['For one lecturer', 'Up to 10 classes at a time', 'Up to 300 students in a class', 'Export to your university system', 'Warning letters and barring list', 'Download reports as PDF', 'Every feature included'],
+        items: ['For one lecturer', 'Up to 10 classes at a time', 'Up to 300 students in a class', 'Certificates for workshops and short courses', 'Export to your university system', 'Warning letters and barring list', 'Download reports as PDF', 'Every feature included'],
         best: true,
       },
       {
@@ -198,14 +199,14 @@ export const EDITIONS: Edition[] = [
       [ICON.calendar, 'Courses and workshops', 'Add a course once with its dates. Each session is waiting on the right day.'],
       [ICON.upload, 'Upload your participant list', 'Excel, CSV or PDF. Participants type only their ID, and you see who is absent by name.'],
       [ICON.bolt, 'Live attendance', 'Names appear on your screen the moment participants check in. No refreshing.'],
-      [ICON.pencil, 'Corrections made easy', 'Mark someone present by hand, or set late or excused, during or after the session.'],
+      [ICON.file, 'Certificates of attendance', 'One click makes a certificate for everyone who attended, with the hours. Each has a link anyone can open to check it is real, and a button to add it to LinkedIn.'],
       [ICON.screen, 'Works online too', 'For online sessions, participants type the code on your screen, and you can check who is still there.'],
-      [ICON.chart, 'Course reports', 'Each participant’s attendance across the course. Export to Excel for your client.'],
+      [ICON.chart, 'Course reports', 'Each participant’s attendance across the course. Export to Excel for your client. Mark anyone present, late or excused by hand.'],
     ],
     steps: [
       ['1. Create', 'Add your course or workshop.'],
       ['2. Scan', 'Show the QR. Participants scan with their phone.'],
-      ['3. Done', 'Attendance is recorded instantly.'],
+      ['3. Done', 'Attendance is recorded instantly. Certificates in one click.'],
     ],
     cta: 'Take attendance at your next session.',
     trust: {
@@ -232,14 +233,17 @@ export const EDITIONS: Edition[] = [
     },
     preview: { title: 'EXCEL FOR MANAGERS', time: '9:00 AM – 5:00 PM', counted: 'PRESENT', rows: [['P003', 'Kumar', '9:07'], ['P002', 'Sarah', '9:05'], ['P001', 'Ahmad', '9:03']] },
     orgPlaceholder: 'e.g. Bright Training Sdn Bhd',
+    faq: [
+      ['Can participants get a certificate?', 'Yes. After a course or workshop, one click makes a certificate for everyone who reached the attendance you set, with their hours. Each certificate has its own link that anyone can open to check it is real, and participants can add it to LinkedIn.'],
+    ],
     without: {
       title: 'Nothing to buy. Nothing to install.',
       skip: ['A sign-in machine at the door', 'An app for participants', 'Participant accounts or passwords', 'Paper sign-in sheets'],
       need: 'Just your laptop or the screen in the room, and participants’ own phones.',
     },
     plans: [
-      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free to start', items: ['1 course', '5 single sessions a month', 'Unlimited participants', 'Every feature included'] },
-      { name: 'Pro', price: { myr: 'RM39', usd: '$9' }, per: 'a month', alt: { myr: 'Or RM390 a year: 12 months for the price of 10.', usd: 'Or $90 a year: 12 months for the price of 10.' }, items: ['Unlimited courses', 'Unlimited participants', 'Every feature included'], best: true },
+      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free to start', items: ['1 course', '5 single sessions a month', 'Unlimited participants', 'Certificates of attendance, with LinkedIn', 'Every feature included'] },
+      { name: 'Pro', price: { myr: 'RM39', usd: '$9' }, per: 'a month', alt: { myr: 'Or RM390 a year: 12 months for the price of 10.', usd: 'Or $90 a year: 12 months for the price of 10.' }, items: ['Unlimited courses', 'Unlimited participants', 'Certificates of attendance, with LinkedIn', 'Every feature included'], best: true },
     ],
   },
   {
@@ -259,13 +263,13 @@ export const EDITIONS: Edition[] = [
       [ICON.building, 'Many offices, one company', 'Each branch has its own hours and staff list. Branch managers see only their office; you see them all.'],
       [ICON.leave, 'Leave, sick days and half days', 'Record annual, emergency, unpaid and sick leave, with the doctor’s note, and half days. Leave never counts as absent.'],
       [ICON.bolt, 'Overtime that fits your local law', 'Choose when overtime starts: after a full day or after the end time. Rest days and public holidays are counted apart for their own rates.'],
-      [ICON.file, 'Reports HR can hand over', 'Monthly report with charts as a PDF, Excel for payroll, attendance rate, and a timesheet per person to sign.'],
-      [ICON.upload, 'Upload your staff list', 'Excel, CSV or PDF, with departments. Staff type only their ID, and you see who has not come in by name.'],
+      [ICON.file, 'Pay and payslips from attendance', 'Enter each salary once. Overtime, rest-day and holiday pay, allowances and deductions for absence are worked out from the clock-ins, with a payslip PDF for every person.'],
+      [ICON.chart, 'Reports HR can hand over', 'Monthly report with charts as a PDF, Excel for payroll, attendance rate, and a timesheet per person to sign.'],
     ],
     steps: [
-      ['1. Create', 'Add your shift and your staff list.'],
+      ['1. Create', 'Add your working hours and upload your staff list from Excel, CSV or PDF.'],
       ['2. Scan', 'Show the QR at the door. Staff scan in and out.'],
-      ['3. Done', 'Hours and lateness are ready.'],
+      ['3. Done', 'Hours, lateness and payslips are ready.'],
     ],
     cta: 'Start clocking in tomorrow morning.',
     trust: {
@@ -299,16 +303,16 @@ export const EDITIONS: Edition[] = [
       title: 'Nothing to buy. Nothing to install.',
       skip: ['A fingerprint or face-scan machine', 'An app on every staff phone', 'Accounts and passwords for staff', 'Anyone’s face or fingerprint on file'],
       need: 'Just a screen at the door, and your staff’s own phones.',
-      focus: 'Just attendance, done properly. Keep your payroll or HR system; Dobry gives it clean data.',
+      focus: 'Attendance and payslips in one place. Your accountant or payroll system still does EPF, SOCSO and tax; Dobry gives them clean figures.',
       saving: {
         myr: 'A basic attendance machine costs around RM500 to RM1,000 or more, plus setup and repairs. Dobry needs none.',
         usd: 'A basic attendance machine costs around $100 to $1,000 or more, plus setup and repairs. Dobry needs none.',
       },
     },
     faq: [
-      ['Do you do payroll?', 'No, on purpose. Dobry does attendance only, and does it properly. It exports clean reports for your payroll, your HR system or your accountant.'],
+      ['Do you do payroll?', 'Dobry works out each person’s pay from their attendance: salary, overtime, rest-day and holiday pay, allowances and deductions, with a payslip for each person. It does not work out EPF, SOCSO, EIS or income tax: give the figures to your accountant or payroll system for those.'],
       ['Does it follow our country’s labour rules?', 'You set your working hours, grace period, breaks, public holidays and when overtime starts, so the hours match your local rules.'],
-      ['What does the free plan leave out?', 'The free plan covers daily attendance for up to 5 staff: clock in and out, the Today screen, the daily list and the door screen, with all your history and reports to view on screen. Downloading reports as PDF, Excel export, overtime, leave, many offices, shift plans, the location check and one phone per person come with a paid plan.'],
+      ['What does the free plan leave out?', 'The free plan covers daily attendance for up to 5 staff: clock in and out, the Today screen, the daily list and the door screen, with all your history and reports to view on screen. Pay and payslips, downloading reports as PDF, Excel export, overtime, leave, many offices, shift plans, the location check and one phone per person come with a paid plan.'],
     ],
     plans: [
       { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free to start', items: ['Up to 5 staff', ...WORK_BASICS, ...WORK_PRO.map((x) => `✕ ${x}`)] },

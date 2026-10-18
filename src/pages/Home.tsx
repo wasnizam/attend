@@ -25,7 +25,7 @@ const DOORS: [EditionId, string, string, string, string, string[]][] = [
     'bg-amber-100 text-amber-600',
     'For trainers and organisers',
     'Check people in at courses, workshops and seminars, with a clean record for your client.',
-    ['No app for participants to install', 'See who is absent, by name', 'Course reports for your client'],
+    ['No app for participants to install', 'Certificates of attendance in one click', 'Course reports for your client'],
   ],
   [
     'workplace',
@@ -33,7 +33,7 @@ const DOORS: [EditionId, string, string, string, string, string[]][] = [
     'bg-emerald-100 text-emerald-600',
     'For workplaces',
     'Staff clock in and out with their own phone. See who is in, late or on leave.',
-    ['No machine to buy', 'Hours, overtime and leave', 'Many offices and shifts'],
+    ['No machine to buy', 'Hours, overtime and leave', 'Payslips from attendance'],
   ],
 ]
 

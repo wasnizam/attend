@@ -18,11 +18,11 @@ export const PAGES: Record<string, { title: string; description: string }> = {
   },
   workplace: {
     title: 'QR clock-in for workplaces: no machine, no app | Dobry',
-    description: 'Staff clock in and out with their own phone. No fingerprint machine to buy and no app to install. See who is in, late or on leave, with hours ready for payroll. Free for up to 5 staff.',
+    description: 'Staff clock in and out with their own phone. No fingerprint machine to buy and no app to install. See who is in, late or on leave, with hours, overtime and payslips worked out for you. Free for up to 5 staff.',
   },
   trainers: {
     title: 'QR attendance for trainers, courses and seminars | Dobry',
-    description: 'Check participants in at courses, workshops and seminars with a QR. Nothing for them to install, and a clean attendance report for your client. Free to start.',
+    description: 'Check participants in at courses, workshops and seminars with a QR. Nothing for them to install, a clean attendance report for your client, and certificates in one click. Free to start.',
   },
   privacy: { title: 'Privacy Policy | Dobry', description: 'What Dobry collects, why, who handles it and how to ask about your information. No adverts, and attendance data is never sold.' },
   terms: { title: 'Terms of Service | Dobry', description: 'The agreement between Dobry and the people and organisations that use it, in plain English.' },

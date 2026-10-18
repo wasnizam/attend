@@ -163,3 +163,11 @@ export interface GiftCodeRow {
 
 /** Free access codes, for Dobry's team: list them, make a batch, or switch one off or on. */
 export const giftCodes = (action: 'list' | 'create' | 'disable' | 'enable', body: object = {}) => call<{ codes: GiftCodeRow[] }>('/api/gift-codes', { action, ...body })
+
+export interface FeatureUse {
+  certificates: { total: number; last30: number; byOrg: Record<string, number> }
+  pay: { companies: number; staff: number; byOrg: Record<string, number> }
+}
+
+/** For Dobry's team: certificates issued and companies working out pay. Counts only. */
+export const featureUse = () => call<FeatureUse>('/api/feature-use', {})
