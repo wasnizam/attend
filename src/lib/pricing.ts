@@ -51,7 +51,7 @@ export interface Switches {
 const switchesOf = (data: { launch?: Partial<Switches> } | undefined): Switches => ({ paymentsOpen: data?.launch?.paymentsOpen === true, trial: data?.launch?.trial === true })
 export const editionKey = (purpose: string | undefined): EditionId => (purpose === 'workplace' ? 'workplace' : purpose === 'training' ? 'trainers' : 'lecturers')
 
-export const CYCLE_LABEL: Record<Cycle, string> = { free: 'Free forever', month: 'a month', semester: 'per semester', year: 'a year' }
+export const CYCLE_LABEL: Record<Cycle, string> = { free: 'Free to start', month: 'a month', semester: 'per semester', year: 'a year' }
 
 const number = (s: string) => Number(s.replace(/[^0-9.]/g, '')) || 0
 const cycleOf = (per: string): Cycle => (/free/i.test(per) ? 'free' : /semester/i.test(per) ? 'semester' : /year/i.test(per) ? 'year' : 'month')

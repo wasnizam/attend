@@ -643,6 +643,7 @@ export const ms: Record<string, string> = {
   "Free": "Percuma",
   "Pro": "Pro",
   "Free forever": "Percuma selama-lamanya",
+  "Free to start": "Percuma untuk bermula",
   "Price announced soon": "Harga akan diumumkan",
   "Early access: everything is free for everyone for now. We will tell you before that changes.": "Akses awal: semuanya percuma untuk semua orang buat masa ini. Kami akan maklumkan sebelum ia berubah.",
   "Not you? See the others": "Bukan anda? Lihat yang lain",

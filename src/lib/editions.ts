@@ -165,7 +165,7 @@ export const EDITIONS: Edition[] = [
       ['Is it allowed?', 'Dobry is your own tool, like Excel or a quiz app. The official record still goes into your university system. If your university has rules on student data, check them; Dobry keeps only the ID and name from your class list.'],
     ],
     plans: [
-      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 class', 'Up to 60 students in a class', '5 single sessions a month', 'QR attendance and live list', 'Reports on screen', '✕ Export to your university system', '✕ Warning letters and barring list', '✕ Download reports as PDF'] },
+      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free to start', items: ['1 class', 'Up to 60 students in a class', '5 single sessions a month', 'QR attendance and live list', 'Reports on screen', '✕ Export to your university system', '✕ Warning letters and barring list', '✕ Download reports as PDF'] },
       {
         name: 'Pro',
         price: { myr: 'RM19', usd: '$5' },
@@ -238,7 +238,7 @@ export const EDITIONS: Edition[] = [
       need: 'Just your laptop or the screen in the room, and participants’ own phones.',
     },
     plans: [
-      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['1 course', '5 single sessions a month', 'Unlimited participants', 'Every feature included'] },
+      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free to start', items: ['1 course', '5 single sessions a month', 'Unlimited participants', 'Every feature included'] },
       { name: 'Pro', price: { myr: 'RM39', usd: '$9' }, per: 'a month', alt: { myr: 'Or RM390 a year: 12 months for the price of 10.', usd: 'Or $90 a year: 12 months for the price of 10.' }, items: ['Unlimited courses', 'Unlimited participants', 'Every feature included'], best: true },
     ],
   },
@@ -311,7 +311,7 @@ export const EDITIONS: Edition[] = [
       ['What does the free plan leave out?', 'The free plan covers daily attendance for up to 5 staff: clock in and out, the Today screen, the daily list and the door screen, with all your history and reports to view on screen. Downloading reports as PDF, Excel export, overtime, leave, many offices, shift plans, the location check and one phone per person come with a paid plan.'],
     ],
     plans: [
-      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free forever', items: ['Up to 5 staff', ...WORK_BASICS, ...WORK_PRO.map((x) => `✕ ${x}`)] },
+      { name: 'Free', price: { myr: 'RM0', usd: '$0' }, per: 'Free to start', items: ['Up to 5 staff', ...WORK_BASICS, ...WORK_PRO.map((x) => `✕ ${x}`)] },
       { name: 'Pro 20', price: { myr: 'RM49', usd: '$12' }, per: 'a month', items: ['Up to 20 staff', ...WORK_BASICS, ...WORK_PRO], best: true },
       { name: 'Pro 50', price: { myr: 'RM99', usd: '$24' }, per: 'a month', items: ['Up to 50 staff', ...WORK_BASICS, ...WORK_PRO] },
       { name: 'Pro 100', price: { myr: 'RM179', usd: '$45' }, per: 'a month', items: ['Up to 100 staff', ...WORK_BASICS, ...WORK_PRO] },
