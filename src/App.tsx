@@ -14,6 +14,8 @@ const DoorEntry = lazy(() => import('./pages/DoorEntry'))
 const Staff = lazy(() => import('./Staff'))
 // Dobry Console, the company's own back office: a separate bundle and sign-in, never part of a customer's app.
 const Console = lazy(() => import('./console/ConsoleApp'))
+// The public page that proves a certificate of attendance is real.
+const Certificate = lazy(() => import('./pages/Certificate'))
 
 function SetupNeeded() {
   return (
@@ -44,6 +46,7 @@ export function App() {
         <Route path="/workplace" element={<Landing show="workplace" />} />
         <Route path="/terms" element={<Legal doc="terms" />} />
         <Route path="/privacy" element={<Legal doc="privacy" />} />
+        <Route path="/c/:code" element={<Certificate />} />
         <Route element={<NeedsFirebase />}>
           <Route path="/session/:token" element={<Attend />} />
           <Route path="/door" element={<DoorEntry />} />

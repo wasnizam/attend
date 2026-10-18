@@ -102,8 +102,8 @@ export interface Caller {
   org: FirebaseFirestore.DocumentData
 }
 
-/** Who is asking: a signed-in admin of an organisation, proven by their Firebase sign-in. */
-export async function caller(request: Request): Promise<Caller> {
+/** Who is asking: anyone signed in to an organisation (a lecturer as well as an admin), proven by their Firebase sign-in. */
+export async function member(request: Request): Promise<Caller & { role: string }> {
   const token = /^Bearer (.+)$/.exec(request.headers.get('authorization') ?? '')?.[1]
   if (!token) throw new HttpError(401, 'Please log in again.')
   const { db, auth } = firebase()
@@ -111,11 +111,17 @@ export async function caller(request: Request): Promise<Caller> {
   if (!decoded) throw new HttpError(401, 'Please log in again.')
   const user = (await db.doc(`users/${decoded.uid}`).get()).data()
   if (!user?.organisationId || user.status !== 'active') throw new HttpError(403, 'Your account cannot do this.')
-  if (user.role !== 'admin') throw new HttpError(403, 'Only an admin of your organisation can change the plan.')
   const org = (await db.doc(`organisations/${user.organisationId}`).get()).data()
   if (!org) throw new HttpError(404, 'Organisation not found.')
   if (org.suspended) throw new HttpError(403, 'This account is suspended. Contact Dobry.')
-  return { uid: decoded.uid, email: decoded.email ?? user.email ?? '', orgId: user.organisationId, org }
+  return { uid: decoded.uid, email: decoded.email ?? user.email ?? '', orgId: user.organisationId, org, role: user.role }
+}
+
+/** Who is asking: a signed-in admin of an organisation, proven by their Firebase sign-in. */
+export async function caller(request: Request): Promise<Caller> {
+  const { role, ...me } = await member(request)
+  if (role !== 'admin') throw new HttpError(403, 'Only an admin of your organisation can change the plan.')
+  return me
 }
 
 const EDITIONS: EditionId[] = ['lecturers', 'trainers', 'workplace']

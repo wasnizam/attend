@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { STATUS_LABEL } from '../components/AttendanceList'
 import { AttendanceTrend, LevelBar, LevelTag } from '../components/charts'
+import { CertificatesPanel } from '../components/Certificates'
 import { LettersPanel, UniExportPanel } from '../components/ClassTools'
 import { Paid, UpgradeNote, allowedOrTell } from '../components/Paid'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat } from '../components/ui'
@@ -66,7 +67,7 @@ function ClassReportView({ cls, savedTools }: { cls: WeeklyClass; savedTools?: W
   const [view, setView] = useState<View>('students')
   const [open, setOpen] = useState<string | null>(null)
   // The two semester tools open in place, one at a time.
-  const [tool, setTool] = useState<'uni' | 'letters' | null>(null)
+  const [tool, setTool] = useState<'uni' | 'letters' | 'certs' | null>(null)
   const [search, setSearch] = useState('')
   const [making, setMaking] = useState(false)
   const profile = useProfile()
@@ -300,7 +301,20 @@ function ClassReportView({ cls, savedTools }: { cls: WeeklyClass; savedTools?: W
                 {due('warning') + due('barring') > 0 && <span className="tabular rounded-full bg-bad px-1.5 text-xs font-semibold text-white">{due('warning') + due('barring')}</span>}
               </Button>
             )}
+            {!has('clock') && (
+              <Button variant={tool === 'certs' ? 'primary' : 'secondary'} onClick={() => setTool(tool === 'certs' ? null : 'certs')} aria-expanded={tool === 'certs'}>
+                {t('Certificates')}
+              </Button>
+            )}
           </div>
+          {tool === 'certs' && (
+            <CertificatesPanel
+              source={{ kind: 'class', id: cls.id }}
+              course={[cls.code, cls.name].filter(Boolean).join(' ')}
+              letterhead={savedTools?.letterhead}
+              people={rows.filter((r) => !r.to).map((r) => ({ key: r.key, name: r.studentName, id: r.studentId, rate: r.rate }))}
+            />
+          )}
           {tool === 'uni' && (allows('export') ? <UniExportPanel cls={cls} report={report} saved={savedTools} /> : <UpgradeNote what={t('Export to your university system is part of the paid plans.')} />)}
           {tool === 'letters' && rule && (allows('pdf') ? <LettersPanel cls={cls} report={report} saved={savedTools} /> : <UpgradeNote what={t('Warning letters and the barring list are part of the paid plans.')} />)}
 

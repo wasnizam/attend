@@ -82,7 +82,7 @@
       ]
     },
     {
-      "source": "/(app|console|admin|login|signup|door)(.*)",
+      "source": "/(app|console|admin|login|signup|door|c/)(.*)",
       "headers": [
         {
           "key": "X-Robots-Tag",

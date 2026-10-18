@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { CertificatesPanel } from '../components/Certificates'
 import { ExportButtons } from '../components/ExportButtons'
 import { LiveSession } from '../components/LiveSession'
 import { SessionRecords } from '../components/SessionRecords'
@@ -146,6 +147,9 @@ function EndedRecord({ session: s, records, loading, error, mine, busy, onReopen
 }) {
   const absentees = useAbsentees(s, records)
   const profile = useProfile()
+  const [certs, setCerts] = useState(false)
+  // A one-off session (a workshop, a seminar): a certificate for everyone who attended.
+  const certifies = mine && !s.classId && !has('clock')
   // Workplace: the export carries time out and hours as well.
   const clocking = has('clock')
   const outs = useLive<ClockOuts>(
@@ -187,7 +191,22 @@ function EndedRecord({ session: s, records, loading, error, mine, busy, onReopen
             {t('Reopen attendance')}
           </Button>
         )}
+        {certifies && (
+          <Button variant={certs ? 'primary' : 'secondary'} onClick={() => setCerts(!certs)} aria-expanded={certs}>
+            {t('Certificates')}
+          </Button>
+        )}
       </div>
+      {certifies && certs && !loading && (
+        <div className="mt-5">
+          <CertificatesPanel
+            oneSession
+            source={{ kind: 'session', id: s.id }}
+            course={[s.code, s.name].filter(Boolean).join(' ')}
+            people={records.filter((r) => r.status !== 'excused' && r.status !== 'mc').map((r) => ({ key: r.studentKey, name: r.studentName, id: r.studentId, rate: 100 }))}
+          />
+        </div>
+      )}
       <div className="mt-5 space-y-3">
         <ErrorNote>{error}</ErrorNote>
         {loading ? (
