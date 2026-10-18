@@ -4,6 +4,7 @@ import { PARTS, ReportCharts, buckets, chartData } from '../components/ReportCha
 import { getOrganisation } from '../data/account'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, inputClass } from '../components/ui'
 import { Paid, UpgradeNote } from '../components/Paid'
+import { PayPanel } from '../components/PayPanel'
 import { allows } from '../lib/plan'
 import { fetchManyAttendance, fetchManyClockOuts } from '../data/attendance'
 import { LEAVE_LABEL, fetchManyLeaveTypes } from '../data/evidence'
@@ -238,6 +239,7 @@ export function Payroll() {
     }
   }
   const [person, setPerson] = useState<string | null>(null)
+  const [payOpen, setPayOpen] = useState(false)
   const [making, setMaking] = useState(false)
   const [org, setOrg] = useState<Organisation | null>(null)
   const company = org?.name ?? ''
@@ -656,6 +658,28 @@ export function Payroll() {
             {overtimeOn ? <Stat label={t('Overtime')} value={formatDuration(total(shown, (r) => r.overtime + r.restMinutes + r.holidayMinutes))} /> : <UpgradeNote what={t('Overtime, rest-day and holiday hours are part of the paid plans.')} className="self-center" />}
             <Stat label={t('Late')} value={total(shown, (r) => r.late)} />
           </div>
+
+          {admin && (
+            payOpen && (period === 'month' || period === 'custom') ? (
+              allows('pay') ? (
+                <PayPanel rows={shown} from={from} to={to} periodName={periodName} company={company} slug={fileName.replace(/^attendance-/, '')} />
+              ) : (
+                <UpgradeNote what={t('Pay and payslips are part of Workplace Pro.')} />
+              )
+            ) : (
+              <Card className="flex flex-wrap items-center justify-between gap-3 p-4 print:hidden">
+                <div>
+                  <h2 className="font-semibold">{t('Pay and payslips')}</h2>
+                  <p className="text-sm text-muted">
+                    {period === 'month' || period === 'custom'
+                      ? t('Salary, overtime pay, allowances and deductions from this attendance, with a payslip for each person.')
+                      : t('Choose Month or Pick dates to work out pay.')}
+                  </p>
+                </div>
+                {(period === 'month' || period === 'custom') && <Button variant="secondary" onClick={() => setPayOpen(true)}>{t('Work out pay')}</Button>}
+              </Card>
+            )
+          )}
 
           {has('charts') && <ReportCharts rows={shown} groups={groups} from={from} to={to < today ? to : today} />}
 

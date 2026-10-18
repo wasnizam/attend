@@ -113,7 +113,7 @@ export function planOf(org: PlanFields, now = Date.now()): { active: ActivePlan;
 }
 
 /** What only paid plans include. A workplace is held back from all eight; a lecturer from PDF and export. */
-export type Feature = 'pdf' | 'export' | 'overtime' | 'leave' | 'offices' | 'shifts' | 'geofence' | 'phoneCheck'
+export type Feature = 'pdf' | 'export' | 'pay' | 'overtime' | 'leave' | 'offices' | 'shifts' | 'geofence' | 'phoneCheck'
 
 /**
  * Whether the free plan's limits are being applied. They always are: Dobry launches on the free
