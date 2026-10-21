@@ -48,24 +48,26 @@ describe('the emails', () => {
       expect(DEFAULT_TEMPLATES[templateId('firstSession', e)]).toBeTruthy()
       expect(DEFAULT_TEMPLATES[templateId('tips', e)]).toBeTruthy()
     }
-    expect(templateId('invite', 'workplace')).toBe('invite')
+    expect(templateId('invite', 'workplace')).toBe('invite.workplace')
+    // Every stage has its own wording for each edition.
+    expect(Object.keys(DEFAULT_TEMPLATES)).toHaveLength(15)
     expect(editionOf('training')).toBe('trainers')
     expect(editionOf(undefined)).toBe('lecturers')
   })
 
   it('fill in the first name, the organisation and the invite link', () => {
-    const words = fill(DEFAULT_TEMPLATES.invite, { name: 'Siti Aminah binti Yusof', invite: 'https://dobry.app/?ref=ABCD2345' })
+    const words = fill(DEFAULT_TEMPLATES['invite.lecturers'], { name: 'Siti Aminah binti Yusof', invite: 'https://dobry.app/?ref=ABCD2345' })
     expect(words.lines[0]).toBe('Hello Siti,')
-    expect(words.lines.at(-1)).toBe('Your invite link: https://dobry.app/?ref=ABCD2345')
+    expect(words.lines).toContain('Your invite link: https://dobry.app/?ref=ABCD2345')
     expect(words.button).toEqual({ label: 'Share your invite link', path: 'https://dobry.app/?ref=ABCD2345' })
-    expect(fill(DEFAULT_TEMPLATES.quiet, {}).lines[0]).toBe('Hello,')
+    expect(fill(DEFAULT_TEMPLATES['quiet.lecturers'], {}).lines[0]).toBe('Hello,')
   })
 
   it('keep saved wording and fill gaps from the standard', () => {
-    const s = tidySettings({ dailyCap: 9999, templates: { quiet: { on: false, subject: 'Hi' } } })
+    const s = tidySettings({ dailyCap: 9999, templates: { 'quiet.trainers': { on: false, subject: 'Hi' } } })
     expect(s.dailyCap).toBe(500)
-    expect(s.templates.quiet).toMatchObject({ on: false, subject: 'Hi', heading: DEFAULT_TEMPLATES.quiet.heading })
-    expect(s.templates.invite).toEqual(DEFAULT_TEMPLATES.invite)
+    expect(s.templates['quiet.trainers']).toMatchObject({ on: false, subject: 'Hi', heading: DEFAULT_TEMPLATES['quiet.trainers'].heading })
+    expect(s.templates['invite.workplace']).toEqual(DEFAULT_TEMPLATES['invite.workplace'])
   })
 
   it('sign unsubscribe links per organisation', () => {
