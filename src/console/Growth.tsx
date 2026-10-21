@@ -1,21 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Card, EmptyState, PageLoader, inputClass } from '../components/ui'
-import { type FeedbackRow, type GrowthData, type GrowthStage, type GrowthTemplate, feedbackList, growthData, saveGrowth, testGrowth } from '../data/billing'
+import { type FeedbackRow, type GrowthData, type GrowthStage, type GrowthTemplate, type SentRow, feedbackList, growthData, saveGrowth, sentLog, testGrowth } from '../data/billing'
 import { formatDate, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
 import { DAY, editionName, useOwner } from './context'
+import { CAME_BACK, HEALTH_LABEL, HEALTH_TONE, STAGE_NAME } from './emailLabels'
 import { Kpi, PageHead, Section, Tabs, td, th, useAction } from './ui'
 
-type Tab = 'emails' | 'sources' | 'feedback'
+type Tab = 'emails' | 'sent' | 'sources' | 'feedback'
 
-const STAGE_NAME: Record<GrowthStage, string> = {
-  firstSession: 'First session nudge',
-  invite: 'Invite friends',
-  tips: 'Tips for their edition',
-  quiet: 'Quiet for a week',
-  winback: 'Come back',
-}
 const EDITION_LABEL: Record<string, string> = { lecturers: 'Lecturers', trainers: 'Trainers', workplace: 'Workplace' }
 
 /** Getting customers in and keeping them: follow-up emails, where sign-ups come from, and what customers say. */
@@ -24,8 +18,9 @@ export default function Growth() {
   return (
     <>
       <PageHead title={t('Growth')} sub={t('Emails that bring customers back, where new customers come from, and what they say about Dobry.')} />
-      <Tabs value={tab} onChange={setTab} items={[['emails', t('Follow-up emails')], ['sources', t('Sign-up sources')], ['feedback', t('Feedback')]]} />
+      <Tabs value={tab} onChange={setTab} items={[['emails', t('Follow-up emails')], ['sent', t('Sent')], ['sources', t('Sign-up sources')], ['feedback', t('Feedback')]]} />
       {tab === 'emails' && <FollowUps />}
+      {tab === 'sent' && <Sent />}
       {tab === 'sources' && <Sources />}
       {tab === 'feedback' && <Feedback />}
     </>
@@ -182,6 +177,97 @@ function Editor({ tpl, canEdit, onChange, onReset, onTest, testing }: { tpl: Gro
           <p className="border-t border-line px-5 py-3 text-xs text-muted">{t('Dobry · dobry.app. Stop these tips; emails about your account and payments still arrive.')}</p>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ---------- Sent ----------
+
+
+function Sent() {
+  const [rows, setRows] = useState<SentRow[] | null>(null)
+  const [failed, setFailed] = useState('')
+  const [stage, setStage] = useState<GrowthStage | ''>('')
+  const [health, setHealth] = useState('')
+  useEffect(() => {
+    sentLog().then(setRows, (e) => setFailed(e instanceof Error ? e.message : String(e)))
+  }, [])
+  if (failed) return <p className="rounded-lg bg-bad-soft px-4 py-2 text-sm text-bad">{failed}</p>
+  if (!rows) return <PageLoader />
+  const shown = rows.filter((r) => (!stage || r.stage === stage) && (!health || r.health === health))
+  // How each email did, by the customer's health when it went.
+  const healths = ['new', 'healthy', 'risk', 'inactive']
+  const rate = (list: SentRow[]) => {
+    const done = list.filter((r) => r.cameBack !== 'pending')
+    return done.length ? `${Math.round((done.filter((r) => r.cameBack === 'yes').length / done.length) * 100)}%` : '—'
+  }
+  return (
+    <div className="space-y-4">
+      <Section title={t('What works for whom')} sub={t('Of the customers each email reached, how many ran a session within 7 days, by their health when it went. Last 90 days.')}>
+        <div className="-mx-5 overflow-x-auto">
+          <table className="w-full min-w-[34rem] text-sm">
+            <thead><tr className="border-b border-line"><th className={th}>{t('Email')}</th>{healths.map((h) => <th key={h} className={`${th} text-right`}>{t(HEALTH_LABEL[h])}</th>)}<th className={`${th} text-right`}>{t('All')}</th></tr></thead>
+            <tbody className="tabular divide-y divide-line">
+              {(Object.keys(STAGE_NAME) as GrowthStage[]).map((s) => {
+                const list = rows.filter((r) => r.stage === s)
+                return (
+                  <tr key={s}>
+                    <td className={td}>{t(STAGE_NAME[s])} <span className="text-xs text-muted">· {list.length}</span></td>
+                    {healths.map((h) => {
+                      const part = list.filter((r) => r.health === h)
+                      return <td key={h} className={`${td} text-right`}>{part.length ? <>{rate(part)} <span className="text-xs text-muted">({part.length})</span></> : <span className="text-slate-300">·</span>}</td>
+                    })}
+                    <td className={`${td} text-right font-semibold`}>{rate(list)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Section>
+      <Section
+        title={t('Every email sent')}
+        sub={t('{n} in the last 90 days', { n: rows.length })}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <select value={stage} onChange={(e) => setStage(e.target.value as GrowthStage | '')} className={`${inputClass} !h-9 !w-auto`} aria-label={t('Email')}>
+              <option value="">{t('All emails')}</option>
+              {(Object.keys(STAGE_NAME) as GrowthStage[]).map((s) => <option key={s} value={s}>{t(STAGE_NAME[s])}</option>)}
+            </select>
+            <select value={health} onChange={(e) => setHealth(e.target.value)} className={`${inputClass} !h-9 !w-auto`} aria-label={t('Health')}>
+              <option value="">{t('Any health')}</option>
+              {healths.map((h) => <option key={h} value={h}>{t(HEALTH_LABEL[h])}</option>)}
+            </select>
+          </div>
+        }
+      >
+        {shown.length === 0 ? (
+          <EmptyState title={t('Nothing sent yet')} text={t('Follow-up emails go out once a day at 9 AM Malaysia time. Each one sent appears here.')} />
+        ) : (
+          <div className="-mx-5 overflow-x-auto">
+            <table className="w-full min-w-[46rem] text-sm">
+              <thead><tr className="border-b border-line"><th className={th}>{t('Sent')}</th><th className={th}>{t('Customer')}</th><th className={th}>{t('Email')}</th><th className={th}>{t('Health then')}</th><th className={th}>{t('Result')}</th></tr></thead>
+              <tbody className="divide-y divide-line">
+                {shown.map((r) => (
+                  <tr key={r.id}>
+                    <td className={`${td} tabular whitespace-nowrap text-muted`}>{formatDate(isoDate(new Date(r.at)))}</td>
+                    <td className={td}>
+                      <Link to={`/console/customers/${r.orgId}`} className="font-medium text-accent hover:underline">{r.orgName || t('Customer')}</Link>
+                      <span className="block text-xs text-muted">{r.to}</span>
+                    </td>
+                    <td className={td}>
+                      {t(STAGE_NAME[r.stage] ?? r.stage)}
+                      <span className="block text-xs text-muted">{[t(EDITION_LABEL[r.edition] ?? r.edition), r.subject].filter(Boolean).join(' · ')}</span>
+                    </td>
+                    <td className={td}>{r.health ? <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${HEALTH_TONE[r.health] ?? ''}`}>{t(HEALTH_LABEL[r.health] ?? r.health)}</span> : '—'}</td>
+                    <td className={`${td} ${CAME_BACK[r.cameBack][1]}`}>{t(CAME_BACK[r.cameBack][0])}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Section>
     </div>
   )
 }

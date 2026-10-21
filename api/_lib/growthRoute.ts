@@ -1,5 +1,5 @@
 import { FieldValue } from 'firebase-admin/firestore'
-import { GROWTH_SETTINGS, followUpStats, growthSettings, sendFollowUp, unsubscribeSecret } from './followUps.js'
+import { GROWTH_SETTINGS, customerEmails, followUpStats, growthSettings, sendFollowUp, sentLog, unsubscribeSecret } from './followUps.js'
 import { DEFAULT_TEMPLATES, STAGES, tidySettings } from './growth.js'
 import { HttpError, failure, firebase, json, staff } from './server.js'
 
@@ -37,6 +37,12 @@ export async function POST(request: Request): Promise<Response> {
       const result = await sendFollowUp(db, '_test', template, { to: me.email, secret: await unsubscribeSecret(db), name: 'Aisyah Rahman' })
       if (!result.ok) throw new HttpError(400, result.error ?? 'The test could not be sent.')
       return json({ sent: me.email })
+    }
+    if (body.action === 'sent') return json({ sent: await sentLog(db) })
+    if (body.action === 'customer') {
+      const orgId = String((body as { orgId?: unknown }).orgId ?? '')
+      if (!orgId || orgId.includes('/')) throw new HttpError(400, 'Unknown customer.')
+      return json(await customerEmails(db, orgId))
     }
     if (body.action === 'feedback') {
       const snap = await db.collection('feedback').orderBy('at', 'desc').limit(500).get()

@@ -208,3 +208,31 @@ export const growthData = () => call<GrowthData>('/api/growth', { action: 'get' 
 export const saveGrowth = (settings: GrowthData['settings']) => call<{ settings: GrowthData['settings'] }>('/api/growth', { action: 'save', settings })
 export const testGrowth = (settings: GrowthData['settings'], template: string) => call<{ sent: string }>('/api/growth', { action: 'test', settings, template })
 export const feedbackList = () => call<{ feedback: FeedbackRow[] }>('/api/growth', { action: 'feedback' }).then((r) => r.feedback)
+
+export interface SentRow {
+  id: string
+  orgId: string
+  orgName: string
+  to: string
+  subject: string
+  stage: GrowthStage
+  template: string
+  edition: string
+  health: string
+  at: number
+  cameBack: 'yes' | 'no' | 'pending'
+}
+export interface CustomerEmail {
+  at: number
+  kind: 'followUp' | 'account'
+  subject: string
+  to: string
+  stage?: GrowthStage
+  health?: string
+  cameBack?: SentRow['cameBack']
+}
+
+/** Every follow-up sent in the last 90 days, with the customer's health at the time and whether they came back. */
+export const sentLog = () => call<{ sent: SentRow[] }>('/api/growth', { action: 'sent' }).then((r) => r.sent)
+/** Everything Dobry has emailed one customer. */
+export const customerEmails = (orgId: string) => call<{ emails: CustomerEmail[]; unsubscribedAt: number | null }>('/api/growth', { action: 'customer', orgId })

@@ -12,6 +12,8 @@ import { DAY, dateOf, editionName, money, statusLabel, useOwner } from './contex
 import { InvoiceForm, PaymentForm } from './forms'
 import { TheirView } from './TheirView'
 import { useFeatureUse } from './featureUse'
+import { CAME_BACK, HEALTH_LABEL, HEALTH_TONE, STAGE_NAME } from './emailLabels'
+import { type CustomerEmail, customerEmails } from '../data/billing'
 import { HealthBadge, Kpi, Section, StatusBadge, Tabs, planUntil, td, th, useAction } from './ui'
 
 type Tab = 'overview' | 'view' | 'subscription' | 'billing' | 'users' | 'activity' | 'notes' | 'audit'
@@ -171,6 +173,7 @@ function Overview({ c }: { c: C }) {
           )}
         </Section>
       </div>
+      <EmailsSent orgId={org.id} />
     </>
   )
 }
@@ -539,6 +542,47 @@ function StandingDiscount({ c }: { c: C }) {
         </div>
       ) : (
         <p className="text-sm text-muted">{t('No discount.')}</p>
+      )}
+    </Section>
+  )
+}
+
+/** Everything Dobry has emailed this customer, newest first: follow-ups (with their health then and whether they came back) and account emails. */
+function EmailsSent({ orgId }: { orgId: string }) {
+  const [data, setData] = useState<{ emails: CustomerEmail[]; unsubscribedAt: number | null } | null>(null)
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    customerEmails(orgId).then(setData, () => setFailed(true))
+  }, [orgId])
+  return (
+    <Section title={t('Emails sent')} sub={t('Follow-up tips and account emails Dobry has sent this customer.')}>
+      {failed ? (
+        <p className="text-sm text-muted">{t('The emails could not be loaded.')}</p>
+      ) : !data ? (
+        <p className="text-sm text-muted">{t('Loading…')}</p>
+      ) : (
+        <>
+          {data.unsubscribedAt !== null && (
+            <p className="mb-3 rounded-lg bg-slate-100 px-3 py-2 text-sm">{data.unsubscribedAt ? t('Stopped the tips on {date}. Account and payment emails still go.', { date: formatDate(isoDate(new Date(data.unsubscribedAt))) }) : t('Stopped the tips. Account and payment emails still go.')}</p>
+          )}
+          {data.emails.length === 0 ? (
+            <p className="text-sm text-muted">{t('No emails sent yet.')}</p>
+          ) : (
+            <ul className="divide-y divide-line text-sm">
+              {data.emails.map((e, i) => (
+                <li key={i} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5">
+                  <span className="tabular w-24 shrink-0 text-muted">{e.at ? formatDate(isoDate(new Date(e.at))) : '—'}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="font-medium">{e.subject || (e.stage ? t(STAGE_NAME[e.stage]) : t('Email'))}</span>
+                    <span className="block text-xs text-muted">{[e.kind === 'followUp' ? t('Follow-up: {name}', { name: t(STAGE_NAME[e.stage!] ?? '') }) : t('Account email'), e.to].filter(Boolean).join(' · ')}</span>
+                  </span>
+                  {e.health && <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${HEALTH_TONE[e.health] ?? ''}`}>{t(HEALTH_LABEL[e.health] ?? e.health)}</span>}
+                  {e.cameBack && <span className={`text-xs ${CAME_BACK[e.cameBack][1]}`}>{t(CAME_BACK[e.cameBack][0])}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </Section>
   )
