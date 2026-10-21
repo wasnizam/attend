@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { IPhone, Snapshots, TrustSection } from '../components/LandingProof'
 import { LanguageSwitch } from '../components/LanguageSwitch'
+import { person } from '../lib/demoNames'
 import { Logo, buttonClass } from '../components/ui'
 import { inMalaysia, setCurrency, useCurrency } from '../lib/currency'
 import { EDITIONS, type Edition, type EditionId, editionById, rememberEdition } from '../lib/editions'
@@ -60,7 +61,7 @@ export function LiveDemo({ edition }: { edition: Pick<Edition, 'id' | 'preview'>
     // Arrivals bunch up in the 10 minutes before the start, as they do; the newest is always latest.
     const at = startMin - 12 + Math.floor(i / 4)
     const h = Math.floor(at / 60)
-    return { key: i, name: ARRIVALS[i % ARRIVALS.length], time: `${((h + 11) % 12) + 1}:${String(at % 60).padStart(2, '0')}`, ampm: h < 12 ? 'AM' : 'PM', colour: AVATAR[i % AVATAR.length] }
+    return { key: i, name: person(ARRIVALS[i % ARRIVALS.length]), time: `${((h + 11) % 12) + 1}:${String(at % 60).padStart(2, '0')}`, ampm: h < 12 ? 'AM' : 'PM', colour: AVATAR[i % AVATAR.length] }
   })
   const newest = list[0]
   const ring = 2 * Math.PI * 18
@@ -71,7 +72,7 @@ export function LiveDemo({ edition }: { edition: Pick<Edition, 'id' | 'preview'>
           <span className="size-2.5 rounded-full bg-rose-300" />
           <span className="size-2.5 rounded-full bg-sun" />
           <span className="size-2.5 rounded-full bg-emerald-300" />
-          <span className="ml-3 truncate text-xs text-muted">{title} · {time}</span>
+          <span className="ml-3 truncate text-xs text-muted">{t(title)} · {time}</span>
         </div>
         <div className="grid gap-4 p-4 sm:grid-cols-[11.5rem_1fr] sm:p-5">
           <div className="rounded-xl bg-night p-4 text-center text-white">

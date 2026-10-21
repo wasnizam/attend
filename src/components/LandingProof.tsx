@@ -1,6 +1,7 @@
 import { QRCodeSVG } from 'qrcode.react'
 import type { Edition, TrustVisual } from '../lib/editions'
 import { t } from '../lib/i18n'
+import { person } from '../lib/demoNames'
 
 const ring = 2 * Math.PI * 15
 
@@ -79,13 +80,13 @@ function Visual({ kind }: { kind: TrustVisual }) {
         <IPhone width="5.6rem">
           <Mark ok className="size-8" />
           <p className="mt-2 text-[10px] font-bold">{t('Clocked in')}</p>
-          <p className="text-[8px] text-slate-500">Sarah Lee · 8:58</p>
+          <p className="text-[8px] text-slate-500">{person('Sarah Lee')} · 8:58</p>
           <span className="mt-3 rounded-full bg-emerald-50 px-2 py-0.5 text-[7px] font-semibold whitespace-nowrap text-emerald-700">{t('Own phone')}</span>
         </IPhone>
         <IPhone width="5.6rem" tone="titanium">
           <Mark ok={false} className="size-8" />
           <p className="mt-2 text-[10px] font-bold">{t('Flagged')}</p>
-          <p className="text-[8px] text-slate-500">Sarah Lee?</p>
+          <p className="text-[8px] text-slate-500">{person('Sarah Lee')}?</p>
           <span className="mt-3 rounded-full bg-rose-50 px-2 py-0.5 text-[7px] font-semibold whitespace-nowrap text-rose-700">{t('Not their phone')}</span>
         </IPhone>
       </div>
@@ -166,9 +167,9 @@ function Visual({ kind }: { kind: TrustVisual }) {
           <span>{t('Today')}</span>
           <svg viewBox="0 0 24 24" className="size-3.5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z" /></svg>
         </div>
-        {row('Ahmad Ali', 'bg-sky-200 text-sky-900', '8:55')}
-        {row('Sarah Lee', 'bg-amber-200 text-amber-900', '8:58', <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-800">{t('Added by hand')}</span>)}
-        {row('Kumar Raj', 'bg-emerald-200 text-emerald-900', '9:02')}
+        {row(person('Ahmad Ali'), 'bg-sky-200 text-sky-900', '8:55')}
+        {row(person('Sarah Lee'), 'bg-amber-200 text-amber-900', '8:58', <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-800">{t('Added by hand')}</span>)}
+        {row(person('Kumar Raj'), 'bg-emerald-200 text-emerald-900', '9:02')}
       </div>
     )
   }
@@ -243,7 +244,7 @@ export function Snapshots({ edition }: { edition: Edition }) {
                   <svg viewBox="0 0 20 20" className="size-7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 10.5 3.2 3L15 7" /></svg>
                 </span>
                 <p className="mt-4 font-semibold tracking-tight">{t(phone.heading)}</p>
-                <p className="mt-3 text-sm">{phone.session}</p>
+                <p className="mt-3 text-sm">{t(phone.session)}</p>
                 <p className="tabular font-display text-3xl font-bold">{phone.time}</p>
                 <p className="mt-2 text-xs text-muted">AHMAD ALI</p>
                 {phone.out && (
@@ -255,7 +256,7 @@ export function Snapshots({ edition }: { edition: Edition }) {
           </figure>
           <figure className="min-w-0">
             <div aria-hidden className="overflow-x-auto rounded-xl bg-white shadow-pop">
-              <p className="border-b border-line bg-slate-50 px-5 py-3 text-sm font-semibold">{report.name} · {t(report.kind)}</p>
+              <p className="border-b border-line bg-slate-50 px-5 py-3 text-sm font-semibold">{t(report.name)} · {t(report.kind)}</p>
               <table className="w-full text-left text-sm">
                 <thead className="text-xs text-muted">
                   <tr>
@@ -269,7 +270,7 @@ export function Snapshots({ edition }: { edition: Edition }) {
                     <tr key={row.cells[0]}>
                       {row.cells.map((cell, i) => (
                         <td key={i} className={`px-1.5 py-3 first:pl-4 last:pr-4 sm:px-3 sm:first:pl-5 sm:last:pr-5 ${i ? 'text-right whitespace-nowrap' : 'font-medium'} ${row.tone && i === row.cells.length - 1 ? `font-semibold ${TONE[row.tone]}` : ''}`}>
-                          {row.tone && i === row.cells.length - 1 ? t(cell) : cell}
+                          {row.tone && i === row.cells.length - 1 ? t(cell) : i === 0 ? person(cell) : cell}
                           {i === 1 && row.late && <span className="block text-xs font-medium text-[#b25e00]">{t('Late by {n} min', { n: row.late })}</span>}
                         </td>
                       ))}
