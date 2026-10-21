@@ -80,4 +80,14 @@ describe('emails to customers', () => {
     expect(bare.subject).toBe('Your Dobry plan is now changed')
     expect(bare.lines.every((l) => l.length > 0)).toBe(true)
   })
+
+  it('speaks to each edition about its own plan', () => {
+    const trainer = emailText('trialEnded', { purpose: 'training' }).lines.join(' ')
+    expect(trainer).toMatch(/1 course, 5 single sessions a month, certificates/)
+    expect(trainer).toMatch(/inviting other trainers/)
+    const work = emailText('paymentFailed', { purpose: 'workplace' }, { amount: 'MYR 49.00' }).lines.join(' ')
+    expect(work).toMatch(/overtime, leave, payslips and staff beyond 5 stop/)
+    expect(emailText('welcome', { purpose: 'training' }).lines.join(' ')).toMatch(/certificate of attendance/)
+    expect(emailText('referralReward', { purpose: 'education' }, { months: '1', friends: '5' }).lines.join(' ')).toMatch(/export to your university portal/)
+  })
 })

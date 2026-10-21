@@ -16,6 +16,35 @@ export interface EmailText {
 
 const EDITION: Record<string, string> = { education: 'Lecturers', training: 'Trainers', workplace: 'Workplace' }
 
+/** What each edition calls its work, and what its plans hold, so every email speaks its customer's language. */
+const WORDS: Record<'education' | 'training' | 'workplace', { work: string; colleagues: string; pro: string; free: string; kept: string; stops: string }> = {
+  education: {
+    work: 'your classes',
+    colleagues: 'colleagues',
+    pro: 'up to 10 classes, export to your university portal, warning letters, the barring list and PDF reports',
+    free: '1 class of up to 60 students, QR attendance and reports on screen',
+    kept: 'Your class lists, attendance and reports',
+    stops: 'portal export, warning letters and PDF reports',
+  },
+  training: {
+    work: 'your courses',
+    colleagues: 'other trainers',
+    pro: 'unlimited courses and sessions, with every feature',
+    free: '1 course, 5 single sessions a month, certificates and reports',
+    kept: 'Your courses, attendance records and certificates',
+    stops: 'unlimited courses and sessions',
+  },
+  workplace: {
+    work: 'your team’s attendance',
+    colleagues: 'other business owners',
+    pro: 'more staff, several offices, shifts, overtime, leave, PDF and Excel reports, and pay with payslips',
+    free: 'up to 5 staff clocking in and out, the door screen and reports on screen',
+    kept: 'Your staff lists, clock-ins and reports',
+    stops: 'overtime, leave, payslips and staff beyond 5',
+  },
+}
+const wordsFor = (purpose?: string) => WORDS[purpose === 'workplace' ? 'workplace' : purpose === 'training' || purpose === 'events' ? 'training' : 'education']
+
 /** "12 October 2026", or nothing when there is no date. */
 export const longDate = (iso: string | undefined) => {
   if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return ''
@@ -26,6 +55,8 @@ export const longDate = (iso: string | undefined) => {
 export function emailText(kind: EmailKind, who: { name?: string; organisation?: string; purpose?: string }, data: Record<string, string> = {}): EmailText {
   const hello = who.name?.trim() ? `Hello ${who.name.trim().split(/\s+/)[0]},` : 'Hello,'
   const workplace = who.purpose === 'workplace'
+  const trainer = who.purpose === 'training' || who.purpose === 'events'
+  const w = wordsFor(who.purpose)
   switch (kind) {
     case 'welcome':
       return {
@@ -35,8 +66,15 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
           hello,
           `Your Dobry ${EDITION[who.purpose ?? 'education'] ?? 'Lecturers'} account is ready.`,
           workplace
-            ? 'Next: add your staff, then open the door screen on any tablet or laptop. Staff scan the QR with their own phone to clock in and out.'
-            : 'Next: add a class and its student list, then start a session and show the QR. Students scan it with their own phone, and the list fills itself.',
+            ? 'Next: set your working hours and add your staff, then open the door screen on any tablet or laptop at the entrance. Staff scan the QR with their own phone to clock in and out.'
+            : trainer
+              ? 'Next: add your course or workshop, then start a session and show the QR. Participants scan it with their own phone, and the list fills itself. For online sessions they type a short code instead.'
+              : 'Next: add a class and its student list, then start a session and show the QR. Students scan it with their own phone, and the list fills itself.',
+          workplace
+            ? 'When the month ends, the same clock-ins give you hours, overtime and lateness for payroll.'
+            : trainer
+              ? 'When a course ends, one click makes a certificate of attendance for everyone who came.'
+              : 'As the semester goes on, Dobry works out the 80% rule for every student, and exports to your university portal.',
           'Tip: add Dobry to your phone’s home screen from the Account page. It opens like an app and keeps you logged in.',
           'Reply to this email if you need a hand. A real person reads it.',
         ],
@@ -49,8 +87,9 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
         lines: [
           hello,
           `Your free Pro trial for ${who.organisation || 'your account'} ends on ${longDate(data.until)}.`,
+          `During the trial you have ${w.pro}.`,
           'To keep everything in Pro, choose a plan before then. It takes a minute, and you can cancel at any time.',
-          'If you do nothing, your account moves to the free plan. Nothing is deleted: your records stay, ready to view.',
+          `If you do nothing, your account moves to the free plan, which keeps ${w.free}. Nothing is deleted: your records stay, ready to view.`,
         ],
         button: { label: 'Choose a plan', path: '/app/account#plan' },
       }
@@ -60,9 +99,9 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
         heading: 'You are now on the free plan',
         lines: [
           hello,
-          `The Pro trial for ${who.organisation || 'your account'} has ended, so the account is on the free plan now.`,
-          'Nothing was deleted. Your records are all there, ready to view.',
-          'You can move back to Pro at any time from the Account page.',
+          `The Pro trial for ${who.organisation || 'your account'} has ended, so the account is on the free plan now: ${w.free}.`,
+          `Nothing was deleted. ${w.kept} are all there, ready to view.`,
+          `You can move back to Pro at any time from the Account page, or get it free by inviting ${w.colleagues}: every 5 who start using Dobry earn you a month.`,
         ],
         button: { label: 'See the plans', path: '/app/account#plan' },
       }
@@ -75,6 +114,7 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
           `We tried to take ${data.amount || 'your payment'} for ${who.organisation || 'your Dobry plan'}, and the card was refused.`,
           data.retry ? `We will try again on ${longDate(data.retry)}. Your plan stays on until then.` : 'Your plan stays on for a few more days while you sort it out.',
           'Most often the card has expired or reached its limit. You can check or change the card in a minute from the Account page.',
+          `If it cannot be paid, the account moves to the free plan, and Pro features such as ${w.stops} stop. ${w.kept} stay safe either way.`,
         ],
         button: { label: 'Update your card', path: '/app/account#plan' },
       }
@@ -87,6 +127,7 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
           `We received ${data.amount || 'your payment'} for ${who.organisation || 'your Dobry plan'}${data.number ? ` (invoice ${data.number})` : ''}.`,
           data.until ? `Your plan is paid until ${longDate(data.until)}, and renews by itself. You can cancel at any time from the Account page.` : 'Your plan renews by itself. You can cancel at any time from the Account page.',
           'On your bank statement this payment appears as DOBRY.',
+          `Thank you for running ${w.work} on Dobry.`,
         ],
         button: data.invoiceUrl ? { label: 'View your invoice', path: data.invoiceUrl } : { label: 'Open your account', path: '/app/account#plan' },
       }
@@ -98,7 +139,8 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
           hello,
           `As you asked, the paid plan for ${who.organisation || 'your account'} is cancelled and will not renew. You will not be charged again.`,
           data.until ? `Everything in your plan stays on until ${longDate(data.until)}. After that the account moves to the free plan.` : 'Everything in your plan stays on until the end of the period you paid for. After that the account moves to the free plan.',
-          'Nothing is deleted: your records stay, ready to view.',
+          `Nothing is deleted: your records stay, ready to view. The free plan keeps ${w.free}.`,
+          'If something in Dobry made you leave, reply and tell us. A real person reads it.',
           'Changed your mind? You can resume the plan with one click on the Account page, any time before that date.',
           'If you did not ask for this, reply to this email straight away.',
         ],
@@ -110,7 +152,7 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
         heading: 'Your plan is back on',
         lines: [
           hello,
-          `The paid plan for ${who.organisation || 'your account'} is resumed. It carries on as before, with nothing lost.`,
+          `The paid plan for ${who.organisation || 'your account'} is resumed. It carries on as before, with nothing lost: ${w.pro}.`,
           data.until ? `It renews by itself on ${longDate(data.until)}. You can cancel at any time from the Account page.` : 'It renews by itself. You can cancel at any time from the Account page.',
           'If you did not ask for this, reply to this email straight away.',
         ],
@@ -135,9 +177,9 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
         heading: 'You are now on the free plan',
         lines: [
           hello,
-          `The paid plan for ${who.organisation || 'your account'} has ended, so the account is on the free plan now.`,
-          'Nothing was deleted. Your records are all there, ready to view.',
-          'You can choose a plan again at any time from the Account page.',
+          `The paid plan for ${who.organisation || 'your account'} has ended, so the account is on the free plan now: ${w.free}.`,
+          `Nothing was deleted. ${w.kept} are all there, ready to view.`,
+          `You can choose a plan again at any time from the Account page, or get Pro free by inviting ${w.colleagues}: every 5 who start using Dobry earn you a month.`,
         ],
         button: { label: 'See the plans', path: '/app/account#plan' },
       }
@@ -148,8 +190,9 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
         lines: [
           hello,
           `${data.friends || 'Several'} of the friends you invited now use Dobry, so ${who.organisation || 'your account'} has Pro free for ${data.months === '1' ? '1 month' : `${data.months || 'some'} months`}.`,
+          `That means ${w.pro}.`,
           data.until ? `It runs until ${longDate(data.until)}. There is nothing to pay and nothing to cancel: after that the account goes back to the free plan, with nothing deleted.` : 'There is nothing to pay and nothing to cancel.',
-          'Keep inviting: every 5 more friends who start using Dobry earn you another month.',
+          `Keep inviting ${w.colleagues}: every 5 more who start using Dobry earn you another month, up to a year.`,
         ],
         button: { label: 'Open Dobry', path: '/app/account#invite' },
       }

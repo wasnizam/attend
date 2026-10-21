@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CertificatesPanel } from '../components/Certificates'
 import { ExportButtons } from '../components/ExportButtons'
 import { LiveSession } from '../components/LiveSession'
+import { SessionMessages } from '../components/SessionMessages'
 import { SessionRecords } from '../components/SessionRecords'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, StatusBadge, friendlyError } from '../components/ui'
 import { type ClockOuts, subscribeClockOuts } from '../data/attendance'
@@ -12,11 +13,18 @@ import { useLive } from '../hooks/useLive'
 import { useAbsentees } from '../hooks/useRoster'
 import { useNow, useSessionAttendance } from '../hooks/useSessions'
 import { slug } from '../lib/csv'
-import { countPresent, courseLine, effectiveStatus, formatDate, formatPercent, formatRange, percent } from '../lib/format'
+import { attendUrl, countPresent, courseLine, effectiveStatus, formatDate, formatPercent, formatRange, percent } from '../lib/format'
+import type { MessageContext } from '../lib/messages'
 import { t } from '../lib/i18n'
 import { has } from '../lib/purpose'
 import { rotatePref } from '../lib/prefs'
 import type { AttendanceRecord, Session } from '../lib/types'
+
+/** What a message to the session's people needs to say. */
+const messageContext = (s: Session): MessageContext => {
+  const online = s.delivery === 'online' || s.delivery === 'hybrid'
+  return { course: [s.code, s.name].filter(Boolean).join(' '), date: s.date, startTime: s.startTime, endTime: s.endTime, venue: s.venue || undefined, online, link: online && s.token ? attendUrl(s.token) : undefined }
+}
 
 export function SessionDetail() {
   const { id = '' } = useParams()
@@ -67,6 +75,7 @@ export function SessionDetail() {
         {back}
         <ErrorNote>{error || (attendance.error && t('Live attendance could not be loaded. Check your connection.'))}</ErrorNote>
         <LiveSession session={s} records={records} owner={mine} />
+        {mine && <SessionMessages kinds={['during', 'clockOut']} ctx={messageContext(s)} />}
       </div>
     )
   }
@@ -111,6 +120,7 @@ export function SessionDetail() {
             </Button>
           </div>
         </Card>
+        {mine && <SessionMessages kinds={['before', 'intro']} ctx={messageContext(s)} />}
       </div>
     )
   }
@@ -191,6 +201,7 @@ function EndedRecord({ session: s, records, loading, error, mine, busy, onReopen
             {t('Reopen attendance')}
           </Button>
         )}
+        {mine && <SessionMessages kinds={['after', 'fix']} ctx={messageContext(s)} />}
         {certifies && (
           <Button variant={certs ? 'primary' : 'secondary'} onClick={() => setCerts(!certs)} aria-expanded={certs}>
             {t('Certificates')}

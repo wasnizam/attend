@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import { STATUS_LABEL } from '../components/AttendanceList'
 import { AttendanceTrend, LevelBar, LevelTag } from '../components/charts'
 import { CertificatesPanel } from '../components/Certificates'
+import { SessionMessages } from '../components/SessionMessages'
+import { nextMeeting } from '../lib/messages'
 import { LettersPanel, UniExportPanel } from '../components/ClassTools'
 import { Paid, UpgradeNote, allowedOrTell } from '../components/Paid'
 import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat } from '../components/ui'
@@ -301,6 +303,15 @@ function ClassReportView({ cls, savedTools }: { cls: WeeklyClass; savedTools?: W
                 {due('warning') + due('barring') > 0 && <span className="tabular rounded-full bg-bad px-1.5 text-xs font-semibold text-white">{due('warning') + due('barring')}</span>}
               </Button>
             )}
+            {!has('clock') && (() => {
+              const next = nextMeeting(cls)
+              return (
+                <SessionMessages
+                  kinds={next ? ['before', 'rule', 'after'] : ['rule', 'after']}
+                  ctx={{ course: [cls.code, cls.name].filter(Boolean).join(' '), ...(next ?? { date: held[held.length - 1]?.date }), venue: cls.venue || undefined, online: cls.delivery === 'online', required: report.required }}
+                />
+              )
+            })()}
             {!has('clock') && (
               <Button variant={tool === 'certs' ? 'primary' : 'secondary'} onClick={() => setTool(tool === 'certs' ? null : 'certs')} aria-expanded={tool === 'certs'}>
                 {t('Certificates')}

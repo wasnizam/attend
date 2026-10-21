@@ -1,6 +1,7 @@
 import { Link, Navigate } from 'react-router-dom'
 import { FeedbackPrompt } from '../components/FeedbackPrompt'
 import { GettingStarted } from '../components/GettingStarted'
+import { SessionMessages } from '../components/SessionMessages'
 import { ShiftAlerts } from '../components/ShiftAlerts'
 import { TodayHero, TodaySchedule } from '../components/TodayItems'
 import { WeekSummary } from '../components/WeekSummary'
@@ -107,6 +108,11 @@ export function Dashboard() {
         // A workplace's day is about people: who is in, late, gone home, or missing.
         <div className="mx-auto max-w-3xl space-y-4">
           <ShiftAlerts sessions={sessions} now={now} />
+          {!waiting && (
+            <div className="flex">
+              <SessionMessages kinds={['intro', 'clockOut', 'fix']} ctx={{ course: '', date: addDays(today, 1) }} />
+            </div>
+          )}
           {waiting ? (
             <Card className="p-6 text-center">
               <p className="text-lg font-semibold tracking-tight">{t('Welcome. No office is yours yet.')}</p>
