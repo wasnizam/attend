@@ -158,7 +158,7 @@ export function Home() {
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden sm:block">
-              <LanguageSwitch />
+              <LanguageSwitch czech />
             </div>
             <Link to="/login" className="rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap text-slate-700 hover:bg-slate-100">
               {t('Log in')}
@@ -307,7 +307,7 @@ export function Home() {
               <Link to="/terms" className="hover:text-ink">{t('Terms')}</Link>
               <Link to="/privacy" className="hover:text-ink">{t('Privacy')}</Link>
             </span>
-            <LanguageSwitch />
+            <LanguageSwitch czech />
           </div>
         </div>
       </footer>
