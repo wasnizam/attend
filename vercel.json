@@ -11,6 +11,18 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/growth",
+      "destination": "/api/app?fn=growth"
+    },
+    {
+      "source": "/api/unsubscribe",
+      "destination": "/api/app?fn=unsubscribe"
+    },
+    {
+      "source": "/api/feedback",
+      "destination": "/api/app?fn=feedback"
+    },
+    {
       "source": "/api/certificate",
       "destination": "/api/app?fn=certificate"
     },

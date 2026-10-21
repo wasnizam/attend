@@ -115,6 +115,13 @@ function Overview({ c }: { c: C }) {
             <div><dt className="text-xs text-muted">{t('Account owner')}</dt><dd>{c.owner?.name ?? '—'} · <a className="text-accent" href={`mailto:${c.owner?.email}`}>{c.owner?.email}</a></dd></div>
             <div><dt className="text-xs text-muted">{t('Accounts')}</dt><dd>{t('{n} admins, {m} managers', { n: c.users.filter((u) => u.role === 'admin').length, m: c.users.filter((u) => u.role !== 'admin').length })}</dd></div>
             <div>
+              <dt className="text-xs text-muted">{t('Came from')}</dt>
+              <dd>
+                {org.source ? [org.source.source, org.source.campaign, org.source.landing].filter(Boolean).join(' · ') : t('Not known (joined before tracking began)')}
+                {org.marketingOff && <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-muted">{t('Stopped the tips')}</span>}
+              </dd>
+            </div>
+            <div>
               <dt className="text-xs text-muted">{t('Features that keep them')}</dt>
               <dd>
                 {!use ? '—' : [

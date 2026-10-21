@@ -1,4 +1,5 @@
 import { Link, Navigate } from 'react-router-dom'
+import { FeedbackPrompt } from '../components/FeedbackPrompt'
 import { GettingStarted } from '../components/GettingStarted'
 import { ShiftAlerts } from '../components/ShiftAlerts'
 import { TodayHero, TodaySchedule } from '../components/TodayItems'
@@ -96,6 +97,10 @@ export function Dashboard() {
             {t('+ New session')}
           </Link>
         )}
+      </div>
+
+      <div className="empty:hidden">
+        <FeedbackPrompt sessions={sessions} today={today} />
       </div>
 
       {has('clock') ? (

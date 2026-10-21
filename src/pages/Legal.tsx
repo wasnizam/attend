@@ -8,7 +8,7 @@ import { describePage } from '../lib/seo'
  * promise to customers, and the people reading them are lecturers and shop owners, not lawyers.
  * English only, so there is one text to stand by.
  */
-const WHO = { product: 'Dobry', site: 'dobry.app', email: 'hello@dobry.app', country: 'Malaysia', updated: '12 October 2026' }
+const WHO = { product: 'Dobry', site: 'dobry.app', email: 'hello@dobry.app', country: 'Malaysia', updated: '21 October 2026' }
 
 type Part = [title: string, paragraphs: (string | string[])[]]
 
@@ -77,7 +77,7 @@ const PRIVACY: Part[] = [
     'People who check in do not need an account, and we do not ask for their email or phone number.',
   ]],
   ['4. What we use it for', [
-    ['to record attendance and show it to the organiser who collected it;', 'to make their lists, reports, letters and exports;', 'to run accounts, plans and payments;', 'to send a few emails about the account, such as a welcome, a trial ending or a failed payment;', 'to keep the service safe and working, and to stop misuse.'],
+    ['to record attendance and show it to the organiser who collected it;', 'to make their lists, reports, letters and exports;', 'to run accounts, plans and payments;', 'to send a few emails about the account, such as a welcome, a trial ending or a failed payment;', 'to send account owners a few tips on getting started and on features made for them. Every tip email has a link to stop them; account and payment emails still arrive;', 'to ask people who log in, once, how likely they are to recommend Dobry. Answers are optional, and we quote someone on our website only if they ticked that we may;', 'to keep the service safe and working, and to stop misuse.'],
     'We do not use this information for advertising, and we do not sell or rent it to anyone.',
   ]],
   ['5. Who else handles it', [
@@ -95,7 +95,7 @@ const PRIVACY: Part[] = [
     'You can refuse the location permission on your phone. The organiser decides whether a check-in without it is accepted.',
   ]],
   ['8. Cookies and your device', [
-    'Dobry does not use advertising or tracking cookies. It keeps a few things on your device so it works: that you are logged in, your language, and small preferences. Installing Dobry on your home screen keeps a copy of the app on the device so it opens quickly.',
+    'Dobry does not use advertising or tracking cookies. It keeps a few things on your device so it works: that you are logged in, your language, small preferences, and the page or link that first brought you to Dobry, which is saved with your account if you sign up within 30 days. Installing Dobry on your home screen keeps a copy of the app on the device so it opens quickly.',
   ]],
   ['9. Keeping it safe', [
     'Each organisation’s records are kept apart, and access rules decide what each person can see. An attendance time cannot be changed by the person who checked in, and anything added by hand is labelled. All traffic is encrypted.',

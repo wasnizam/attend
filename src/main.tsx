@@ -7,6 +7,7 @@ import '@fontsource-variable/bricolage-grotesque'
 import './index.css'
 import { watchInstall } from './lib/install'
 import { rememberRef } from './lib/referral'
+import { rememberSource } from './lib/source'
 import { keepUpToDate } from './lib/updates'
 
 // Students only ever open the check-in page from a QR code. They get no saved offline
@@ -15,6 +16,7 @@ if (!location.pathname.startsWith('/session/') && location.pathname !== '/door')
 
 watchInstall()
 rememberRef()
+rememberSource()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

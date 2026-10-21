@@ -1,4 +1,5 @@
 import { auth } from '../lib/auth'
+import { takeSource } from '../lib/source'
 import type { Currency } from '../lib/currency'
 import { t } from '../lib/i18n'
 
@@ -122,7 +123,7 @@ export const emailSetup = (action: 'status' | 'save' | 'test' | 'clear', fields:
 export async function sendWelcome(): Promise<void> {
   try {
     const token = await auth.currentUser?.getIdToken()
-    if (token) await fetch('/api/welcome', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: '{}' })
+    if (token) await fetch('/api/welcome', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ source: takeSource() }) })
   } catch {
     // No email this time; nothing else depends on it.
   }
@@ -171,3 +172,39 @@ export interface FeatureUse {
 
 /** For Dobry's team: certificates issued and companies working out pay. Counts only. */
 export const featureUse = () => call<FeatureUse>('/api/feature-use', {})
+
+export interface GrowthTemplate {
+  on: boolean
+  subject: string
+  heading: string
+  body: string
+  button: string
+  path: string
+}
+export type GrowthStage = 'firstSession' | 'invite' | 'tips' | 'quiet' | 'winback'
+export interface GrowthData {
+  settings: { dailyCap: number; templates: Record<string, GrowthTemplate> }
+  defaults: Record<string, GrowthTemplate>
+  stages: { id: GrowthStage; when: string; perEdition: boolean }[]
+  stats: Record<GrowthStage, { sent30: number; sentAll: number; cameBack: number; measured: number }>
+  unsubscribed: number
+  canEdit: boolean
+}
+export interface FeedbackRow {
+  id: string
+  orgId: string
+  organisation: string
+  purpose: string
+  name: string
+  email: string
+  score: number
+  comment: string
+  quoteOk: boolean
+  at: number
+}
+
+/** For Dobry's team: the follow-up emails and their results. */
+export const growthData = () => call<GrowthData>('/api/growth', { action: 'get' })
+export const saveGrowth = (settings: GrowthData['settings']) => call<{ settings: GrowthData['settings'] }>('/api/growth', { action: 'save', settings })
+export const testGrowth = (settings: GrowthData['settings'], template: string) => call<{ sent: string }>('/api/growth', { action: 'test', settings, template })
+export const feedbackList = () => call<{ feedback: FeedbackRow[] }>('/api/growth', { action: 'feedback' }).then((r) => r.feedback)

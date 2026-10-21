@@ -1,4 +1,5 @@
 import { emailOrg } from './_lib/email.js'
+import { runFollowUps } from './_lib/followUps.js'
 import { settleAll } from './_lib/referral.js'
 import { failure, firebase, json } from './_lib/server.js'
 
@@ -28,7 +29,12 @@ export async function GET(): Promise<Response> {
     }
     // Friends who have started using Dobry since yesterday: count them, and give any Pro earned.
     const invites = await settleAll(db).catch(() => 0)
-    return json({ checked: trials.size, sent, invites })
+    // The follow-up emails (first session, invite friends, tips, come back), up to the daily limit.
+    const followUps = await runFollowUps(db).catch((e) => {
+      console.error(e)
+      return 0
+    })
+    return json({ checked: trials.size, sent, invites, followUps })
   } catch (e) {
     return failure(e)
   }

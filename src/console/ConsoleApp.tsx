@@ -26,6 +26,7 @@ const Announcements = lazy(() => import('./Announcements'))
 const Settings = lazy(() => import('./Settings'))
 const Account = lazy(() => import('./Account'))
 const Pricing = lazy(() => import('./Pricing'))
+const Growth = lazy(() => import('./Growth'))
 
 /**
  * Dobry Console, the back office, separate from the customers' app: its own address (/console), sign-in, frame
@@ -85,6 +86,7 @@ export default function ConsoleApp() {
           <Route path="team" element={<Team />} />
           {can(role, 'audit') && <Route path="audit" element={<Audit />} />}
           <Route path="announcements" element={<Announcements />} />
+          <Route path="growth" element={<Growth />} />
           <Route path="settings" element={<Settings />} />
           <Route path="account" element={<Account />} />
           <Route path="*" element={<Navigate to="/console" replace />} />
@@ -107,6 +109,7 @@ const ICON: Record<string, string> = {
   team: 'M17 20v-1a4 4 0 0 0-3-3.9M7 20v-1a4 4 0 0 1 8 0v1M11 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM17 8a3 3 0 0 1 0 5',
   audit: 'M12 8v4l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z',
   announcements: 'M4 10v4h3l5 4V6L7 10H4Zm13-2a5 5 0 0 1 0 8',
+  growth: 'M3 17l6-6 4 4 8-8M15 7h6v6',
   settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7-3a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 2h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 22h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z',
 }
 
@@ -120,13 +123,16 @@ function Shell({ email, role, children }: { email: string; role: StaffRole; chil
       ['limits', t('Plan limits'), 'limits'],
       ['users', t('Users'), 'users'],
     ]],
+    [t('Growth'), [
+      ['growth', t('Growth'), 'growth'],
+      ['announcements', t('Announcements'), 'announcements'],
+    ]],
     [t('Money'), [
       ['billing', t('Billing'), 'billing'],
       ['pricing', t('Pricing'), 'pricing'],
     ]],
     [t('Team'), [
       ['tasks', t('Tasks'), 'tasks'],
-      ['announcements', t('Announcements'), 'announcements'],
       ['team', t('Team & roles'), 'team'],
       ...(can(role, 'audit') ? ([['audit', t('Audit log'), 'audit']] as [string, string, string][]) : []),
       ['settings', t('Settings'), 'settings'],

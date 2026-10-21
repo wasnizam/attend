@@ -4,7 +4,7 @@ import { firebase } from './server.js'
 
 /** Where the email key is kept: a place in the database that no browser can read or write. */
 export const EMAIL_SECRETS = 'platformSecrets/email'
-const SITE = () => (process.env.SITE_URL?.trim() || 'https://dobry.app').replace(/\/$/, '')
+export const SITE = () => (process.env.SITE_URL?.trim() || 'https://dobry.app').replace(/\/$/, '')
 
 export interface EmailSettings {
   apiKey: string
@@ -28,13 +28,13 @@ export async function emailSettings(fresh = false): Promise<EmailSettings> {
 }
 
 /** Sends one email through Resend. Says why when it could not. */
-export async function send(settings: EmailSettings, to: string, subject: string, html: string, text: string): Promise<{ ok: boolean; error?: string }> {
+export async function send(settings: EmailSettings, to: string, subject: string, html: string, text: string, headers?: Record<string, string>): Promise<{ ok: boolean; error?: string }> {
   if (!settings.apiKey || !settings.from) return { ok: false, error: 'Emails are not set up yet.' }
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { authorization: `Bearer ${settings.apiKey}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ from: settings.from, to: [to], subject, html, text, ...(settings.replyTo ? { reply_to: settings.replyTo } : {}) }),
+      body: JSON.stringify({ from: settings.from, to: [to], subject, html, text, ...(settings.replyTo ? { reply_to: settings.replyTo } : {}), ...(headers ? { headers } : {}) }),
     })
     if (res.ok) return { ok: true }
     const body = (await res.json().catch(() => ({}))) as { message?: string }
@@ -45,7 +45,7 @@ export async function send(settings: EmailSettings, to: string, subject: string,
 }
 
 /** The sender's name for the foot of an email: what is before the address in "Dobry <…>". */
-const company = (from: string) => from.replace(/<.*$/, '').trim() || 'Dobry'
+export const company = (from: string) => from.replace(/<.*$/, '').trim() || 'Dobry'
 
 /**
  * Emails an organisation's owner, once per `key` (the kind of email, unless told otherwise): a

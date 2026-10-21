@@ -104,6 +104,12 @@ export interface Organisation {
   /** A standing discount on what they pay, until a date (none = for as long as it lasts). */
   discount?: { kind: 'percent' | 'amount'; value: number; label: string; code?: string; until?: string } | null
   createdAt?: Timestamp | null
+  /** Where the account came from, as the browser remembered it at sign-up (written by the server). */
+  source?: { source: string; medium: string; campaign: string; landing: string; referrer: string }
+  /** The owner stopped the follow-up tips (written by the unsubscribe link). */
+  marketingOff?: boolean
+  /** When each follow-up email went (written by the daily job). */
+  followUps?: Record<string, Timestamp>
   name: string
   ownerId: string
   inviteCode: string

@@ -165,7 +165,7 @@ export function emailText(kind: EmailKind, who: { name?: string; organisation?: 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 /** The email as HTML (simple, so every mail app shows it properly) and as plain text. */
-export function render(text: EmailText, site: string, company: string): { html: string; text: string } {
+export function render(text: EmailText, site: string, company: string, unsubscribe?: string): { html: string; text: string } {
   const link = text.button ? (/^https:\/\//.test(text.button.path) ? text.button.path : `${site}${text.button.path}`) : ''
   const html = `<!doctype html><html><body style="margin:0;background:#f8fafc;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:24px 12px"><tr><td align="center">
@@ -176,8 +176,8 @@ export function render(text: EmailText, site: string, company: string): { html: 
 ${text.lines.map((l) => `<p style="margin:0 0 14px;font-size:16px;line-height:1.55;color:#334155">${esc(l)}</p>`).join('\n')}
 ${link ? `<p style="margin:22px 0 6px"><a href="${esc(link)}" style="display:inline-block;background:#ffc83d;color:#16123f;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:10px">${esc(text.button!.label)}</a></p>` : ''}
 </td></tr>
-<tr><td style="padding:16px 28px 22px;border-top:1px solid #e2e8f0;font-size:12px;line-height:1.5;color:#64748b">${esc(company)} · <a href="${esc(site)}" style="color:#64748b">${esc(site.replace(/^https?:\/\//, ''))}</a><br>You get this because you have a Dobry account. It is about your account, not marketing.</td></tr>
+<tr><td style="padding:16px 28px 22px;border-top:1px solid #e2e8f0;font-size:12px;line-height:1.5;color:#64748b">${esc(company)} · <a href="${esc(site)}" style="color:#64748b">${esc(site.replace(/^https?:\/\//, ''))}</a><br>${unsubscribe ? `You get this because you have a Dobry account. <a href="${esc(unsubscribe)}" style="color:#64748b">Stop these tips</a>; emails about your account and payments still arrive.` : 'You get this because you have a Dobry account. It is about your account, not marketing.'}</td></tr>
 </table></td></tr></table></body></html>`
-  const plain = [text.heading, '', ...text.lines, ...(link ? ['', `${text.button!.label}: ${link}`] : []), '', `${company} · ${site}`].join('\n')
+  const plain = [text.heading, '', ...text.lines, ...(link ? ['', `${text.button!.label}: ${link}`] : []), '', `${company} · ${site}`, ...(unsubscribe ? [`Stop these tips: ${unsubscribe}`] : [])].join('\n')
   return { html, text: plain }
 }
