@@ -91,7 +91,7 @@ const PRIVACY: Part[] = [
   ]],
   ['7. Your choices', [
     'You can ask to see, correct or delete information about you.',
-    ['If you log in to Dobry: change your name on your Account page, or write to us.', 'If you checked in to someone’s class or workplace: ask that organiser, since the record is theirs. If they do not help, write to us and we will pass it on.'],
+    ['If you log in to Dobry: change your name on your Account page, or write to us. You can delete your account from the Account page too; it is deleted within 30 days.', 'If you checked in to someone’s class or workplace: ask that organiser, since the record is theirs. If they do not help, write to us and we will pass it on.'],
     'You can refuse the location permission on your phone. The organiser decides whether a check-in without it is accepted.',
   ]],
   ['8. Cookies and your device', [

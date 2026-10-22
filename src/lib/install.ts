@@ -32,7 +32,10 @@ export function watchInstall() {
 
 /** Already opened as an app (from the home screen or desktop), not in a browser tab. */
 export const isInstalled = () =>
-  window.matchMedia?.('(display-mode: standalone)').matches === true || (navigator as { standalone?: boolean }).standalone === true
+  window.matchMedia?.('(display-mode: standalone)').matches === true ||
+  (navigator as { standalone?: boolean }).standalone === true ||
+  // The Dobry app from the App Store or Play Store.
+  Boolean((window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.())
 
 export type InstallWay = 'button' | 'ios' | 'menu'
 

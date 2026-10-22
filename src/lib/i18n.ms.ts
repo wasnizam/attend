@@ -2040,4 +2040,13 @@ export const ms: Record<string, string> = {
   "No emails sent yet.": "Belum ada e-mel dihantar.",
   "Follow-up: {name}": "Susulan: {name}",
   "Account email": "E-mel akaun",
+  "Signed up with Google? Tap “Forgot password?” below to set a password for the app, using the same email.": "Mendaftar dengan Google? Ketik “Lupa kata laluan?” di bawah untuk menetapkan kata laluan bagi aplikasi, dengan e-mel yang sama.",
+  "Your account will be deleted": "Akaun anda akan dipadam",
+  "You are being signed out. Everything is deleted within 30 days. Changed your mind? Email hello@dobry.app before then.": "Anda sedang dilog keluar. Semuanya dipadam dalam tempoh 30 hari. Ubah fikiran? E-mel hello@dobry.app sebelum itu.",
+  "Delete account": "Padam akaun",
+  "Deletes your organisation, every login in it, and all its attendance records. This cannot be undone.": "Memadam organisasi anda, setiap log masuk di dalamnya, dan semua rekod kehadirannya. Ini tidak boleh dibatalkan.",
+  "Deletes your login. The attendance records you took stay with your organisation.": "Memadam log masuk anda. Rekod kehadiran yang anda ambil kekal dengan organisasi anda.",
+  "Type DELETE to confirm": "Taip DELETE untuk mengesahkan",
+  "Delete my account": "Padam akaun saya",
+  "Type DELETE to confirm.": "Taip DELETE untuk mengesahkan.",
 }

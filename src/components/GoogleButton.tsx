@@ -1,11 +1,20 @@
 import { useState } from 'react'
 import { signInWithGoogle } from '../data/account'
 import { t } from '../lib/i18n'
+import { inNativeApp } from '../lib/native'
 import { Spinner, friendlyError } from './ui'
 
 /** "Continue with Google", followed by the divider that introduces the email form. */
 export function GoogleButton({ onError }: { onError: (message: string) => void }) {
   const [busy, setBusy] = useState(false)
+  // Google does not allow its sign-in inside apps' own screens: in the Dobry app, email only.
+  if (inNativeApp()) {
+    return (
+      <p className="mb-4 rounded-lg bg-canvas px-3 py-2 text-xs text-muted">
+        {t('Signed up with Google? Tap “Forgot password?” below to set a password for the app, using the same email.')}
+      </p>
+    )
+  }
   const go = async () => {
     setBusy(true)
     onError('')

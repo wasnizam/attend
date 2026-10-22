@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { resendVerification } from '../data/account'
 import { AnnouncementBanner } from './AnnouncementBanner'
@@ -7,6 +7,7 @@ import { PullToRefresh } from './PullToRefresh'
 import { useAuth, useProfile } from '../hooks/useAuth'
 import { t } from '../lib/i18n'
 import { solo } from '../lib/plan'
+import { statusBarFor } from '../lib/native'
 import { getPurpose, has } from '../lib/purpose'
 import { Logo, buttonClass } from './ui'
 
@@ -69,6 +70,7 @@ function Avatar({ name }: { name: string }) {
  */
 export function AppShell() {
   const profile = useProfile()
+  useEffect(() => statusBarFor('light'), [])
   const item = (to: string, label: string, icon: string, end = false) => ({ to, label, icon, end })
   const today = item('/app', t('Today'), icons.today, true)
   const students = item('/app/students', t('Students'), icons.students)

@@ -10,6 +10,7 @@ import { InstallApp } from '../components/InstallApp'
 import { InviteFriends } from '../components/InviteFriends'
 import { UpgradeNote } from '../components/Paid'
 import { openBilling, redeemCode, resumePlan, startCheckout, syncPlan } from '../data/billing'
+import { auth } from '../lib/auth'
 import { getPurpose } from '../lib/purpose'
 import { useAuth, useProfile } from '../hooks/useAuth'
 import { LANGS, getLang, locale, setLang, t } from '../lib/i18n'
@@ -598,12 +599,14 @@ export function Account() {
             </Row>
             <Row label={t('Language')}>
               <select aria-label={t('Language')} value={getLang()} onChange={(e) => setLang(e.target.value as 'en' | 'ms')} className={inputClass}>
-                {LANGS.map((l) => (
+                {LANGS.filter((l) => l.id !== 'cs').map((l) => (
                   <option key={l.id} value={l.id}>{l.label}</option>
                 ))}
               </select>
             </Row>
           </Section>
+
+          <DeleteAccount owner={org?.ownerId === profile.id} />
 
           <div className="flex justify-end">
             <Button
@@ -619,5 +622,67 @@ export function Account() {
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * Deleting the account: the person types DELETE, is signed out, and cannot sign in again. Dobry's
+ * team deletes the account (and, for the owner, the organisation and its records) within 30 days.
+ */
+function DeleteAccount({ owner }: { owner: boolean }) {
+  const [open, setOpen] = useState(false)
+  const [typed, setTyped] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState(false)
+  const go = async () => {
+    setBusy(true)
+    setError('')
+    try {
+      const token = await auth.currentUser?.getIdToken()
+      const res = await fetch('/api/account', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token ?? ''}` }, body: JSON.stringify({ action: 'delete', confirm: typed.trim().toUpperCase() }) })
+      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) throw new Error(data.error ? t(data.error) : t('That did not go through. Please try again.'))
+      setDone(true)
+      setTimeout(() => signOut().catch(() => {}), 4000)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+      setBusy(false)
+    }
+  }
+  if (done)
+    return (
+      <Card className="p-5">
+        <p className="font-semibold">{t('Your account will be deleted')}</p>
+        <p className="mt-1 text-sm text-muted">{t('You are being signed out. Everything is deleted within 30 days. Changed your mind? Email hello@dobry.app before then.')}</p>
+      </Card>
+    )
+  return (
+    <Card className="p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-semibold">{t('Delete account')}</p>
+          <p className="text-sm text-muted">
+            {owner
+              ? t('Deletes your organisation, every login in it, and all its attendance records. This cannot be undone.')
+              : t('Deletes your login. The attendance records you took stay with your organisation.')}
+          </p>
+        </div>
+        {!open && <Button variant="secondary" className="!text-bad" onClick={() => setOpen(true)}>{t('Delete account')}</Button>}
+      </div>
+      {open && (
+        <div className="mt-4 space-y-3 border-t border-line pt-4">
+          <label className="block text-sm font-medium">
+            {t('Type DELETE to confirm')}
+            <input id="delete-confirm" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" className={`${inputClass} mt-1`} />
+          </label>
+          {error && <p className="text-sm text-bad">{error}</p>}
+          <div className="flex gap-2">
+            <Button busy={busy} disabled={typed.trim().toUpperCase() !== 'DELETE'} onClick={go} className="!bg-bad hover:!bg-bad/90">{t('Delete my account')}</Button>
+            <Button variant="ghost" onClick={() => { setOpen(false); setTyped('') }}>{t('Cancel')}</Button>
+          </div>
+        </div>
+      )}
+    </Card>
   )
 }

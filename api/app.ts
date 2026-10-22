@@ -1,3 +1,4 @@
+import * as account from './_lib/accountRoute.js'
 import * as certificate from './_lib/certificateRoute.js'
 import * as featureUse from './_lib/featureUseRoute.js'
 import * as feedback from './_lib/feedbackRoute.js'
@@ -13,7 +14,7 @@ import { json } from './_lib/server.js'
  * /api/health, /api/growth, /api/unsubscribe and /api/feedback here with ?fn= naming which one, so their addresses do not change.
  */
 type Route = { GET?: (r: Request) => Promise<Response>; POST?: (r: Request) => Promise<Response> }
-const ROUTES: Record<string, Route> = { certificate, pay, 'feature-use': featureUse, health, growth, unsubscribe, feedback }
+const ROUTES: Record<string, Route> = { certificate, pay, 'feature-use': featureUse, health, growth, unsubscribe, feedback, account }
 
 const handle = (method: 'GET' | 'POST') => (request: Request) => {
   // The name comes from ?fn= after the rewrite, or from the address itself if it arrives unchanged.

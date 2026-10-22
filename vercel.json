@@ -11,6 +11,10 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/account",
+      "destination": "/api/app?fn=account"
+    },
+    {
       "source": "/api/growth",
       "destination": "/api/app?fn=growth"
     },

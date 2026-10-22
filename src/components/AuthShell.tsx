@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { statusBarFor } from '../lib/native'
 import { LanguageSwitch } from './LanguageSwitch'
 import { Logo } from './ui'
 
@@ -8,6 +9,7 @@ import { Logo } from './ui'
  * website's top section, so every first screen of Dobry feels like one place.
  */
 export function AuthShell({ children, footer, below }: { children: ReactNode; footer?: ReactNode; below?: ReactNode }) {
+  useEffect(() => statusBarFor('dark'), [])
   return (
     <div className="relative isolate min-h-dvh overflow-hidden bg-night text-white">
       <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(40rem_25rem_at_90%_0%,rgb(255_200_61/0.16),transparent_60%),radial-gradient(40rem_30rem_at_0%_100%,rgb(99_102_241/0.45),transparent_60%)]" />
