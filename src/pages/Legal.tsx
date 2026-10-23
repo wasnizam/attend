@@ -14,7 +14,7 @@ type Part = [title: string, paragraphs: (string | string[])[]]
 
 const TERMS: Part[] = [
   ['1. Who we are', [
-    `${WHO.product} (“we”, “us”) is an attendance service based in ${WHO.country}. These terms are the agreement between us and you, the person or organisation that makes a ${WHO.product} account.`,
+    `${WHO.product} (“we”, “us”) is an attendance service. These terms are the agreement between us and you, the person or organisation that makes a ${WHO.product} account.`,
     'By making an account or using Dobry, you agree to these terms. If you use Dobry for an organisation, you confirm you are allowed to agree on its behalf.',
   ]],
   ['2. Your account', [
@@ -65,7 +65,6 @@ const PRIVACY: Part[] = [
     'Dobry records attendance. We collect only what that needs, we do not sell it, we do not show adverts, and we do not use it for anything except running Dobry for the organisation that collected it.',
   ]],
   ['2. Who is responsible', [
-    `${WHO.product} is based in ${WHO.country}.`,
     'For attendance records, the lecturer, trainer or employer who uses Dobry decides what is collected and why. They are responsible for those records; we look after them on their behalf. If you are a student, participant or staff member with a question about your attendance record, please ask them first.',
     'For account details of the people who log in to Dobry (lecturers, trainers, managers), we are responsible.',
   ]],
