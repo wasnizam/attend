@@ -80,9 +80,7 @@ const PRIVACY: Part[] = [
     'We do not use this information for advertising, and we do not sell or rent it to anyone.',
   ]],
   ['5. Who else handles it', [
-    'We use a small number of companies to run Dobry. They may only handle the information to provide their service to us:',
-    ['Google (Firebase): sign-in and the database. The database is kept in Singapore.', 'Vercel: hosting the website and the app.', 'Stripe: payments.', 'Resend: sending account emails.'],
-    'We may also share information if the law requires it.',
+    'We use trusted service providers for hosting, the database, payments and sending emails. They may only handle the information to provide their service to us, and it may be stored outside your country. We do not sell it, and we share it otherwise only if the law requires it.',
   ]],
   ['6. How long we keep it', [
     'Records are kept for as long as the organiser’s account is open, because attendance records are often needed for a whole course or a whole year of work.',
