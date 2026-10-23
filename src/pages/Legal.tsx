@@ -79,28 +79,25 @@ const PRIVACY: Part[] = [
     ['to record attendance and show it to the organiser who collected it;', 'to make their lists, reports, letters and exports;', 'to run accounts, plans and payments;', 'to send a few emails about the account, such as a welcome, a trial ending or a failed payment;', 'to send account owners a few tips on getting started and on features made for them. Every tip email has a link to stop them; account and payment emails still arrive;', 'to ask people who log in, once, how likely they are to recommend Dobry. Answers are optional, and we quote someone on our website only if they ticked that we may;', 'to keep the service safe and working, and to stop misuse.'],
     'We do not use this information for advertising, and we do not sell or rent it to anyone.',
   ]],
-  ['5. Who else handles it', [
-    'We use trusted service providers for hosting, the database, payments and sending emails. They may only handle the information to provide their service to us, and it may be stored outside your country. We do not sell it, and we share it otherwise only if the law requires it.',
-  ]],
-  ['6. How long we keep it', [
+  ['5. How long we keep it', [
     'Records are kept for as long as the organiser’s account is open, because attendance records are often needed for a whole course or a whole year of work.',
     'When an account is closed, or when the organiser asks, we delete its records within 30 days, except what the law requires us to keep, such as payment records.',
   ]],
-  ['7. Your choices', [
+  ['6. Your choices', [
     'You can ask to see, correct or delete information about you.',
     ['If you log in to Dobry: change your name on your Account page, or write to us. You can delete your account from the Account page too; it is deleted within 30 days.', 'If you checked in to someone’s class or workplace: ask that organiser, since the record is theirs. If they do not help, write to us and we will pass it on.'],
     'You can refuse the location permission on your phone. The organiser decides whether a check-in without it is accepted.',
   ]],
-  ['8. Cookies and your device', [
+  ['7. Cookies and your device', [
     'Dobry does not use advertising or tracking cookies. It keeps a few things on your device so it works: that you are logged in, your language, small preferences, and the page or link that first brought you to Dobry, which is saved with your account if you sign up within 30 days. Installing Dobry on your home screen keeps a copy of the app on the device so it opens quickly.',
   ]],
-  ['9. Keeping it safe', [
+  ['8. Keeping it safe', [
     'Each organisation’s records are kept apart, and access rules decide what each person can see. An attendance time cannot be changed by the person who checked in, and anything added by hand is labelled. All traffic is encrypted.',
     'No service is perfectly safe. If something happens that puts your information at risk, we will tell the organisations affected without delay.',
   ]],
-  ['10. Children', ['Dobry is made for universities, training providers and workplaces. It is not meant for children under 13, and should not be used to record them without the consent the law requires.']],
-  ['11. Changes', ['If we change this policy in a way that matters, we will say so in the app or by email before the change applies.']],
-  ['12. Contact', [`Questions or requests about your information: ${WHO.email}.`]],
+  ['9. Children', ['Dobry is made for universities, training providers and workplaces. It is not meant for children under 13, and should not be used to record them without the consent the law requires.']],
+  ['10. Changes', ['If we change this policy in a way that matters, we will say so in the app or by email before the change applies.']],
+  ['11. Contact', [`Questions or requests about your information: ${WHO.email}.`]],
 ]
 
 export function Legal({ doc }: { doc: 'terms' | 'privacy' }) {
