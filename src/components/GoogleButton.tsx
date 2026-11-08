@@ -1,39 +1,54 @@
 import { useState } from 'react'
-import { signInWithGoogle } from '../data/account'
+import { signInWithApple, signInWithGoogle } from '../data/account'
 import { t } from '../lib/i18n'
-import { inNativeApp } from '../lib/native'
+import { nativePlatform } from '../lib/native'
 import { Spinner, friendlyError } from './ui'
 
-/** "Continue with Google", followed by the divider that introduces the email form. */
+/**
+ * "Continue with Google", followed by the divider that introduces the email form. In the iPhone
+ * app, "Sign in with Apple" sits next to it, as Apple requires wherever Google sign-in is offered.
+ */
 export function GoogleButton({ onError }: { onError: (message: string) => void }) {
-  const [busy, setBusy] = useState(false)
-  // Google does not allow its sign-in inside apps' own screens: in the Dobry app, email only.
-  if (inNativeApp()) {
-    return (
-      <p className="mb-4 rounded-lg bg-canvas px-3 py-2 text-xs text-muted">
-        {t('Signed up with Google? Tap “Forgot password?” below to set a password for the app, using the same email.')}
-      </p>
-    )
-  }
-  const go = async () => {
-    setBusy(true)
+  const [busy, setBusy] = useState<'' | 'google' | 'apple'>('')
+  const apple = nativePlatform() === 'ios'
+  const go = async (which: 'google' | 'apple') => {
+    setBusy(which)
     onError('')
     try {
-      await signInWithGoogle()
+      await (which === 'apple' ? signInWithApple() : signInWithGoogle())
     } catch (e) {
-      onError(friendlyError(e))
-      setBusy(false)
+      // Closing the sign-in sheet is not an error worth showing.
+      const message = String((e as { message?: string })?.message ?? '')
+      if (!/cancel/i.test(message)) onError(friendlyError(e))
+      setBusy('')
     }
   }
   return (
     <>
+      {apple && (
+        <button
+          type="button"
+          onClick={() => go('apple')}
+          disabled={busy !== ''}
+          className="mb-2.5 flex h-11 w-full items-center justify-center gap-2.5 rounded-lg bg-black text-sm font-medium text-white transition hover:bg-black/85 disabled:opacity-60"
+        >
+          {busy === 'apple' ? (
+            <Spinner small />
+          ) : (
+            <svg viewBox="0 0 24 24" className="size-[18px]" fill="currentColor" aria-hidden>
+              <path d="M16.37 12.6c-.02-2.2 1.8-3.26 1.88-3.31-1.02-1.5-2.62-1.7-3.19-1.72-1.36-.14-2.65.8-3.34.8-.69 0-1.75-.78-2.88-.76-1.48.02-2.85.86-3.61 2.19-1.54 2.67-.39 6.63 1.1 8.8.73 1.06 1.6 2.25 2.74 2.2 1.1-.04 1.51-.71 2.84-.71 1.32 0 1.7.71 2.86.69 1.18-.02 1.93-1.08 2.65-2.14.84-1.23 1.18-2.42 1.2-2.48-.03-.01-2.3-.88-2.32-3.5ZM14.2 6.13c.6-.73 1.01-1.75.9-2.76-.87.03-1.92.58-2.54 1.31-.56.64-1.05 1.67-.92 2.66.97.08 1.96-.49 2.56-1.21Z" />
+            </svg>
+          )}
+          {t('Sign in with Apple')}
+        </button>
+      )}
       <button
         type="button"
-        onClick={go}
-        disabled={busy}
+        onClick={() => go('google')}
+        disabled={busy !== ''}
         className="flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-line bg-white text-sm font-medium shadow-xs transition hover:bg-canvas disabled:opacity-60"
       >
-        {busy ? (
+        {busy === 'google' ? (
           <Spinner small />
         ) : (
           <svg viewBox="0 0 48 48" className="size-5" aria-hidden>

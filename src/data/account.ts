@@ -4,6 +4,8 @@ import {
   createUserWithEmailAndPassword,
   reauthenticateWithCredential,
   sendEmailVerification,
+  OAuthProvider,
+  signInWithCredential,
   signInWithPopup,
   updatePassword,
   sendPasswordResetEmail,
@@ -25,6 +27,8 @@ import {
 import { auth } from '../lib/auth'
 import { db } from '../lib/firebase'
 import { randomToken } from '../lib/format'
+import { t } from '../lib/i18n'
+import { inNativeApp } from '../lib/native'
 import { takeRef } from '../lib/referral'
 import { claimInvite, refreshUsage, sendWelcome } from './billing'
 import { startPlanFor } from '../lib/pricing'
@@ -46,8 +50,32 @@ export async function createAccount(name: string, email: string, password: strin
   return cred.user
 }
 
-/** Google sign-in. A first-time Google user lands on "Finish setting up" to pick an organisation. */
-export const signInWithGoogle = () => signInWithPopup(auth, new GoogleAuthProvider())
+/**
+ * Google sign-in. A first-time Google user lands on "Finish setting up" to pick an organisation.
+ * In the Dobry app the phone's own Google sign-in is used (Google does not allow its web sign-in
+ * inside apps), and its proof signs in to the same Dobry account as on the website.
+ */
+export async function signInWithGoogle() {
+  if (!inNativeApp()) return signInWithPopup(auth, new GoogleAuthProvider())
+  const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
+  const result = await FirebaseAuthentication.signInWithGoogle()
+  const idToken = result.credential?.idToken
+  if (!idToken) throw new Error(t('Google sign-in was cancelled.'))
+  return signInWithCredential(auth, GoogleAuthProvider.credential(idToken, result.credential?.accessToken))
+}
+
+/** Sign in with Apple, in the iPhone app (Apple requires it next to Google sign-in there). */
+export async function signInWithApple() {
+  const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
+  const result = await FirebaseAuthentication.signInWithApple({ scopes: ['email', 'name'] })
+  const idToken = result.credential?.idToken
+  if (!idToken) throw new Error(t('Apple sign-in was cancelled.'))
+  const signedIn = await signInWithCredential(auth, new OAuthProvider('apple.com').credential({ idToken, rawNonce: result.credential?.nonce }))
+  // Apple gives the name only the very first time; keep it as the account's name.
+  const name = [result.additionalUserInfo?.profile?.given_name ?? result.user?.displayName].filter(Boolean).join(' ')
+  if (name && !signedIn.user.displayName) await updateProfile(signedIn.user, { displayName: String(name) }).catch(() => {})
+  return signedIn
+}
 
 export async function resendVerification() {
   if (auth.currentUser) await sendEmailVerification(auth.currentUser)

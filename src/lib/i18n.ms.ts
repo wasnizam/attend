@@ -2049,4 +2049,7 @@ export const ms: Record<string, string> = {
   "Type DELETE to confirm": "Taip DELETE untuk mengesahkan",
   "Delete my account": "Padam akaun saya",
   "Type DELETE to confirm.": "Taip DELETE untuk mengesahkan.",
+  "Sign in with Apple": "Daftar masuk dengan Apple",
+  "Google sign-in was cancelled.": "Daftar masuk Google dibatalkan.",
+  "Apple sign-in was cancelled.": "Daftar masuk Apple dibatalkan.",
 }

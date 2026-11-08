@@ -21,8 +21,16 @@ const config: CapacitorConfig = {
     limitsNavigationsToAppBoundDomains: false,
   },
   plugins: {
+    // Google and Apple sign-in on the phone itself (Google does not allow its web sign-in inside
+    // apps). The phone only proves who the person is; the sign-in into Dobry itself is the same
+    // as on the website, so it is one account everywhere.
+    FirebaseAuthentication: { skipNativeAuth: true, providers: ['google.com', 'apple.com'] },
     SplashScreen: { launchShowDuration: 600, backgroundColor: '#16123f', showSpinner: false },
     StatusBar: { overlaysWebView: true, style: 'DARK' },
+  },
+  // Only the Google sign-in SDK is linked in; the plugin's Facebook SDK is left out.
+  experimental: {
+    ios: { spm: { swiftToolsVersion: '6.1', packageTraits: { '@capacitor-firebase/authentication': ['Google'] } } },
   },
 }
 
