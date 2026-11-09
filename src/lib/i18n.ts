@@ -35,6 +35,9 @@ const listeners = new Set<() => void>()
 
 export const getLang = () => lang
 
+/** The language this screen is really shown in: Czech readers see English outside the public pages. */
+export const shownLang = (): Lang => (lang === 'cs' && !czechHere() ? 'en' : lang)
+
 export function setLang(next: Lang) {
   lang = next
   try {

@@ -82,6 +82,8 @@ export interface Organisation {
   otRule?: 'fullDay' | 'end'
   /** Workplace: the company's time zone (IANA name), so a report read from elsewhere can warn. */
   timezone?: string
+  /** Where the organisation is, for public holidays; workplaces may stay open on them. */
+  holidays?: { country: string; region?: string | null; open?: boolean } | null
   /** Workplace: a clock-in from a phone that is not the person's own is flagged, or refused. */
   phoneCheck?: 'flag' | 'block'
   /** Set by the owner of Dobry: nobody in the organisation can use the app until restored. */
@@ -259,6 +261,12 @@ export interface WeeklyClass extends CourseDetails, Geofence {
   barPct?: number
   /** Meetings that were called off: key is meetingKey(date, slot), value is the reason. */
   cancelled?: Record<string, string>
+  /** Meetings that fall on a public holiday (meeting key → reason), kept by the holiday sync. */
+  holidayKeys?: Record<string, string>
+  /** Holiday meetings someone chose to hold anyway: the sync leaves them on. */
+  holidayKept?: Record<string, boolean>
+  /** What the holidays were last worked out from (see lib/holidays). */
+  holidaySync?: string
   /** Classes: a scan this many minutes after the start counts as late. Missing means lateness is only marked by hand. */
   lateAfter?: number | null
   /** Students who joined late or dropped the course, by student key: classes outside these dates are not counted for them. */

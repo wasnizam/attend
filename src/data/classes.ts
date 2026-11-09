@@ -6,6 +6,7 @@ import {
   deleteField,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   query,
   serverTimestamp,
@@ -134,7 +135,11 @@ export async function cancelRange(list: WeeklyClass[], from: string, to: string,
 export async function restoreReason(list: WeeklyClass[], reason: string) {
   for (const cls of list) {
     const keys = Object.entries(cls.cancelled ?? {}).filter(([, r]) => r === reason).map(([k]) => k)
-    if (keys.length) await updateDoc(doc(classes, cls.id), Object.fromEntries(keys.map((k) => [`cancelled.${k}`, deleteField()])))
+    if (keys.length)
+      await updateDoc(
+        doc(classes, cls.id),
+        Object.fromEntries(keys.flatMap((k) => [[`cancelled.${k}`, deleteField()], ...(cls.holidayKeys?.[k] ? [[`holidayKept.${k}`, true]] : [])])),
+      )
   }
 }
 
@@ -142,8 +147,11 @@ export async function restoreReason(list: WeeklyClass[], reason: string) {
 export const cancelMeeting = (cls: WeeklyClass, date: string, slot: Slot, reason: string) =>
   updateDoc(doc(classes, cls.id), { [`cancelled.${meetingKey(date, slot)}`]: reason.trim() || '-' })
 
-export const restoreMeeting = (cls: WeeklyClass, date: string, slot: Slot) =>
-  updateDoc(doc(classes, cls.id), { [`cancelled.${meetingKey(date, slot)}`]: deleteField() })
+/** Puts a called-off meeting back. A public holiday put back stays on: the holiday sync leaves it. */
+export const restoreMeeting = (cls: WeeklyClass, date: string, slot: Slot) => {
+  const key = meetingKey(date, slot)
+  return updateDoc(doc(classes, cls.id), { [`cancelled.${key}`]: deleteField(), ...(cls.holidayKeys?.[key] ? { [`holidayKept.${key}`]: true } : {}) })
+}
 
 /** Where the workplace (or class) is, for the location check on every day opened from it. */
 export const setClassGeofence = (id: string, fence: { lat: number; lng: number; radius: number; mode: GeoMode } | null) =>
@@ -252,6 +260,37 @@ export async function recordPastClass(profile: UserProfile, cls: WeeklyClass, da
   const session = { id, ...snap.data() } as Session
   if (session.status === 'active') await endSession(session)
   return id
+}
+
+/**
+ * Brings each class in line with the organisation's public holidays (see lib/holidays). Only
+ * classes whose holidays are out of date are touched, and the holiday list is loaded only then.
+ * Meetings that were held (`held` has their session IDs) are never called off.
+ */
+export async function syncHolidays(profile: UserProfile, list: WeeklyClass[], label: string): Promise<number> {
+  const { getHolidaySetting, holidayPatch, holidaysBetween, signatureFor, windowFor } = await import('../lib/holidays')
+  const setting = getHolidaySetting()
+  const stale = list.filter((c) => (c.holidaySync ?? 'none') !== signatureFor(c, setting))
+  let changed = 0
+  for (const cls of stale) {
+    const signature = signatureFor(cls, setting)
+    const w = windowFor(cls)
+    const days = setting ? await holidaysBetween(setting, w.from, w.to) : []
+    // The days this class was really held: a holiday never calls those off.
+    const found = await getDocs(
+      query(
+        collection(db, 'sessions'),
+        where('organisationId', '==', cls.organisationId),
+        where('classId', '==', cls.id),
+        ...(profile.role === 'admin' ? [] : [where('ownerId', '==', profile.id)]),
+      ),
+    )
+    const held = new Set(found.docs.filter((d) => d.data().status !== 'scheduled').map((d) => d.id))
+    const patch = holidayPatch(cls, days, { open: Boolean(setting?.open), held, label, signature, sessionIdOf: (date, slot) => `${cls.id}_${date}_${slot.startTime.replace(":", "")}`, del: deleteField() })
+    await updateDoc(doc(classes, cls.id), patch)
+    changed += 1
+  }
+  return changed
 }
 
 export { classSessionId }

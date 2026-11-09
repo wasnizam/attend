@@ -111,6 +111,10 @@ export const setPhoneCheckFor = (id: string, value: 'flag' | 'block') => updateD
 
 export const setOrgSetting = (id: string, field: 'otRule' | 'timezone', value: string) => updateDoc(doc(db, 'organisations', id), { [field]: value })
 
+/** Where the organisation is, for public holidays (null: none). Workplaces may stay open on them. */
+export const setHolidays = (id: string, value: { country: string; region: string | null; open: boolean } | null) =>
+  updateDoc(doc(db, 'organisations', id), { holidays: value })
+
 export const setShifts = (id: string, on: boolean) => updateDoc(doc(db, 'organisations', id), { shifts: on })
 
 export async function renameOrganisation(org: Organisation, name: string) {

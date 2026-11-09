@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PublicHolidays } from '../components/PublicHolidays'
 import { Breaks } from '../components/Breaks'
 import { DayAgenda, STATE_DOT } from '../components/DayAgenda'
 import { Button, Card, ErrorNote, PageLoader, friendlyError } from '../components/ui'
@@ -141,6 +142,9 @@ export function Calendar() {
           </button>
         )}
       </section>
+
+      {/* Public holidays by country, for every class and shift. */}
+      {(classes.data ?? []).length > 0 && <PublicHolidays />}
 
       {/* Lecturers and trainers: holidays and breaks for the whole timetable at once. */}
       {has('recurring') && !has('clock') && (classes.data ?? []).length > 0 && <Breaks classes={classes.data ?? []} sessions={sessions.data ?? []} start={selected} />}

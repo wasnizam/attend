@@ -8,6 +8,7 @@ import { allows, setPlan } from './lib/plan'
 import { setPhoneCheck, setPurpose, setShiftMode } from './lib/purpose'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { MySessionsProvider } from './hooks/useSessions'
+import { HolidaySync } from './components/HolidaySync'
 import { t } from './lib/i18n'
 import { Account } from './pages/Account'
 import Admin from './pages/Admin'
@@ -30,6 +31,7 @@ import { SubjectReport } from './pages/SubjectReport'
 import { useSwitches } from './lib/pricing'
 import { refreshUsage } from './data/billing'
 import { Timetable } from './pages/Timetable'
+import { setHolidaySetting } from './lib/holidays'
 
 /**
  * Finds out what the organisation uses Dobry for before any screen is drawn, and
@@ -50,7 +52,8 @@ function PurposeGate({ organisationId, uid, children }: { organisationId: string
         setPlan(org)
         setShiftMode(org?.shifts && allows('shifts'))
         setPhoneCheck(org?.phoneCheck)
-        setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}:${org?.seats ?? ''}:${org?.usage?.lecturers ?? ''}:${org?.usage?.staff ?? ''}:${org?.shifts ? 's' : ''}:${org?.phoneCheck ?? ''}:${org?.tags?.includes('pay-test') ? 't' : ''}`)
+        setHolidaySetting(org?.holidays)
+        setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}:${org?.seats ?? ''}:${org?.usage?.lecturers ?? ''}:${org?.usage?.staff ?? ''}:${org?.shifts ? 's' : ''}:${org?.phoneCheck ?? ''}:${JSON.stringify(org?.holidays ?? null)}:${org?.tags?.includes('pay-test') ? 't' : ''}`)
         // Once per visit, where the plan has a size: have the server count what is in use.
         if (!counted.current && org && ((org.plan ?? 'early') !== 'early' || (org.purpose ?? 'education') === 'education')) {
           counted.current = true
@@ -96,6 +99,7 @@ function RequireAuth({ admin = false }: { admin?: boolean }) {
   return (
     <PurposeGate organisationId={profile.organisationId} uid={profile.id}>
       <MySessionsProvider>
+        <HolidaySync />
         <Outlet />
       </MySessionsProvider>
     </PurposeGate>

@@ -1,3 +1,4 @@
+import { holidayDates } from '../lib/holidays'
 import { Fragment, type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PARTS, ReportCharts, buckets, chartData } from '../components/ReportCharts'
@@ -295,7 +296,7 @@ export function Payroll({ payFirst = false }: { payFirst?: boolean } = {}) {
             Date.now(),
             leave,
             // Each list's working days, and the days it was closed (public holidays), for rest-day and holiday hours.
-            new Map((classes.data ?? []).map((c) => [c.id, { days: c.days, off: new Set(Object.keys(c.cancelled ?? {}).map((k) => k.slice(0, 10))) }] as const)),
+            new Map((classes.data ?? []).map((c) => [c.id, { days: c.days, off: new Set([...Object.keys(c.cancelled ?? {}).map((k) => k.slice(0, 10)), ...holidayDates(c)]) }] as const)),
             org?.otRule ?? 'fullDay',
           ),
         ),
@@ -336,7 +337,7 @@ export function Payroll({ payFirst = false }: { payFirst?: boolean } = {}) {
     }
   }
   // A month or more with no public holiday marked anywhere is worth a reminder.
-  const holidayMarked = (classes.data ?? []).some((c) => Object.keys(c.cancelled ?? {}).some((k) => k.slice(0, 10) >= from && k.slice(0, 10) <= to))
+  const holidayMarked = (classes.data ?? []).some((c) => [...Object.keys(c.cancelled ?? {}), ...Object.keys(c.holidayKeys ?? {})].some((k) => k.slice(0, 10) >= from && k.slice(0, 10) <= to))
   const remindHolidays = !holidayMarked && (parseDate(to < today ? to : today).getTime() - parseDate(from).getTime()) / 86_400_000 >= 27
   const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone
   const otherZone = org?.timezone && org.timezone !== browserZone ? org.timezone : ''

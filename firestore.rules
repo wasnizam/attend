@@ -121,7 +121,16 @@ service cloud.firestore {
         && !('usage' in request.resource.data);
       // The purpose and the plan are what the customer pays for: not theirs to change.
       allow update: if adminOf(orgId)
-        && onlyChanges(['name', 'shifts', 'phoneCheck', 'otRule', 'timezone'])
+        && onlyChanges(['name', 'shifts', 'phoneCheck', 'otRule', 'timezone', 'holidays'])
+        // Where the organisation is, for public holidays: a country code, a state, open or closed.
+        && (request.resource.data.get('holidays', null) == null
+            || (request.resource.data.holidays is map
+                && request.resource.data.holidays.keys().hasOnly(['country', 'region', 'open'])
+                && request.resource.data.holidays.country is string
+                && request.resource.data.holidays.country.matches('^[A-Z]{2}$')
+                && (request.resource.data.holidays.get('region', null) == null
+                    || (request.resource.data.holidays.region is string && request.resource.data.holidays.region.size() <= 20))
+                && request.resource.data.holidays.get('open', false) is bool))
         && request.resource.data.get('shifts', false) is bool
         && request.resource.data.get('otRule', 'fullDay') in ['fullDay', 'end']
         && request.resource.data.get('timezone', '') is string

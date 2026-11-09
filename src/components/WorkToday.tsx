@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { type ClockOuts, subscribeClockOuts } from '../data/attendance'
-import { startClassSession } from '../data/classes'
+import { restoreMeeting, startClassSession } from '../data/classes'
 import { startSession } from '../data/sessions'
 import { useProfile } from '../hooks/useAuth'
 import { useLive } from '../hooks/useLive'
@@ -59,6 +59,14 @@ function NotOpen({ item, now }: { item: AgendaItem; now: number }) {
       <Card className="p-5">
         <Head item={item} chip={t('Not working today')} tone="muted" />
         {item.reason && <p className="mt-2 text-sm text-muted">{item.reason}</p>}
+        {item.due && profile.role === 'admin' && (
+          <button
+            className="mt-3 text-sm font-semibold text-accent hover:underline"
+            onClick={() => window.confirm(t('Open {name} today after all? Hours worked on a public holiday are paid at the holiday rate.', { name: item.name })) && restoreMeeting(item.due!.cls, item.date, item.due!.slot).catch((e) => window.alert(friendlyError(e)))}
+          >
+            {t('We are working today')}
+          </button>
+        )}
       </Card>
     )
   }
