@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 /**
- * The Dobry app for iPhone (and later Android). It opens the live app at dobry.app, so every update
+ * The Dobry app for iPhone and Android. It opens the live app at dobry.app, so every update
  * to the website reaches the app at once, with nothing to resubmit. The native parts (status bar,
  * splash screen, haptics, and later notifications) are added around it.
  */
@@ -19,6 +19,9 @@ const config: CapacitorConfig = {
     contentInset: 'never',
     backgroundColor: '#16123f',
     limitsNavigationsToAppBoundDomains: false,
+  },
+  android: {
+    backgroundColor: '#16123f',
   },
   plugins: {
     // Google and Apple sign-in on the phone itself (Google does not allow its web sign-in inside

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Dobry</string>
+    <string name="title_activity_main">Dobry</string>
+    <string name="package_name">app.dobry</string>
+    <string name="custom_url_scheme">app.dobry</string>
+</resources>

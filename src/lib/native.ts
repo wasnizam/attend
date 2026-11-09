@@ -16,3 +16,14 @@ export function statusBarFor(background: 'dark' | 'light') {
     .then(({ StatusBar, Style }) => StatusBar.setStyle({ style: background === 'dark' ? Style.Dark : Style.Light }))
     .catch(() => {})
 }
+
+/**
+ * Android's back button: back one screen, like the browser's back; on the first screen it leaves
+ * the app, as Android people expect.
+ */
+export function startNativeApp() {
+  if (nativePlatform() !== 'android') return
+  import('@capacitor/app')
+    .then(({ App }) => App.addListener('backButton', ({ canGoBack }) => (canGoBack ? window.history.back() : App.exitApp())))
+    .catch(() => {})
+}

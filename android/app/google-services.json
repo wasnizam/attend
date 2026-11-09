@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "1016152221396",
+    "project_id": "attend-d2744",
+    "storage_bucket": "attend-d2744.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1016152221396:android:3f8221164146eb037e7d41",
+        "android_client_info": {
+          "package_name": "app.dobry"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1016152221396-mt2hgpase1g6s2fjikm0b8q1c63ddgbh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.dobry",
+            "certificate_hash": "ac27aea9e69810bc0484fb34c5ab60c111cfca5d"
+          }
+        },
+        {
+          "client_id": "1016152221396-rqoollv9bil5qbc3ehm0rjhuehhsru92.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCu_54YRDU5uykzaBGREpL-GjuYPJ8QCbc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1016152221396-rqoollv9bil5qbc3ehm0rjhuehhsru92.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1016152221396-k4jcrs5fq653utm41nrb6djnbmepcvs2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "app.dobry"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

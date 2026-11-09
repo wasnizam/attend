@@ -9,6 +9,7 @@ import { watchInstall } from './lib/install'
 import { rememberRef } from './lib/referral'
 import { rememberSource } from './lib/source'
 import { keepUpToDate } from './lib/updates'
+import { startNativeApp } from './lib/native'
 
 // Students only ever open the check-in page from a QR code. They get no saved offline
 // copy, so their phones never download the lecturer app in the background.
@@ -17,6 +18,7 @@ if (!location.pathname.startsWith('/session/') && location.pathname !== '/door')
 watchInstall()
 rememberRef()
 rememberSource()
+startNativeApp()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
