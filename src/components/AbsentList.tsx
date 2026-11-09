@@ -8,11 +8,13 @@ interface Props {
   open?: boolean
   /** When given, each student gets buttons to record them by hand. */
   onMark?: (student: Absentee, status: AttendanceStatus) => void
+  /** When given, one button marks everyone left as present. */
+  onMarkAll?: () => void
   busy?: boolean
 }
 
 /** Named absentees. Only shown for sessions that use a class list. */
-export function AbsentList({ absent, open = false, onMark, busy }: Props) {
+export function AbsentList({ absent, open = false, onMark, onMarkAll, busy }: Props) {
   if (absent.length === 0) return null
   const pill = 'h-8 rounded-md border border-line bg-white px-3 text-xs font-semibold hover:bg-canvas disabled:opacity-50'
   return (
@@ -20,6 +22,14 @@ export function AbsentList({ absent, open = false, onMark, busy }: Props) {
       <summary className="cursor-pointer px-4 py-3 text-sm font-semibold select-none">
         {t('Not checked in')} <span className="tabular font-normal text-muted">· {absent.length}</span>
       </summary>
+      {onMarkAll && absent.length > 1 && (
+        <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5 text-sm">
+          <span className="text-muted">{t('Most were there? Mark everyone present, then change the few who were not.')}</span>
+          <button disabled={busy} className={`${pill} shrink-0 text-good`} onClick={onMarkAll}>
+            {t('All present')}
+          </button>
+        </div>
+      )}
       <ul className="divide-y divide-line border-t border-line text-sm">
         {absent.map((a) => (
           <li key={a.studentId} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">

@@ -256,6 +256,15 @@ export function SessionRecords({ session, records, live = false, emptyTitle, emp
         absent={absentees}
         open={!live}
         busy={busy}
+        onMarkAll={
+          live
+            ? undefined
+            : () =>
+                window.confirm(t('Mark all {n} as present?', { n: absentees.length })) &&
+                run(async () => {
+                  for (const a of absentees) await markManually(session, viewer, a, 'present')
+                })
+        }
         onMark={(student, status) =>
           isAway(status)
             ? (!clocking || allowedOrTell('leave', t('Leave and sick leave tracking is part of the paid plans.'))) && setAsking({ studentId: student.studentId, studentName: student.studentName, studentKey: studentKeyOf(student.studentId), status, recorded: false })

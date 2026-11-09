@@ -16,7 +16,7 @@ import {
 import { db } from '../lib/firebase'
 import { addDays, classSessionId, classSlots, inSemester, meetingKey, parseDate } from '../lib/format'
 import type { ClassKind, Delivery, GeoMode, Session, Slot, UserProfile, WeeklyClass } from '../lib/types'
-import { newSessionData, startSession } from './sessions'
+import { endSession, newSessionData, startSession } from './sessions'
 
 export interface ClassInput {
   /** Workplace only: see WeeklyClass. */
@@ -239,6 +239,19 @@ export async function startClassSession(
   const session = { id: snap.id, ...snap.data() } as Session
   if (session.status === 'scheduled') await startSession(session, rotating)
   return session.id
+}
+
+/**
+ * A class that was held but attendance was not taken (the lecturer forgot, or the phone was not
+ * there): the meeting becomes a session that is closed at once, with no QR anyone can use, so the
+ * lecturer can tick each student by hand afterwards. Returns the session ID.
+ */
+export async function recordPastClass(profile: UserProfile, cls: WeeklyClass, date: string, slot: Slot): Promise<string> {
+  const id = await startClassSession(profile, cls, date, slot)
+  const snap = await getDoc(doc(db, 'sessions', id))
+  const session = { id, ...snap.data() } as Session
+  if (session.status === 'active') await endSession(session)
+  return id
 }
 
 export { classSessionId }

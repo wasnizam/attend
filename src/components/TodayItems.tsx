@@ -175,7 +175,7 @@ function ScheduleRow({ item, isLast }: { item: AgendaItem; isLast: boolean }) {
                   {t('Start')}
                 </Button>
               </span>
-            ) : item.state === 'cancelled' ? (
+            ) : item.state === 'cancelled' || item.state === 'missed' ? (
               <MeetingActions item={item} />
             ) : (
               <span className="text-sm text-muted">{t('Not held')}</span>
