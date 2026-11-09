@@ -39,6 +39,13 @@ describe('public holidays', () => {
     expect(p['holidayKeys.2026-11-16_0900']).toBe(DEL)
   })
 
+  it('renames a holiday it called off earlier, but not one changed by hand', () => {
+    const before = cls({ cancelled: { '2026-11-09_0900': 'Public holiday: Old name' }, holidayKeys: { '2026-11-09_0900': 'Public holiday: Old name' } })
+    expect(holidayPatch(before, list, opts())['cancelled.2026-11-09_0900']).toBe('Public holiday: Deepavali')
+    const mine = cls({ cancelled: { '2026-11-09_0900': 'Exam week' }, holidayKeys: { '2026-11-09_0900': 'Public holiday: Old name' } })
+    expect(holidayPatch(mine, list, opts())['cancelled.2026-11-09_0900']).toBeUndefined()
+  })
+
   it('works out again when the place changes', () => {
     expect(signatureFor(cls(), null)).toBe('none')
     expect(signatureFor(cls(), { country: 'MY', region: '10' })).not.toBe(signatureFor(cls(), { country: 'MY', region: '13' }))

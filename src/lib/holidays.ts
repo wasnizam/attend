@@ -73,14 +73,18 @@ export async function regions(country: string): Promise<{ code: string; name: st
 /** The public holidays between two dates (inclusive), one per day, earliest first. */
 export async function holidaysBetween(s: Pick<HolidaySetting, 'country' | 'region'>, from: string, to: string): Promise<Holiday[]> {
   const H = await load()
-  const h = s.region ? new H(s.country, s.region, { languages: [language(), 'en'] }) : new H(s.country, { languages: [language(), 'en'] })
+  // Malaysians and Bruneians call their holidays by their Malay names (Hari Raya Aidilfitri), in English too.
+  const languages = ['MY', 'BN'].includes(s.country) && language() === 'en' ? ['ms', 'en'] : [language(), 'en']
+  const h = s.region ? new H(s.country, s.region, { languages }) : new H(s.country, { languages })
   const out = new Map<string, string>()
   for (let year = Number(from.slice(0, 4)); year <= Number(to.slice(0, 4)); year++) {
     for (const x of h.getHolidays(year) || []) {
       if (x.type !== 'public') continue
       const date = x.date.slice(0, 10)
       if (date < from || date > to) continue
-      out.set(date, out.has(date) ? `${out.get(date)} / ${x.name}` : x.name)
+      // The list only says "substitute day" in English; Malay names get the Malay word.
+      const name = languages[0] === 'ms' ? x.name.replace(/\(substitute day\)/i, '(cuti ganti)') : x.name
+      out.set(date, out.has(date) ? `${out.get(date)} / ${name}` : name)
     }
   }
   return [...out.entries()].map(([date, name]) => ({ date, name })).sort((a, b) => a.date.localeCompare(b.date))
@@ -100,7 +104,7 @@ export function signatureFor(cls: Pick<WeeklyClass, 'startDate' | 'endDate' | 's
   // An open-ended shift moves its window along each month.
   const month = cls.endDate ? '' : today.slice(0, 7)
   const times = classSlots(cls).map((x) => `${x.day}${x.startTime}`).join(',')
-  return `v1|${s.country}|${s.region ?? ''}|${s.open ? 'open' : 'closed'}|${w.from}|${cls.endDate ?? ''}|${month}|${times}`
+  return `v2|${s.country}|${s.region ?? ''}|${s.open ? 'open' : 'closed'}|${w.from}|${cls.endDate ?? ''}|${month}|${times}`
 }
 
 export const holidayReason = (name: string, label: string) => `${label}: ${name}`
@@ -142,7 +146,8 @@ export function holidayPatch(
       if (opts.open && cls.cancelled?.[key] === old[key] && old[key]) patch[`cancelled.${key}`] = DELETE
       continue
     }
-    if (!cls.cancelled?.[key]) patch[`cancelled.${key}`] = reason
+    // Not yet called off, or called off by this sync under an older name: (re)written.
+    if (!cls.cancelled?.[key] || (old[key] && cls.cancelled[key] === old[key] && old[key] !== reason)) patch[`cancelled.${key}`] = reason
   }
   patch.holidaySync = opts.signature
   return patch

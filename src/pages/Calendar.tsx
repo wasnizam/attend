@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PublicHolidays } from '../components/PublicHolidays'
 import { Breaks } from '../components/Breaks'
 import { DayAgenda, STATE_DOT } from '../components/DayAgenda'
@@ -9,9 +9,27 @@ import { useMyClasses } from '../hooks/useClasses'
 import { useMySessions, useNow } from '../hooks/useSessions'
 import { agendaFor } from '../lib/agenda'
 import { WEEK, addDays, dayShort, formatDate, formatTime, isoDate, parseDate, weekStart } from '../lib/format'
+import { type Holiday, getHolidaySetting, holidaysBetween } from '../lib/holidays'
 import { locale, t } from '../lib/i18n'
 
 /** A month of sessions and class meetings: what was held, what is running, what is coming. */
+/** The public holidays between two dates, by date, for the organisation's country (none if off). */
+function useHolidays(from: string, to: string): Map<string, string> {
+  const setting = getHolidaySetting()
+  const key = `${setting?.country ?? ''}|${setting?.region ?? ''}|${from}|${to}`
+  const [found, setFound] = useState<{ key: string; list: Holiday[] }>({ key: '', list: [] })
+  useEffect(() => {
+    if (!setting) return
+    let stale = false
+    holidaysBetween(setting, from, to).then((list) => !stale && setFound({ key, list }), () => {})
+    return () => {
+      stale = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+  return new Map(found.key === key ? found.list.map((h) => [h.date, h.name]) : [])
+}
+
 export function Calendar() {
   const sessions = useMySessions()
   const classes = useMyClasses()
@@ -20,6 +38,9 @@ export function Calendar() {
   // Any date inside the month being shown.
   const [month, setMonth] = useState(today.slice(0, 7) + '-01')
   const [selected, setSelected] = useState(today)
+  // Public holidays on the grid; the picked day's too, should it lie outside the grid.
+  const gridStart = weekStart(month)
+  const holidays = useHolidays(gridStart < selected ? gridStart : selected, addDays(gridStart, 41) > selected ? addDays(gridStart, 41) : selected)
 
   if (sessions.loading || classes.loading) return <PageLoader />
   if (sessions.error || classes.error) return <ErrorNote>{t('We could not load this data. Check your connection and reload.')}</ErrorNote>
@@ -72,21 +93,31 @@ export function Calendar() {
           {days.map(({ date, inMonth, items }, i) => {
             const isToday = date === today
             const isPicked = date === selected
+            const holiday = holidays.get(date)
             return (
               <button
                 key={date}
                 onClick={() => setSelected(date)}
                 aria-pressed={isPicked}
-                aria-label={`${formatDate(date)}: ${t('{n} sessions', { n: items.length })}`}
+                aria-label={`${formatDate(date)}${holiday ? ` · ${holiday}` : ''}: ${t('{n} sessions', { n: items.length })}`}
                 className={`flex min-h-16 flex-col items-stretch gap-1 border-line p-1 text-left transition-colors sm:min-h-28 sm:p-1.5 ${i % 7 ? 'border-l' : ''} ${i >= 7 ? 'border-t' : ''} ${
-                  isPicked ? 'bg-accent-soft' : 'hover:bg-slate-50'
-                } ${inMonth ? '' : 'bg-slate-50/60 text-slate-400'}`}
+                  isPicked ? 'bg-accent-soft' : holiday ? (inMonth ? 'bg-orange-50 hover:bg-orange-100' : 'bg-orange-50/50') : 'hover:bg-slate-50'
+                } ${inMonth ? '' : `${holiday ? '' : 'bg-slate-50/60'} text-slate-400`} ${isPicked && holiday ? 'shadow-[inset_0_0_0_2px_rgb(251,146,60)]' : ''}`}
               >
                 <span
-                  className={`tabular flex size-6 items-center justify-center self-center rounded-full text-xs font-semibold sm:self-start ${isToday ? 'bg-accent text-white' : ''}`}
+                  className={`tabular flex size-6 items-center justify-center self-center rounded-full text-xs font-semibold sm:self-start ${isToday ? 'bg-accent text-white' : holiday && inMonth ? 'text-orange-700' : ''}`}
                 >
                   {parseDate(date).getDate()}
                 </span>
+                {holiday && (
+                  <>
+                    {/* Phone: a short orange bar. Wider screens: the holiday's name. */}
+                    <span className="mx-auto h-1 w-5 rounded-full bg-orange-400 sm:hidden" />
+                    <span className={`hidden truncate px-1 text-[11px] leading-4 font-semibold sm:block ${inMonth ? 'text-orange-700' : 'text-orange-400'}`} title={holiday}>
+                      {holiday}
+                    </span>
+                  </>
+                )}
                 {/* Phone: dots. Wider screens: the first few sessions by name. */}
                 <span className="flex flex-wrap justify-center gap-0.5 sm:hidden">
                   {items.slice(0, 4).map((item) => (
@@ -116,6 +147,12 @@ export function Calendar() {
             {t(label)}
           </span>
         ))}
+        {getHolidaySetting() && (
+          <span className="flex items-center gap-1.5">
+            <span className="size-3 rounded-sm border border-orange-300 bg-orange-50" />
+            {t('Public holiday')}
+          </span>
+        )}
       </div>
 
       <section>
@@ -123,6 +160,12 @@ export function Calendar() {
           {formatDate(selected)}
           {selected === today && <span className="ml-2 text-sm font-normal text-muted">{t('Today')}</span>}
         </h2>
+        {holidays.get(selected) && (
+          <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 ring-1 ring-orange-200">
+            <span className="size-2 rounded-full bg-orange-400" />
+            {t('Public holiday')}: {holidays.get(selected)}
+          </p>
+        )}
         <DayAgenda items={dayItems} empty={t('Nothing on this day.')} />
         {has('clock') && dayItems.some((i) => i.due && (i.state === 'planned' || i.state === 'missed')) && (
           // A public holiday closes every office at once.
