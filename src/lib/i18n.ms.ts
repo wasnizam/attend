@@ -527,6 +527,7 @@ export const ms: Record<string, string> = {
   "Cancel {name} on this day? You can add a reason (optional).": "Batalkan {name} pada hari ini? Anda boleh menambah sebab (pilihan).",
   "Mark as cancelled": "Tanda sebagai dibatalkan",
   "Record attendance": "Rekod kehadiran",
+  "Holidays here also differ by state. Choose your state to add its own holidays too.": "Cuti di sini juga berbeza mengikut negeri. Pilih negeri anda untuk menambah cuti negeri juga.",
   "A day off for everyone, and nobody is counted absent. Anyone who does work that day is paid the public holiday rate.": "Cuti untuk semua, dan tiada sesiapa dikira tidak hadir. Sesiapa yang bekerja pada hari itu dibayar kadar cuti umum.",
   "Choose a country": "Pilih negara",
   "Choose where you teach. Its public holidays are taken off all your classes by themselves, every semester.": "Pilih tempat anda mengajar. Cuti umumnya dikeluarkan daripada semua kelas anda secara automatik, setiap semester.",

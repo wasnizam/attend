@@ -104,6 +104,9 @@ export function PublicHolidays() {
               {saved.region ? ` · ${name(states, saved.region) || saved.region}` : ''}
             </p>
             <p className="text-muted">{what}</p>
+            {!saved.region && states.length > 0 && (
+              <p className="mt-1 text-amber-700">{t('Holidays here also differ by state. Choose your state to add its own holidays too.')}</p>
+            )}
           </div>
           {admin && (
             <button className="font-semibold text-accent hover:underline" onClick={() => setEditing(true)}>

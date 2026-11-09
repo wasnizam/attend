@@ -272,8 +272,13 @@ export async function syncHolidays(profile: UserProfile, list: WeeklyClass[], la
   const setting = getHolidaySetting()
   const stale = list.filter((c) => (c.holidaySync ?? 'none') !== signatureFor(c, setting))
   let changed = 0
-  for (const cls of stale) {
+  for (const listed of stale) {
+    // Worked out from the class as it is now, not as the list last showed it.
+    const fresh = await getDoc(doc(classes, listed.id))
+    if (!fresh.exists()) continue
+    const cls = { id: fresh.id, ...fresh.data() } as WeeklyClass
     const signature = signatureFor(cls, setting)
+    if ((cls.holidaySync ?? 'none') === signature) continue
     const w = windowFor(cls)
     const days = setting ? await holidaysBetween(setting, w.from, w.to) : []
     // The days this class was really held: a holiday never calls those off.

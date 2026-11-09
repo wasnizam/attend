@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { Button, PageLoader } from './components/ui'
-import { signOut, subscribeOrganisation } from './data/account'
+import { setHolidays, signOut, subscribeOrganisation } from './data/account'
 import { isPlatformOwner } from './data/platform'
 import { allows, setPlan } from './lib/plan'
 import { setPhoneCheck, setPurpose, setShiftMode } from './lib/purpose'
@@ -31,16 +31,17 @@ import { SubjectReport } from './pages/SubjectReport'
 import { useSwitches } from './lib/pricing'
 import { refreshUsage } from './data/billing'
 import { Timetable } from './pages/Timetable'
-import { setHolidaySetting } from './lib/holidays'
+import { guessCountry, setHolidaySetting } from './lib/holidays'
 
 /**
  * Finds out what the organisation uses Dobry for before any screen is drawn, and
  * redraws everything if an admin changes it. The purpose picks the words and features.
  */
-function PurposeGate({ organisationId, uid, children }: { organisationId: string; uid?: string; children: ReactNode }) {
+function PurposeGate({ organisationId, uid, admin = false, children }: { organisationId: string; uid?: string; admin?: boolean; children: ReactNode }) {
   const [purpose, setLoaded] = useState<string | null>(null)
   const [suspended, setSuspended] = useState(false)
   const counted = useRef(false)
+  const holidaysSaved = useRef(false)
   // The Console's switch for paid plans: listened to here so every screen follows it at once.
   const selling = useSwitches().paymentsOpen
   useEffect(
@@ -52,7 +53,14 @@ function PurposeGate({ organisationId, uid, children }: { organisationId: string
         setPlan(org)
         setShiftMode(org?.shifts && allows('shifts'))
         setPhoneCheck(org?.phoneCheck)
-        setHolidaySetting(org?.holidays)
+        // Public holidays start by themselves: where nobody has chosen, the country comes from the
+        // company's time zone (or this device's), and an admin's first visit saves it for everyone.
+        const guess = guessCountry(org?.timezone)
+        setHolidaySetting(org?.holidays, guess)
+        if (admin && org && org.holidays === undefined && guess && !holidaysSaved.current) {
+          holidaysSaved.current = true
+          setHolidays(org.id, { country: guess, region: null, open: false }).catch(() => {})
+        }
         setLoaded(`${org?.purpose ?? 'education'}:${org?.plan ?? 'early'}:${org?.seats ?? ''}:${org?.usage?.lecturers ?? ''}:${org?.usage?.staff ?? ''}:${org?.shifts ? 's' : ''}:${org?.phoneCheck ?? ''}:${JSON.stringify(org?.holidays ?? null)}:${org?.tags?.includes('pay-test') ? 't' : ''}`)
         // Once per visit, where the plan has a size: have the server count what is in use.
         if (!counted.current && org && ((org.plan ?? 'early') !== 'early' || (org.purpose ?? 'education') === 'education')) {
@@ -60,7 +68,7 @@ function PurposeGate({ organisationId, uid, children }: { organisationId: string
           void refreshUsage()
         }
       }),
-    [organisationId, uid],
+    [organisationId, uid, admin],
   )
   if (!purpose) return <PageLoader />
   // Paused by the owner of Dobry (unpaid, or on request): nothing is deleted, nothing can be used.
@@ -97,7 +105,7 @@ function RequireAuth({ admin = false }: { admin?: boolean }) {
   }
   if (admin && profile.role !== 'admin') return <Navigate to="/app" replace />
   return (
-    <PurposeGate organisationId={profile.organisationId} uid={profile.id}>
+    <PurposeGate organisationId={profile.organisationId} uid={profile.id} admin={profile.role === 'admin'}>
       <MySessionsProvider>
         <HolidaySync />
         <Outlet />

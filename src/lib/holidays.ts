@@ -25,8 +25,16 @@ export interface Holiday {
 }
 
 let setting: HolidaySetting | null = null
-export const setHolidaySetting = (value: unknown) => {
+/**
+ * The organisation's choice. Never chosen (undefined): the country is worked out from the time zone,
+ * so national holidays apply from the start. Switched off on purpose (null): none.
+ */
+export const setHolidaySetting = (value: unknown, fallbackCountry = '') => {
   const v = value as Partial<HolidaySetting> | null | undefined
+  if (v === undefined) {
+    setting = /^[A-Z]{2}$/.test(fallbackCountry) ? { country: fallbackCountry } : null
+    return
+  }
   setting = v && typeof v.country === 'string' && /^[A-Z]{2}$/.test(v.country) ? { country: v.country, region: typeof v.region === 'string' && v.region ? v.region : undefined, open: Boolean(v.open) } : null
 }
 export const getHolidaySetting = () => setting
@@ -144,8 +152,8 @@ export function holidayPatch(
 export const holidayDates = (cls: Pick<WeeklyClass, 'holidayKeys'>) => Object.keys(cls.holidayKeys ?? {}).map((k) => k.slice(0, 10))
 
 /** A best first guess at the country, from the device's time zone. */
-export function guessCountry(): string {
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? ''
+export function guessCountry(timeZone?: string): string {
+  const zone = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone || ''
   const byZone: Record<string, string> = {
     'Asia/Kuala_Lumpur': 'MY', 'Asia/Kuching': 'MY', 'Asia/Singapore': 'SG', 'Asia/Jakarta': 'ID', 'Asia/Makassar': 'ID', 'Asia/Jayapura': 'ID',
     'Asia/Bangkok': 'TH', 'Asia/Manila': 'PH', 'Asia/Ho_Chi_Minh': 'VN', 'Asia/Brunei': 'BN', 'Asia/Kolkata': 'IN', 'Asia/Calcutta': 'IN',
