@@ -18,6 +18,10 @@ const SHOTS_MS = [
   { file: '2-checkin', title: 'Pelajar imbas dengan <em>telefon sendiri</em>', sub: 'Tiada aplikasi atau akaun diperlukan.' },
   { file: '3-dashboard', title: 'Seluruh semester <em>sepintas lalu</em>', sub: 'Kehadiran, kelas diadakan, siapa berisiko.' },
   { file: '4-report', title: 'Laporan semester, <em>peraturan 80%</em>', sub: 'Surat amaran dan senarai halangan sekali tekan.' },
+  { file: '8-trainer-live', title: 'Kursus dan bengkel, <em>daftar masuk pantas</em>', sub: 'Untuk jurulatih: peserta imbas, tanpa borang.' },
+  { file: '10-work-door', title: 'Staf punch card <em>di pintu masuk</em>', sub: 'Satu skrin di pintu. Satu telefon, seorang staf.' },
+  { file: '11-work-today', title: 'Siapa hadir, <em>lewat atau belum</em>', sub: 'Setiap syif secara langsung, untuk pengurus.' },
+  { file: '12-work-dashboard', title: 'Bulan ini untuk <em>seluruh pasukan</em>', sub: 'Kehadiran, lewat, lebih masa dan cuti.' },
   { file: '5-calendar', title: 'Cuti umum <em>ditambah untuk anda</em>', sub: 'Mengikut negara dan negeri anda, setiap tahun.' },
   { file: '7-welcome', title: 'Daftar masuk <em>tanpa akaun</em>', sub: 'Atau log masuk untuk urus kelas dan staf.' },
   { file: '6-dark', title: 'Selesa di mata dengan <em>mod gelap</em>', sub: 'Mengikut telefon anda, siang dan malam.' },
@@ -33,6 +37,10 @@ const SHOTS_EN = [
   { file: '2-checkin', title: 'Students scan with <em>their own phone</em>', sub: 'No app or account needed to check in.' },
   { file: '3-dashboard', title: 'The whole semester <em>at a glance</em>', sub: 'Attendance, classes held, who is at risk.' },
   { file: '4-report', title: 'Semester report with the <em>80% rule</em>', sub: 'Warning letters and barring list in one tap.' },
+  { file: '8-trainer-live', title: 'Courses and workshops, <em>fast</em>', sub: 'For trainers: participants scan, no forms.' },
+  { file: '10-work-door', title: 'Staff clock in <em>at the door</em>', sub: 'A screen at the entrance. One phone, one person.' },
+  { file: '11-work-today', title: 'Who is in, <em>late or not yet</em>', sub: 'Every shift, live, for the manager.' },
+  { file: '12-work-dashboard', title: 'The month for your <em>whole team</em>', sub: 'Attendance, lateness, overtime and leave.' },
   { file: '5-calendar', title: 'Public holidays <em>added for you</em>', sub: 'For your country and state, every year.' },
   { file: '7-welcome', title: 'Check in <em>without an account</em>', sub: 'Or sign in to run classes and staff.' },
   { file: '6-dark', title: 'Easy on the eyes in <em>dark mode</em>', sub: 'Follows your phone, day and night.' },
@@ -119,14 +127,19 @@ async function render(html, width, height, path) {
   console.log('made', path, `${width}×${height}`)
 }
 
-let n = 0
+// Numbered per device, in upload order. Apple takes at most 10 per device.
+const count = { iphone: 0, ipad: 0 }
 for (const s of SHOTS) {
-  n += 1
   for (const device of ['iphone', 'ipad']) {
     const file = `${device}-${s.file}.png`
     if (!existsSync(resolve(rawDir, file))) continue
     // On an iPad these two are a small card in a big empty screen: kept for iPhone only.
     if (device === 'ipad' && (s.file === '2-checkin' || s.file === '7-welcome')) continue
+    // The iPhone's ten places go to the three editions; dark mode stays on the iPad.
+    if (device === 'iphone' && s.file === '6-dark') continue
+    if (count[device] === 10) continue
+    count[device] += 1
+    const n = count[device]
     const colour = await topColour(file)
     const html =
       device === 'iphone'

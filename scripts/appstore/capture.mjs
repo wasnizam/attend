@@ -85,6 +85,51 @@ function showLiveAddress() {
 }
 
 const has = (text) => new Function(`return document.body.innerText.includes(${JSON.stringify(text)})`)
+// For screens recognised by their address rather than their words: loaded, and nothing spinning.
+const settled = () => document.body.innerText.length > 150 && !document.querySelector('.animate-spin')
+
+// The trainer and workplace editions (switch the sample account first with edition.mjs): their own few screens.
+const EDITION = process.env.EDITION || 'lecturer'
+if (EDITION !== 'lecturer') {
+  for (const device of ['iphone', 'ipad']) {
+    const page = await preparePage(device)
+    await signIn(page)
+    if (EDITION === 'trainer') {
+      await shot(page, `/app/session/${SESSION}`, `${device}-8-trainer-live`, settled)
+      await shot(page, '/app/overview', `${device}-9-trainer-dashboard`, settled)
+    } else {
+      // The door screen first asks which office it stands in: Head Office, then its QR shows.
+      await page.evaluate(() => {
+        history.pushState({}, '', '/app/door')
+        dispatchEvent(new PopStateEvent('popstate'))
+      })
+      // (Remembered from an earlier pass, it goes straight to the QR.)
+      // Each second: tap Head Office while the question shows, until the QR is there.
+      await page.waitForFunction(
+        () => {
+          if (document.querySelector('[shape-rendering]')) return true
+          ;[...document.querySelectorAll('button')].find((b) => b.textContent.includes('Head Office'))?.click()
+          return false
+        },
+        { timeout: 120000, polling: 1000 },
+      ).catch(async (e) => {
+        await page.screenshot({ path: `${out}/${device}-door-failed.png` })
+        console.log('door failed; screen:', (await page.evaluate(() => document.body.innerText)).slice(0, 300))
+        throw e
+      })
+      await new Promise((r) => setTimeout(r, 3000))
+      await page.evaluate(showLiveAddress)
+      await page.screenshot({ path: `${out}/${device}-10-work-door.png` })
+      console.log('saved', `${device}-10-work-door`)
+      await shot(page, '/app', `${device}-11-work-today`, settled)
+      await shot(page, '/app/overview', `${device}-12-work-dashboard`, settled)
+      await shot(page, '/app/pay', `${device}-13-work-pay`, settled)
+    }
+    await page.close()
+  }
+  await browser.close()
+  process.exit(0)
+}
 
 for (const device of ['iphone', 'ipad']) {
   const page = await preparePage(device)
