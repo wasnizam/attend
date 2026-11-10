@@ -1,19 +1,34 @@
 // Turns the raw captures (capture.mjs) into App Store images at Apple's exact sizes: screenshots
 // for iPhone 6.9" (1320 × 2868) and iPad 13" (2064 × 2752), a product page header (3840 × 1646)
 // and a search results image (1920 × 1280). Each is an HTML page drawn by Chrome at that size.
-// Usage: node scripts/appstore/compose.mjs [rawDir] [outDir]
+// Usage: node scripts/appstore/compose.mjs [rawDir] [outDir] [en|ms]
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import puppeteer from 'puppeteer-core'
 import sharp from 'sharp'
 
-const [rawDir = 'marketing/appstore/raw', outDir = 'marketing/appstore'] = process.argv.slice(2)
+const [rawDir = 'marketing/appstore/raw', outDir = 'marketing/appstore', LANG = 'en'] = process.argv.slice(2)
 const raw = (f) => `file://${resolve(rawDir, f)}`
 const font = (f) => `file://${resolve('node_modules', f)}`
 mkdirSync(`${outDir}/iphone`, { recursive: true })
 mkdirSync(`${outDir}/ipad`, { recursive: true })
 
-const SHOTS = [
+const SHOTS_MS = [
+  { file: '1-live', title: 'Kehadiran QR <em>dalam beberapa saat</em>', sub: 'Paparkan kod. Senarai terisi sendiri.' },
+  { file: '2-checkin', title: 'Pelajar imbas dengan <em>telefon sendiri</em>', sub: 'Tiada aplikasi atau akaun diperlukan.' },
+  { file: '3-dashboard', title: 'Seluruh semester <em>sepintas lalu</em>', sub: 'Kehadiran, kelas diadakan, siapa berisiko.' },
+  { file: '4-report', title: 'Laporan semester, <em>peraturan 80%</em>', sub: 'Surat amaran dan senarai halangan sekali tekan.' },
+  { file: '5-calendar', title: 'Cuti umum <em>ditambah untuk anda</em>', sub: 'Mengikut negara dan negeri anda, setiap tahun.' },
+  { file: '7-welcome', title: 'Daftar masuk <em>tanpa akaun</em>', sub: 'Atau log masuk untuk urus kelas dan staf.' },
+  { file: '6-dark', title: 'Selesa di mata dengan <em>mod gelap</em>', sub: 'Mengikut telefon anda, siang dan malam.' },
+]
+// The header and search results words, by language.
+const HERO = {
+  en: { head: 'Attendance in seconds.', em: 'Scan, and it’s done.', sub: 'QR attendance for classes, courses and workplaces.', sub2: 'No machine, no app for the people checking in.', short: 'For classes, courses and workplaces. No app needed to check in.' },
+  ms: { head: 'Kehadiran dalam saat.', em: 'Imbas, dan siap.', sub: 'Kehadiran QR untuk kelas, kursus dan tempat kerja.', sub2: 'Tiada mesin, tiada aplikasi untuk mereka yang imbas.', short: 'Untuk kelas, kursus dan tempat kerja. Tiada aplikasi diperlukan.' },
+}[LANG]
+
+const SHOTS_EN = [
   { file: '1-live', title: 'QR attendance <em>in seconds</em>', sub: 'Show the code. The list fills itself.' },
   { file: '2-checkin', title: 'Students scan with <em>their own phone</em>', sub: 'No app or account needed to check in.' },
   { file: '3-dashboard', title: 'The whole semester <em>at a glance</em>', sub: 'Attendance, classes held, who is at risk.' },
@@ -22,6 +37,7 @@ const SHOTS = [
   { file: '7-welcome', title: 'Check in <em>without an account</em>', sub: 'Or sign in to run classes and staff.' },
   { file: '6-dark', title: 'Easy on the eyes in <em>dark mode</em>', sub: 'Follows your phone, day and night.' },
 ]
+const SHOTS = LANG === 'ms' ? SHOTS_MS : SHOTS_EN
 
 const base = `
 @font-face { font-family: Display; src: url('${font('@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2')}'); font-weight: 200 800; }
@@ -142,16 +158,16 @@ const logo = (size) => `<div style="display:flex;align-items:center;gap:${size *
 await hero(3840, 1646, `${outDir}/header-3840x1646.png`, (p) => `<div class="glow"></div><div class="dots"></div>
   <div style="position:absolute;left:260px;top:0;bottom:0;width:1700px;display:flex;flex-direction:column;justify-content:center">
     ${logo(120)}
-    <h1 style="font-size:150px;margin-top:70px">Attendance in seconds.<br><em>Scan, and it’s done.</em></h1>
-    <p class="sub" style="font-size:56px;margin-top:50px;line-height:1.35">QR attendance for classes, courses and workplaces.<br>No machine, no app for the people checking in.</p>
+    <h1 style="font-size:150px;margin-top:70px">${HERO.head}<br><em>${HERO.em}</em></h1>
+    <p class="sub" style="font-size:56px;margin-top:50px;line-height:1.35">${HERO.sub}<br>${HERO.sub2}</p>
   </div>
   <div class="device" style="left:2350px;top:250px;transform:rotate(-6deg);padding:16px;border-radius:84px">${phone(p[1].img, p[1].colour, 600)}</div>
   <div class="device" style="left:2900px;top:150px;transform:rotate(4deg);padding:16px;border-radius:84px">${phone(p[0].img, p[0].colour, 640)}</div>`)
 
 await hero(1920, 1280, `${outDir}/search-1920x1280.png`, (p) => `<div class="glow"></div><div class="dots"></div>
   <div style="position:absolute;top:90px;left:0;right:0;text-align:center">
-    <h1 style="font-size:92px">Attendance in seconds. <em>Scan, and it’s done.</em></h1>
-    <p class="sub" style="font-size:38px;margin-top:22px">For classes, courses and workplaces. No app needed to check in.</p>
+    <h1 style="font-size:92px">${HERO.head} <em>${HERO.em}</em></h1>
+    <p class="sub" style="font-size:38px;margin-top:22px">${HERO.short}</p>
   </div>
   <div class="device" style="left:520px;top:420px;transform:translateX(-50%) rotate(-5deg);padding:10px;border-radius:56px">${phone(p[1].img, p[1].colour, 400)}</div>
   <div class="device" style="left:960px;top:360px;padding:10px;border-radius:56px">${phone(p[0].img, p[0].colour, 420)}</div>
@@ -159,8 +175,8 @@ await hero(1920, 1280, `${outDir}/search-1920x1280.png`, (p) => `<div class="glo
 
 await hero(3840, 2560, `${outDir}/search-3840x2560.png`, (p) => `<div class="glow"></div><div class="dots"></div>
   <div style="position:absolute;top:180px;left:0;right:0;text-align:center">
-    <h1 style="font-size:184px">Attendance in seconds. <em>Scan, and it’s done.</em></h1>
-    <p class="sub" style="font-size:76px;margin-top:44px">For classes, courses and workplaces. No app needed to check in.</p>
+    <h1 style="font-size:184px">${HERO.head} <em>${HERO.em}</em></h1>
+    <p class="sub" style="font-size:76px;margin-top:44px">${HERO.short}</p>
   </div>
   <div class="device" style="left:1040px;top:840px;transform:translateX(-50%) rotate(-5deg);padding:20px;border-radius:112px">${phone(p[1].img, p[1].colour, 800)}</div>
   <div class="device" style="left:1920px;top:720px;padding:20px;border-radius:112px">${phone(p[0].img, p[0].colour, 840)}</div>

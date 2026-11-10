@@ -1,11 +1,20 @@
 // Captures Dobry's screens at the App Store's exact sizes, from the local test copy (npm run
 // dev:emulator, with the emulators and sample data). The page is told it runs inside the phone
 // app, so the website's banners stay out, as in the real app.
-// Usage: node scripts/appstore/capture.mjs <email> <password> [outDir]
+// Usage: node scripts/appstore/capture.mjs <email> <password> [outDir] [en|ms]
 import { mkdirSync } from 'node:fs'
 import puppeteer from 'puppeteer-core'
 
-const [email, password, out = 'marketing/appstore/raw'] = process.argv.slice(2)
+const [email, password, out = 'marketing/appstore/raw', LANG = 'en'] = process.argv.slice(2)
+// The words each screen is recognised by, in the language it is shown in.
+const MS = {
+  'LIVE ATTENDANCE': 'KEHADIRAN SEMASA',
+  'Classes, lowest attendance first': 'Kelas, kehadiran terendah dahulu',
+  'Where students stand': 'Kedudukan pelajar',
+  'Public holidays': 'Cuti umum',
+  'How will you use Dobry?': 'Bagaimana anda akan menggunakan Dobry?',
+}
+const T = (en) => (LANG === 'ms' ? MS[en] : en)
 if (!email || !password) throw new Error('Usage: node scripts/appstore/capture.mjs <email> <password> [outDir]')
 mkdirSync(out, { recursive: true })
 const BASE = 'http://localhost:5173'
@@ -20,7 +29,7 @@ const DEVICES = {
 
 const browser = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, args: ['--hide-scrollbars'] })
 
-async function preparePage(device, { theme = 'light', lang = 'en', fresh = false } = {}) {
+async function preparePage(device, { theme = 'light', lang = LANG, fresh = false } = {}) {
   // A fresh window has no saved sign-in: for the welcome screen and the student's check-in.
   const page = fresh ? await (await browser.createBrowserContext()).newPage() : await browser.newPage()
   await page.setViewport(DEVICES[device])
@@ -80,10 +89,10 @@ const has = (text) => new Function(`return document.body.innerText.includes(${JS
 for (const device of ['iphone', 'ipad']) {
   const page = await preparePage(device)
   await signIn(page)
-  await shot(page, `/app/session/${SESSION}`, `${device}-1-live`, has('LIVE ATTENDANCE'))
-  await shot(page, '/app/overview', `${device}-3-dashboard`, has('Classes, lowest attendance first'))
-  await shot(page, '/app/timetable/demo-data-structures/report', `${device}-4-report`, has('Where students stand'))
-  await shot(page, '/app/calendar', `${device}-5-calendar`, has('Public holidays'))
+  await shot(page, `/app/session/${SESSION}`, `${device}-1-live`, has(T('LIVE ATTENDANCE')))
+  await shot(page, '/app/overview', `${device}-3-dashboard`, has(T('Classes, lowest attendance first')))
+  await shot(page, '/app/timetable/demo-data-structures/report', `${device}-4-report`, has(T('Where students stand')))
+  await shot(page, '/app/calendar', `${device}-5-calendar`, has(T('Public holidays')))
   await page.close()
 
   // The student's side: the check-in page their phone opens from the QR.
@@ -113,14 +122,14 @@ for (const device of ['iphone', 'ipad']) {
   // Dark mode, to show it.
   const dark = await preparePage(device, { theme: 'dark' })
   await signIn(dark)
-  await shot(dark, '/app/overview', `${device}-6-dark`, has('Classes, lowest attendance first'), { scroll: device === 'iphone' ? 600 : 0 })
+  await shot(dark, '/app/overview', `${device}-6-dark`, has(T('Classes, lowest attendance first')), { scroll: device === 'iphone' ? 600 : 0 })
   await dark.close()
 
   // The phone app's first screen.
   const welcome = await preparePage(device, { fresh: true })
   await welcome.evaluateOnNewDocument(() => localStorage.removeItem('dobry.app.welcomed'))
   await welcome.goto(`${BASE}/login`, { waitUntil: 'networkidle2' })
-  await welcome.waitForFunction(has('How will you use Dobry?'), { timeout: 60000 })
+  await welcome.waitForFunction(has(T('How will you use Dobry?')), { timeout: 60000 })
   await new Promise((r) => setTimeout(r, 1500))
   await welcome.screenshot({ path: `${out}/${device}-7-welcome.png` })
   console.log('saved', `${device}-7-welcome`)
