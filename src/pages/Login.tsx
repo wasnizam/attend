@@ -3,6 +3,9 @@ import { Link, Navigate, useLocation } from 'react-router-dom'
 import { GoogleButton } from '../components/GoogleButton'
 import { AuthShell } from '../components/AuthShell'
 import { ScanToCheckIn } from '../components/ScanToCheckIn'
+import { Welcome } from '../components/Welcome'
+import { inNativeApp } from '../lib/native'
+import { welcomed } from '../lib/welcome'
 import { Button, ErrorNote, Field, PageLoader, friendlyError } from '../components/ui'
 import { resetPassword, signIn } from '../data/account'
 import { useAuth } from '../hooks/useAuth'
@@ -16,9 +19,12 @@ export function Login() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  // The phone app's first run: a welcome that sends people checking in straight to the scanner.
+  const [welcome, setWelcome] = useState(() => inNativeApp() && !welcomed())
 
   if (loading) return <PageLoader />
   if (user) return <Navigate to={(location.state as { from?: string } | null)?.from ?? '/app'} replace />
+  if (welcome) return <Welcome onSignIn={() => setWelcome(false)} />
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()

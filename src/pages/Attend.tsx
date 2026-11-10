@@ -8,7 +8,7 @@ import { getSessionLink, subscribeSessionLink } from '../data/sessions'
 import { formatClock, formatDuration, formatRange } from '../lib/format'
 import { type Position, getPosition } from '../lib/geo'
 import { t } from '../lib/i18n'
-import { buzzSuccess } from '../lib/native'
+import { buzzSuccess, inNativeApp } from '../lib/native'
 import { setPurpose } from '../lib/purpose'
 import type { SessionLink } from '../lib/types'
 
@@ -27,10 +27,13 @@ function Shell({ children, below }: { children: React.ReactNode; below?: React.R
     <AuthShell
       below={below}
       footer={
-        <span className="text-xs">
-          {t('Attendance by Dobry. Free for lecturers, trainers and small teams.')}{' '}
-          <a href="/?utm_source=checkin" target="_blank" rel="noreferrer">{t('Try Dobry')} →</a>
-        </span>
+        // Inside the phone app the person is already using Dobry; the invitation is for browsers.
+        inNativeApp() ? undefined : (
+          <span className="text-xs">
+            {t('Attendance by Dobry. Free for lecturers, trainers and small teams.')}{' '}
+            <a href="/?utm_source=checkin" target="_blank" rel="noreferrer">{t('Try Dobry')} →</a>
+          </span>
+        )
       }
     >
       <div className="p-1">{children}</div>

@@ -1,4 +1,5 @@
 import { type Purpose, getPurpose } from './purpose'
+import { inNativeApp } from './native'
 
 /**
  * Whether paid plans are open: prices show on the website and in the app, and customers can pay.
@@ -26,6 +27,9 @@ export const PAY_TEST_TAG = 'pay-test'
  * for one browser only.
  */
 export function canPay(): boolean {
+  // Never inside the iPhone or Android app: Apple and Google only allow their own payments there,
+  // so plans are bought on dobry.app and the app simply follows the plan.
+  if (inNativeApp()) return false
   if (open) return true
   if (fields.tags?.includes(PAY_TEST_TAG)) return true
   try {

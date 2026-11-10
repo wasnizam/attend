@@ -1,9 +1,10 @@
 import { Suspense, lazy } from 'react'
-import { Outlet, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { OfflineBanner } from './components/OfflineBanner'
 import { PageLoader } from './components/ui'
 import { isConfigured } from './lib/firebase'
 import { useLang } from './lib/i18n'
+import { inNativeApp } from './lib/native'
 import { Home } from './pages/Home'
 import { Landing } from './pages/Landing'
 import { Legal } from './pages/Legal'
@@ -37,15 +38,17 @@ function NeedsFirebase() {
 export function App() {
   // Changing language re-mounts every screen, so all text is re-read in the new language.
   const lang = useLang()
+  const app = inNativeApp()
   return (
     <Suspense fallback={<PageLoader />}>
       <OfflineBanner />
       <Routes key={lang}>
-        <Route path="/" element={<Home />} />
+        {/* The website's sales pages (with prices) are for browsers; inside the phone app they lead to the app. */}
+        <Route path="/" element={app ? <Navigate to="/app" replace /> : <Home />} />
         {/* One page, three doors: each group has its own address to share. */}
-        <Route path="/lecturers" element={<Landing show="lecturers" />} />
-        <Route path="/trainers" element={<Landing show="trainers" />} />
-        <Route path="/workplace" element={<Landing show="workplace" />} />
+        <Route path="/lecturers" element={app ? <Navigate to="/app" replace /> : <Landing show="lecturers" />} />
+        <Route path="/trainers" element={app ? <Navigate to="/app" replace /> : <Landing show="trainers" />} />
+        <Route path="/workplace" element={app ? <Navigate to="/app" replace /> : <Landing show="workplace" />} />
         <Route path="/terms" element={<Legal doc="terms" />} />
         <Route path="/privacy" element={<Legal doc="privacy" />} />
         <Route path="/c/:code" element={<Certificate />} />

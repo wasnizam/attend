@@ -9,6 +9,7 @@ import { GRACE_DAYS, PLAN_LABEL, activePlan, allows, canPay, paidUntil, payments
 import { InstallApp } from '../components/InstallApp'
 import { InviteFriends } from '../components/InviteFriends'
 import { UpgradeNote } from '../components/Paid'
+import { inNativeApp } from '../lib/native'
 import { openBilling, redeemCode, resumePlan, startCheckout, syncPlan } from '../data/billing'
 import { auth } from '../lib/auth'
 import { getPurpose } from '../lib/purpose'
@@ -557,7 +558,8 @@ export function Account() {
                   </p>
                 )}
 
-                {profile.role === 'admin' && (
+                {/* Codes unlock Pro outside the app stores' own payments, which the iPhone and Android apps may not offer. */}
+                {profile.role === 'admin' && !inNativeApp() && (
                   <details className="group mt-4 border-t border-line pt-4" open={Boolean(codeNote) || undefined}>
                     <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-accent [&::-webkit-details-marker]:hidden">
                       {t('Have a code?')}
