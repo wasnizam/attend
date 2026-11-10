@@ -1,4 +1,5 @@
 import type { Invoice, PlatformSettings } from '../data/platform'
+import { savePdf } from './saveFile'
 
 /** A tax invoice as a PDF, downloaded straight away. Drawn as text, so it prints sharp. */
 export async function downloadInvoicePdf(inv: Invoice, seller: PlatformSettings) {
@@ -89,5 +90,5 @@ export async function downloadInvoicePdf(inv: Invoice, seller: PlatformSettings)
   const H = doc.internal.pageSize.getHeight()
   doc.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(...muted).text(plain(`${seller.companyName || 'Dobry'} - ${inv.number}`), M, H - 10)
   doc.text('Computer-generated invoice. No signature required.', W - M, H - 10, { align: 'right' })
-  doc.save(`${inv.number}.pdf`)
+  return savePdf(doc, `${inv.number}.pdf`)
 }

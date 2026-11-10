@@ -10,6 +10,7 @@ import type { ClassReport, StudentRow } from '../lib/report'
 import type { ClassToolSettings, WeeklyClass } from '../lib/types'
 import { CODE_PRESETS, type Mark, type UniFormat, formatDay, loadFormat, saveFormat, uniCsv, uniRows } from '../lib/uniExport'
 import { Button, Card, inputClass } from './ui'
+import { savePdf } from '../lib/saveFile'
 
 const MARKS: [Mark, string][] = [
   ['present', 'Present'],
@@ -236,11 +237,11 @@ export function LettersPanel({ cls, report, saved }: { cls: WeeklyClass; report:
   }
   const generated = t('Made with Dobry on {date}', { date: formatDate(isoDate()) })
 
-  const run = async (make: () => Promise<{ save(name: string): void }>, name: string) => {
+  const run = async (make: () => Promise<{ output(type: 'blob'): Blob }>, name: string) => {
     setBusy(true)
     setFailed(false)
     try {
-      ;(await make()).save(name)
+      await savePdf(await make(), name)
     } catch {
       setFailed(true)
     } finally {

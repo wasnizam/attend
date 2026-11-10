@@ -2,6 +2,7 @@ import { type FormEvent, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { GoogleButton } from '../components/GoogleButton'
 import { AuthShell } from '../components/AuthShell'
+import { ScanToCheckIn } from '../components/ScanToCheckIn'
 import { Button, ErrorNote, Field, PageLoader, friendlyError } from '../components/ui'
 import { resetPassword, signIn } from '../data/account'
 import { useAuth } from '../hooks/useAuth'
@@ -46,6 +47,7 @@ export function Login() {
 
   return (
     <AuthShell
+      above={<ScanToCheckIn />}
       footer={
         <>
           {t('New here?')} <Link to="/signup">{t('Create an account')}</Link>

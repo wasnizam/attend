@@ -4,6 +4,7 @@
  * charts stay sharp when zoomed, and the file is small. The library loads only on download.
  */
 import type { jsPDF as JsPDF } from 'jspdf'
+import { savePdf } from './saveFile'
 
 export interface PdfTable {
   head: string[]
@@ -221,7 +222,7 @@ export async function downloadReportPdf(report: PdfReport) {
   }
 
   runningHeadersAndFooters(doc, report)
-  doc.save(`${report.fileName}.pdf`)
+  return savePdf(doc, `${report.fileName}.pdf`)
 }
 
 /** First page: accent rule, company, title, period, and who/what the report covers. */

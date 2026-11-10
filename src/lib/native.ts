@@ -27,3 +27,11 @@ export function startNativeApp() {
     .then(({ App }) => App.addListener('backButton', ({ canGoBack }) => (canGoBack ? window.history.back() : App.exitApp())))
     .catch(() => {})
 }
+
+/** A short "done" buzz on the phone, for a check-in that went through. Nothing in a browser. */
+export function buzzSuccess() {
+  if (!inNativeApp()) return
+  import('@capacitor/haptics')
+    .then(({ Haptics, NotificationType }) => Haptics.notification({ type: NotificationType.Success }))
+    .catch(() => {})
+}

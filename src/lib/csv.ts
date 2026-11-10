@@ -1,6 +1,7 @@
 import { countedMinutes, formatClock24, formatDate } from './format'
 import { t } from './i18n'
 import type { AttendanceRecord, Session } from './types'
+import { saveFile } from './saveFile'
 
 const HEADER = ['Student ID', 'Student Name', 'Session', 'Date', 'Time', 'Status']
 const STATUS = { present: 'Present', late: 'Late', excused: 'Excused', mc: 'MC' }
@@ -48,16 +49,8 @@ export function attendanceCsv(
  * `excel` adds a UTF-8 byte-order mark so Excel opens non-Latin names correctly
  * when the file is double-clicked.
  */
-export function downloadCsv(filename: string, csv: string, excel = false) {
-  const blob = new Blob([excel ? '﻿' + csv : csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
+export function downloadCsv(filename: string, csv: string, excel = false): Promise<void> {
+  return saveFile(filename, new Blob([excel ? '﻿' + csv : csv], { type: 'text/csv;charset=utf-8' })).catch((e) => window.alert(e instanceof Error ? e.message : String(e)))
 }
 
 /** A class's list of people, as a file: ID and name. */

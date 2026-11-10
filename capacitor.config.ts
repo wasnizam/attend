@@ -14,6 +14,8 @@ const config: CapacitorConfig = {
     url: process.env.CAP_SERVER_URL || 'https://dobry.app/app',
     // Only Dobry's own pages open inside the app; anything else opens in Safari.
     allowNavigation: ['dobry.app', 'www.dobry.app', ...(process.env.CAP_SERVER_URL ? ['localhost'] : [])],
+    // With no internet, Dobry's own "No internet" screen (from the app itself) instead of a blank page.
+    errorPath: 'offline.html',
   },
   ios: {
     contentInset: 'never',

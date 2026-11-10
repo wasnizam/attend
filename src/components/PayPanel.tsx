@@ -18,6 +18,7 @@ import {
 } from '../lib/pay'
 import type { PayrollRow } from '../lib/payroll'
 import { Button, Card, PageLoader, inputClass } from './ui'
+import { savePdf } from '../lib/saveFile'
 
 const csvCell = (v: string | number) => {
   const s = String(v)
@@ -113,7 +114,7 @@ export function PayPanel({ rows, from, to, periodName, company, slug }: { rows: 
   const pdf = async (list: typeof ready, name: string) => {
     setBusy('pdf')
     try {
-      ;(await payslipsPdf(list, ctx)).save(name)
+      await savePdf(await payslipsPdf(list, ctx), name)
     } catch {
       setError(t('The PDF could not be made. Try again.'))
     } finally {

@@ -1,5 +1,6 @@
 import { Suspense, lazy } from 'react'
 import { Outlet, Route, Routes } from 'react-router-dom'
+import { OfflineBanner } from './components/OfflineBanner'
 import { PageLoader } from './components/ui'
 import { isConfigured } from './lib/firebase'
 import { useLang } from './lib/i18n'
@@ -38,6 +39,7 @@ export function App() {
   const lang = useLang()
   return (
     <Suspense fallback={<PageLoader />}>
+      <OfflineBanner />
       <Routes key={lang}>
         <Route path="/" element={<Home />} />
         {/* One page, three doors: each group has its own address to share. */}

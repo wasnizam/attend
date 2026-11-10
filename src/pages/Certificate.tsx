@@ -6,6 +6,7 @@ import { type Certificate, certificateUrl, certificatesPdf, dateLine, fetchCerti
 import { slug } from '../lib/csv'
 import { formatDate, isoDate } from '../lib/format'
 import { t } from '../lib/i18n'
+import { savePdf } from '../lib/saveFile'
 
 /**
  * The public page behind a certificate's link and QR: anyone can see that it is real, and the
@@ -38,7 +39,7 @@ export default function CertificatePage() {
     if (!cert) return
     setBusy(true)
     try {
-      ;(await certificatesPdf([cert])).save(`certificate-${slug(cert.name)}.pdf`)
+      await savePdf(await certificatesPdf([cert]), `certificate-${slug(cert.name)}.pdf`)
     } finally {
       setBusy(false)
     }

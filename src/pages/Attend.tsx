@@ -8,6 +8,7 @@ import { getSessionLink, subscribeSessionLink } from '../data/sessions'
 import { formatClock, formatDuration, formatRange } from '../lib/format'
 import { type Position, getPosition } from '../lib/geo'
 import { t } from '../lib/i18n'
+import { buzzSuccess } from '../lib/native'
 import { setPurpose } from '../lib/purpose'
 import type { SessionLink } from '../lib/types'
 
@@ -353,6 +354,7 @@ export default function Attend() {
         } catch {
           // Private browsing: nothing to remember, nothing to do.
         }
+        buzzSuccess()
       }
       setResult(outcome)
     } catch (err) {

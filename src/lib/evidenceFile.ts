@@ -1,4 +1,6 @@
 import { t } from './i18n'
+import { saveFile } from './saveFile'
+import { inNativeApp } from './native'
 
 export interface PreparedFile {
   fileName: string
@@ -52,12 +54,17 @@ export async function prepareEvidence(file: File): Promise<PreparedFile> {
   throw new Error(t('Evidence must be a photo or a PDF.'))
 }
 
-/** Opens saved evidence in a new tab. */
-export function openEvidence(dataUrl: string) {
+/** Opens saved evidence in a new tab (in the phone app: the share sheet, which can show it too). */
+export function openEvidence(dataUrl: string, fileName = 'evidence') {
   // Browsers block navigating straight to a data: URL, so hand over a blob instead.
   const [head, body] = dataUrl.split(',')
   const mime = head.match(/data:([^;]+)/)?.[1] ?? 'application/octet-stream'
   const bytes = Uint8Array.from(atob(body), (c) => c.charCodeAt(0))
+  if (inNativeApp()) {
+    const ext = mime === 'application/pdf' ? 'pdf' : (mime.split('/')[1] ?? 'bin').replace('jpeg', 'jpg')
+    void saveFile(/\.\w+$/.test(fileName) ? fileName : `${fileName}.${ext}`, new Blob([bytes], { type: mime })).catch(() => {})
+    return
+  }
   const url = URL.createObjectURL(new Blob([bytes], { type: mime }))
   window.open(url, '_blank', 'noopener')
   setTimeout(() => URL.revokeObjectURL(url), 60_000)

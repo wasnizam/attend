@@ -6,6 +6,7 @@ import { type Certificate, type CertificateSource, certificateUrl, certificatesP
 import { formatPercent } from '../lib/format'
 import { t } from '../lib/i18n'
 import { Button, Card, inputClass } from './ui'
+import { savePdf } from '../lib/saveFile'
 
 export interface CertificatePerson {
   key: string
@@ -101,7 +102,7 @@ export function CertificatesPanel({ source, people, course: defaultCourse, lette
     setError('')
     try {
       const doc = await certificatesPdf(list)
-      doc.save(list.length === 1 ? `certificate-${slug(list[0].name)}.pdf` : `${slug(course || defaultCourse)}-certificates.pdf`)
+      await savePdf(doc, list.length === 1 ? `certificate-${slug(list[0].name)}.pdf` : `${slug(course || defaultCourse)}-certificates.pdf`)
     } catch {
       setError(t('The PDF could not be made. Try again.'))
     } finally {
