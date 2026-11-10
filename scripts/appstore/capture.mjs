@@ -21,10 +21,11 @@ const BASE = 'http://localhost:5173'
 const SESSION = 'demo-data-structures_2026-11-11_0900'
 
 const DEVICES = {
-  // iPhone 6.9": 440 × 956 points at 3× = 1320 × 2868 pixels.
-  iphone: { width: 440, height: 956, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
-  // iPad 13": 1032 × 1376 points at 2× = 2064 × 2752 pixels.
-  ipad: { width: 1032, height: 1376, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
+  // iPhone 6.9": 440 × 956 points at 3×. The app sits between the 54-point status bar and the
+  // 34-point home bar strip, which compose.mjs adds, so the page is 868 points tall.
+  iphone: { width: 440, height: 868, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
+  // iPad 13": 1032 × 1376 points at 2×, less its 24-point status bar and 20-point home bar strip.
+  ipad: { width: 1032, height: 1332, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
 }
 
 const browser = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, args: ['--hide-scrollbars'] })
@@ -78,10 +79,16 @@ async function shot(page, path, name, ready, { scroll = 0 } = {}) {
   console.log('saved', name)
 }
 
-/** The test copy runs on localhost; the store shows the real address people will see. */
+/** The test copy runs on localhost; the store shows the real address, and a sample person's name. */
 function showLiveAddress() {
   const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
-  for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.nodeValue.includes('localhost:5173')) n.nodeValue = n.nodeValue.replace('http://localhost:5173', 'dobry.app')
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    let v = n.nodeValue
+    v = v.replace('http://localhost:5173', 'dobry.app').replace(/lecturer\.[a-z0-9]+@test\.localhost/, 'aminah@example.edu').replace('Test Lecturer', 'Dr Aminah Yusof')
+    // The round picture with the first letter of the name.
+    if (v.trim() === 'T' && n.parentElement?.classList.contains('rounded-full')) v = 'A'
+    if (v !== n.nodeValue) n.nodeValue = v
+  }
 }
 
 const has = (text) => new Function(`return document.body.innerText.includes(${JSON.stringify(text)})`)
