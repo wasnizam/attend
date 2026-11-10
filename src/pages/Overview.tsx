@@ -16,7 +16,7 @@ import type { PayrollRow } from '../lib/payroll'
 import type { Organisation, Session, WeeklyClass } from '../lib/types'
 
 /**
- * Everything at a glance, on one page: for lecturers and trainers the semester across all their
+ * The Dashboard: everything at a glance, on one page: for lecturers and trainers the semester across all their
  * classes; for a workplace the month across all its staff. The numbers are the same ones each
  * class's report and the Pay page work out, added up.
  */
@@ -244,12 +244,16 @@ const rank = (level: string) => (level === 'barring' ? 0 : level === 'warning' ?
 
 function Heading({ text, busy = false }: { text: string; busy?: boolean }) {
   return (
-    <div className="flex items-end justify-between gap-3">
+    <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
         <p className="text-sm text-muted">{text}</p>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('Overview')}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('Dashboard')}</h1>
       </div>
-      {busy && <Spinner small />}
+      <div className="flex items-center gap-4 text-sm font-semibold">
+        {busy && <Spinner small />}
+        <Link to="/app/reports" className="text-accent">{t('Class reports')} ›</Link>
+        <Link to="/app/calendar" className="text-accent">{t('Calendar')} ›</Link>
+      </div>
     </div>
   )
 }
@@ -383,9 +387,15 @@ function WorkOverview() {
 
 function WorkHeading({ month }: { month: string }) {
   return (
-    <div>
-      <p className="text-sm text-muted">{t('{month}, so far', { month })}</p>
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('Overview')}</h1>
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p className="text-sm text-muted">{t('{month}, so far', { month })}</p>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('Dashboard')}</h1>
+      </div>
+      <div className="flex items-center gap-4 text-sm font-semibold">
+        <Link to="/app/reports" className="text-accent">{t('Monthly report')} ›</Link>
+        <Link to="/app/calendar" className="text-accent">{t('Calendar')} ›</Link>
+      </div>
     </div>
   )
 }

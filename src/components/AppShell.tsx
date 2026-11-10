@@ -78,7 +78,7 @@ export function AppShell() {
   const history = item('/app/history', t('History'), icons.history)
   const calendar = item('/app/calendar', t('Calendar'), icons.calendar)
   // The numbers at a glance: the semester for classes, the month for a workplace.
-  const overview = item('/app/overview', t('Overview'), icons.overview)
+  const overview = item('/app/overview', t('Dashboard'), icons.overview)
   // A lecturer on their own has nothing to administer; a faculty's page is named for what it is.
   const adminItem = profile.role === 'admin' && !solo() ? [item('/admin', getPurpose() === 'education' ? t('Faculty') : t('Admin'), icons.admin)] : []
   // Timetable and class reports only exist for organisations that run repeating classes.
@@ -86,9 +86,10 @@ export function AppShell() {
     ? { timetable: [item('/app/timetable', t('Timetable'), icons.timetable)], reports: [item('/app/reports', t('Reports'), icons.reports)] }
     : { timetable: [], reports: [] }
 
-  // The phone tab bar has room for five; Calendar (and History, when Reports is shown)
-  // live in the sidebar and are one tap from Today or Reports on a phone.
-  const tabs = [today, ...recurring.timetable, students, ...(recurring.reports.length ? recurring.reports : [history]), ...adminItem]
+  // The phone tab bar has room for five. Where there are classes or shifts, the Dashboard takes the
+  // second place and Reports is a link at its top; Calendar and History live in the sidebar and are
+  // one tap from Today or the Dashboard on a phone.
+  const tabs = recurring.reports.length ? [today, overview, ...recurring.timetable, students, ...adminItem] : [today, students, history, ...adminItem]
   // Workplaces leave a tablet at the door; the link opens that full-screen view.
   const door = has('clock')
     ? [...(has('shifts') ? [item('/app/plan', t('Shift plan'), icons.calendar)] : [])]

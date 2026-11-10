@@ -86,10 +86,6 @@ export function Dashboard() {
             {greeting(new Date().getHours())}, {profile.name}
           </h1>
           {!has('clock') && <p className="mt-1 text-sm text-muted">{summary}</p>}
-          {/* Phones have no sidebar: the overview is one tap from here. */}
-          <Link to="/app/overview" className="mt-2 inline-block text-sm font-semibold text-accent md:hidden">
-            {has('clock') ? t('This month at a glance') : t('This semester at a glance')} ›
-          </Link>
         </div>
         {has('clock') && (
           <Link to="/app/door" className={`${buttonClass()} self-start md:hidden`}>

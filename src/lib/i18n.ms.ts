@@ -527,6 +527,8 @@ export const ms: Record<string, string> = {
   "Cancel {name} on this day? You can add a reason (optional).": "Batalkan {name} pada hari ini? Anda boleh menambah sebab (pilihan).",
   "Mark as cancelled": "Tanda sebagai dibatalkan",
   "Record attendance": "Rekod kehadiran",
+  "Dashboard": "Papan pemuka",
+  "Class reports": "Laporan kelas",
   "Each class, week by week": "Setiap kelas, minggu demi minggu",
   "One line for each class. The dashed line is the 80% rule.": "Satu garis untuk setiap kelas. Garis putus-putus ialah peraturan 80%.",
   "Attendance day by day": "Kehadiran hari demi hari",
