@@ -13,6 +13,7 @@ import { Logo, buttonClass } from './ui'
 
 const icons = {
   today: 'M3 11.500 12 4l9 7.500M5.500 10v9.500h13V10',
+  overview: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
   timetable: 'M4 6h16M4 12h16M4 18h10',
   calendar: 'M4 5h16v15H4zM4 10h16M9 5v15M15 5v15M4 15h16',
   students: 'M16 20v-1.500a3.500 3.500 0 0 0-3.500-3.500h-5A3.500 3.500 0 0 0 4 18.500V20M10 11a3.500 3.500 0 1 0 0-7 3.500 3.500 0 0 0 0 7ZM20 20v-1.500a3.500 3.500 0 0 0-2.500-3.350M15.500 4.150a3.500 3.500 0 0 1 0 6.700',
@@ -76,6 +77,8 @@ export function AppShell() {
   const students = item('/app/students', t('Students'), icons.students)
   const history = item('/app/history', t('History'), icons.history)
   const calendar = item('/app/calendar', t('Calendar'), icons.calendar)
+  // The numbers at a glance: the semester for classes, the month for a workplace.
+  const overview = item('/app/overview', t('Overview'), icons.overview)
   // A lecturer on their own has nothing to administer; a faculty's page is named for what it is.
   const adminItem = profile.role === 'admin' && !solo() ? [item('/admin', getPurpose() === 'education' ? t('Faculty') : t('Admin'), icons.admin)] : []
   // Timetable and class reports only exist for organisations that run repeating classes.
@@ -92,7 +95,7 @@ export function AppShell() {
     : []
   // A workplace's admins work out pay from the month's attendance; managers never see salaries.
   const pay = has('clock') && profile.role === 'admin' ? [item('/app/pay', t('Pay'), icons.pay)] : []
-  const sidebar = [today, ...door, calendar, ...recurring.timetable, students, ...recurring.reports, ...pay, history, ...adminItem]
+  const sidebar = [today, overview, ...door, calendar, ...recurring.timetable, students, ...recurring.reports, ...pay, history, ...adminItem]
 
   return (
     <div className="min-h-dvh md:pl-60 print:!pl-0">

@@ -14,6 +14,7 @@ import { Account } from './pages/Account'
 import Admin from './pages/Admin'
 import { Calendar } from './pages/Calendar'
 import { Dashboard } from './pages/Dashboard'
+import { Overview } from './pages/Overview'
 import { History } from './pages/History'
 import { Login } from './pages/Login'
 import { NewSession } from './pages/NewSession'
@@ -134,6 +135,7 @@ export default function Staff() {
             <Route path="/app/timetable/:classId/report" element={<Report />} />
             <Route path="/app/account" element={<Account />} />
             <Route path="/app/calendar" element={<Calendar />} />
+            <Route path="/app/overview" element={<Overview />} />
             <Route path="/app/students" element={<Students />} />
             <Route path="/app/reports" element={<Reports />} />
             <Route path="/app/reports/monthly" element={<Payroll />} />

@@ -1,5 +1,4 @@
-import { holidayDates } from '../lib/holidays'
-import { Fragment, type ReactNode, useEffect, useMemo, useState } from 'react'
+import { Fragment, type ReactNode, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PARTS, ReportCharts, buckets, chartData } from '../components/ReportCharts'
 import { getOrganisation } from '../data/account'
@@ -7,20 +6,15 @@ import { Button, Card, EmptyState, ErrorNote, PageLoader, Stat, inputClass } fro
 import { Paid, UpgradeNote } from '../components/Paid'
 import { PayPanel } from '../components/PayPanel'
 import { allows } from '../lib/plan'
-import { fetchManyAttendance, fetchManyClockOuts } from '../data/attendance'
-import { LEAVE_LABEL, fetchManyLeaveTypes } from '../data/evidence'
-import { fetchPlans } from '../data/plans'
-import { fetchRoster } from '../data/roster'
+import { LEAVE_LABEL } from '../data/evidence'
 import { useProfile } from '../hooks/useAuth'
 import { useEditableClasses } from '../hooks/useClasses'
-import { useLive } from '../hooks/useLive'
-import { useMySessions } from '../hooks/useSessions'
-import { subscribeOrgSessions } from '../data/sessions'
-import type { Organisation, Session } from '../lib/types'
+import { usePayrollRows } from '../hooks/usePayrollRows'
+import type { Organisation } from '../lib/types'
 import { downloadCsv } from '../lib/csv'
 import { addDays, formatClock, formatDate, formatDuration, isoDate, parseDate, weekStart } from '../lib/format'
 import { t } from '../lib/i18n'
-import { type DayEntry, type PayrollRow, buildPayroll, hours } from '../lib/payroll'
+import { type DayEntry, type PayrollRow, hours } from '../lib/payroll'
 import { type PdfReport, downloadReportPdf } from '../lib/reportPdf'
 
 const LEAVE_KINDS = ['annual', 'emergency', 'unpaid', 'other'] as const
@@ -214,7 +208,6 @@ async function savePdf(report: PdfReport, setBusy: (b: boolean) => void) {
 /** Attendance for everyone over a week, month, year or any dates: charts, exceptions, totals and the payroll sheet. */
 export function Payroll({ payFirst = false }: { payFirst?: boolean } = {}) {
   const profile = useProfile()
-  const mySessions = useMySessions()
   const classes = useEditableClasses()
   const today = isoDate()
   const [period, setPeriod] = useState<Period>('month')
@@ -249,64 +242,8 @@ export function Payroll({ payFirst = false }: { payFirst?: boolean } = {}) {
   }, [profile.organisationId])
   const [department, setDepartment] = useState('')
   const [office, setOffice] = useState('')
-  const [rows, setRows] = useState<PayrollRow[] | null>(null)
-  const [failed, setFailed] = useState(false)
-  // An admin's report covers the whole company: every office, whoever manages it.
+  const { rows, failed, source } = usePayrollRows(from, to, org, classes)
   const admin = profile.role === 'admin'
-  const orgSessions = useLive<Session[]>(
-    admin ? (onData, onError) => subscribeOrgSessions(profile.organisationId, from, to, onData, onError) : null,
-    [admin, from, to, profile.organisationId],
-  )
-  const source = admin ? orgSessions : mySessions
-  const held = useMemo(
-    () => (source.data ?? []).filter((s) => s.date >= from && s.date <= to && s.status !== 'scheduled'),
-    [source.data, from, to],
-  )
-  const signature = held.map((s) => `${s.id}:${s.presentCount}:${s.status}`).join(',')
-
-  useEffect(() => {
-    let stale = false
-    setRows(null)
-    setFailed(false)
-    // Every list this manager keeps, so a department is known even for a day opened without a list.
-    const lists = [...new Set([...held.map((s) => s.rosterId), ...(classes.data ?? []).filter((c) => c.rosterCount).map((c) => c.id)].filter((id): id is string => Boolean(id)))]
-    Promise.all([
-      fetchManyAttendance(held, profile),
-      fetchManyClockOuts(held, profile),
-      Promise.all(lists.map(async (id) => [id, await fetchRoster(id, profile.organisationId, profile)] as const)),
-      // The weekly plans for the lists people rotate on, so a planned day is checked exactly.
-      Promise.all(
-        [...new Set(held.filter((s) => s.rotating && s.rosterId).map((s) => s.rosterId!))].map((id) =>
-          fetchPlans(id, [...new Set(held.filter((s) => s.rosterId === id).map((s) => weekStart(s.date)))], profile).catch(() => []),
-        ),
-      ),
-      // What kind of leave each day off was.
-      fetchManyLeaveTypes(held, profile).catch(() => new Map()),
-    ]).then(
-      ([records, outs, rosters, plans, leave]) =>
-        !stale &&
-        setRows(
-          buildPayroll(
-            held,
-            records,
-            outs,
-            new Map(rosters),
-            plans.flat(),
-            new Map([...held.filter((s) => s.rosterId).map((s) => [s.rosterId!, s.venue || ''] as const), ...(classes.data ?? []).map((c) => [c.id, c.venue || ''] as const)]),
-            Date.now(),
-            leave,
-            // Each list's working days, and the days it was closed (public holidays), for rest-day and holiday hours.
-            new Map((classes.data ?? []).map((c) => [c.id, { days: c.days, off: new Set([...Object.keys(c.cancelled ?? {}).map((k) => k.slice(0, 10)), ...holidayDates(c)]) }] as const)),
-            org?.otRule ?? 'fullDay',
-          ),
-        ),
-      () => !stale && setFailed(true),
-    )
-    return () => {
-      stale = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature, from, to, profile.id, classes.data, org?.otRule])
 
   if (source.loading || classes.loading) return <PageLoader />
 
