@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      // Light or dark before anything is drawn, so a dark-mode screen never flashes white.
+      // The choice is "system" (follow the phone or computer), "light" or "dark"; see src/lib/theme.ts.
+      try {
+        var c = localStorage.getItem('dobry.theme')
+        var d = c === 'dark' || (c !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.theme = d ? 'dark' : 'light'
+      } catch (e) {}
+    </script>
     <meta name="description" content="QR attendance for lecturers, trainers and workplaces. Show a QR on any screen, people scan with their own phone, and the list fills itself. No machine to buy, no app to install. Free to start." />
     <link rel="canonical" href="https://dobry.app/" />
     <meta property="og:type" content="website" />

@@ -8,8 +8,9 @@ import type { ClassReport, Level } from '../lib/report'
 export const LEVEL_COLOR: Record<Level, string> = { ok: '#0ca30c', warning: '#fab219', barring: '#d03b3b' }
 export const LEVEL_LABEL: Record<Level, string> = { ok: 'On track', warning: 'Warning due', barring: 'Barring due' }
 
-const SERIES = '#4f46e5'
-const GRID = '#e2e8f0'
+// Theme colours, so the charts follow dark mode.
+const SERIES = 'var(--color-accent)'
+const GRID = 'var(--color-line)'
 
 /** Dot + words. The words carry the meaning; the colour only helps the eye find it. */
 export function LevelTag({ level }: { level: Level }) {
@@ -56,7 +57,7 @@ export function AttendanceTrend({ trend }: { trend: ClassReport['trend'] }) {
         {/* The 80% line is the university rule; other kinds of organisation have no such line. */}
         {has('barring') && (
           <>
-            <line x1={pad.l} x2={W - pad.r} y1={y(80)} y2={y(80)} stroke="#94a3b8" strokeWidth="1" />
+            <line x1={pad.l} x2={W - pad.r} y1={y(80)} y2={y(80)} stroke="var(--color-slate-400)" strokeWidth="1" />
             <text x={W - pad.r + 6} y={y(80) + 4} className="fill-slate-500 text-[11px]">80%</text>
           </>
         )}
@@ -64,7 +65,7 @@ export function AttendanceTrend({ trend }: { trend: ClassReport['trend'] }) {
         {points.length > 1 && <path d={area} fill={SERIES} opacity="0.1" />}
         {points.length > 1 && <path d={line} fill="none" stroke={SERIES} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
         {points.map((p, i) => (
-          <circle key={p.session.id} cx={x(i)} cy={y(p.rate!)} r={hover === i ? 6 : 4} fill={SERIES} stroke="#fff" strokeWidth="2" />
+          <circle key={p.session.id} cx={x(i)} cy={y(p.rate!)} r={hover === i ? 6 : 4} fill={SERIES} stroke="var(--color-surface)" strokeWidth="2" />
         ))}
         {/* Only the latest point is labelled; the rest are in the tooltip and the table. */}
         <text x={x(points.length - 1)} y={y(last.rate!) - 12} textAnchor="middle" className="fill-slate-900 text-[12px] font-semibold">
@@ -97,7 +98,7 @@ export function AttendanceTrend({ trend }: { trend: ClassReport['trend'] }) {
             />
           )
         })}
-        {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={y(0)} stroke="#94a3b8" strokeWidth="1" />}
+        {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={y(0)} stroke="var(--color-slate-400)" strokeWidth="1" />}
       </svg>
       {shown && hover !== null && (
         <div

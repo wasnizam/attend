@@ -9,13 +9,21 @@ const bridge = (): Bridge | undefined => (typeof window === 'undefined' ? undefi
 export const inNativeApp = () => Boolean(bridge()?.isNativePlatform?.())
 export const nativePlatform = () => (inNativeApp() ? bridge()?.getPlatform?.() ?? '' : '')
 
-/** Light text on the night-blue screens (sign-in, check-in), dark text on the app's white screens. */
+/**
+ * Light text on the night-blue screens (sign-in, check-in), dark text on the app's white screens,
+ * and light text on those too in dark mode.
+ */
+let lastBackground: 'dark' | 'light' = 'light'
 export function statusBarFor(background: 'dark' | 'light') {
+  lastBackground = background
   if (!inNativeApp()) return
+  const dark = background === 'dark' || document.documentElement.dataset.theme === 'dark'
   import('@capacitor/status-bar')
-    .then(({ StatusBar, Style }) => StatusBar.setStyle({ style: background === 'dark' ? Style.Dark : Style.Light }))
+    .then(({ StatusBar, Style }) => StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light }))
     .catch(() => {})
 }
+/** Light or dark changed: the status bar follows the current screen again. */
+export const refreshStatusBar = () => statusBarFor(lastBackground)
 
 /**
  * Android's back button: back one screen, like the browser's back; on the first screen it leaves

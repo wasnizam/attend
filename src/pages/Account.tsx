@@ -9,6 +9,7 @@ import { GRACE_DAYS, PLAN_LABEL, activePlan, allows, canPay, paidUntil, payments
 import { InstallApp } from '../components/InstallApp'
 import { InviteFriends } from '../components/InviteFriends'
 import { UpgradeNote } from '../components/Paid'
+import { AppearanceChoice } from '../components/AppearanceChoice'
 import { inNativeApp } from '../lib/native'
 import { openBilling, redeemCode, resumePlan, startCheckout, syncPlan } from '../data/billing'
 import { auth } from '../lib/auth'
@@ -605,6 +606,9 @@ export function Account() {
                   <option key={l.id} value={l.id}>{l.label}</option>
                 ))}
               </select>
+            </Row>
+            <Row label={t('Appearance')} hint={t('Automatic follows this phone or computer.')}>
+              <AppearanceChoice />
             </Row>
           </Section>
 

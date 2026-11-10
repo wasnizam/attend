@@ -15,9 +15,10 @@ type Part = (typeof PARTS)[number]['id']
 
 const partOf = (mark: DayEntry['mark']): Part => (mark === 'late' ? 'late' : mark === 'absent' ? 'absent' : mark === 'leave' || mark === 'mc' ? 'off' : 'onTime')
 
-const ACCENT = '#4f46e5'
-const INK2 = '#64748b'
-const GRID = '#e2e8f0'
+// Theme colours, so the charts follow dark mode.
+const ACCENT = 'var(--color-accent)'
+const INK2 = 'var(--color-muted)'
+const GRID = 'var(--color-line)'
 
 export interface Bucket {
   key: string
@@ -106,7 +107,7 @@ function Trend({ data }: { data: Bucket[] }) {
           return (
             <g key={b.key} onMouseEnter={() => setHover(i)}>
               {/* A hit area the full height of the slot, wider than the bar. */}
-              <rect x={pad.l + slot * i} y={pad.t} width={slot} height={H - pad.t - pad.b} fill={hover === i ? '#f1f5f9' : 'transparent'} />
+              <rect x={pad.l + slot * i} y={pad.t} width={slot} height={H - pad.t - pad.b} fill={hover === i ? 'var(--color-slate-100)' : 'transparent'} />
               {parts.map((p, j) => {
                 const v = b.counts[p.id]
                 const top = y(acc + v)
@@ -126,7 +127,7 @@ function Trend({ data }: { data: Bucket[] }) {
             </g>
           )
         })}
-        <line x1={pad.l} x2={W - pad.r} y1={y(0)} y2={y(0)} stroke="#cbd5e1" strokeWidth={1} />
+        <line x1={pad.l} x2={W - pad.r} y1={y(0)} y2={y(0)} stroke="var(--color-slate-300)" strokeWidth={1} />
       </svg>
       {h && total(h) > 0 && (
         <div

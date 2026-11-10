@@ -10,6 +10,7 @@ import { rememberRef } from './lib/referral'
 import { rememberSource } from './lib/source'
 import { keepUpToDate } from './lib/updates'
 import { startNativeApp } from './lib/native'
+import { watchTheme } from './lib/theme'
 
 // Students only ever open the check-in page from a QR code. They get no saved offline
 // copy, so their phones never download the lecturer app in the background.
@@ -19,6 +20,7 @@ watchInstall()
 rememberRef()
 rememberSource()
 startNativeApp()
+watchTheme()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
