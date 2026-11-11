@@ -60,6 +60,8 @@ export interface UserProfile {
   status: UserStatus
   organisationId: string
   createdAt: Timestamp | null
+  /** Set when the person deleted their own account; it is removed within 30 days. */
+  deletionRequested?: Timestamp | null
 }
 
 export interface Organisation {

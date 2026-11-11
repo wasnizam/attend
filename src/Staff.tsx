@@ -93,6 +93,17 @@ function RequireAuth({ admin = false }: { admin?: boolean }) {
   if (loading) return <PageLoader />
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   if (!profile) return <Navigate to="/signup" replace />
+  if (profile.status !== 'active' && profile.deletionRequested) {
+    return (
+      <div className="mx-auto max-w-sm px-6 py-24 text-center">
+        <h1 className="text-xl font-semibold">{t('Your account will be deleted')}</h1>
+        <p className="mt-2 text-muted">{t('You are being signed out. Everything is deleted within 30 days. Changed your mind? Email hello@dobry.app before then.')}</p>
+        <Button className="mt-6" variant="secondary" onClick={() => signOut()}>
+          {t('Log out')}
+        </Button>
+      </div>
+    )
+  }
   if (profile.status !== 'active') {
     return (
       <div className="mx-auto max-w-sm px-6 py-24 text-center">
