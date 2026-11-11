@@ -202,6 +202,11 @@ for (const s of SHOTS) {
            </div>
            ${tablet(l, 1520, 'left:50%;top:450px;transform:translateX(-50%)')}`
     await render(html, device === 'iphone' ? 1320 : 2064, device === 'iphone' ? 2868 : 2752, `${outDir}/${device}/${String(n).padStart(2, '0')}-${s.file}.png`)
+    // App Store Connect may ask for the medium iPhone (6.1" or 6.3") instead: 1206 × 2622, the same shape.
+    if (device === 'iphone') {
+      mkdirSync(`${outDir}/iphone-6.3`, { recursive: true })
+      await sharp(`${outDir}/iphone/${String(n).padStart(2, '0')}-${s.file}.png`).resize(1206, 2622, { fit: 'cover' }).png().toFile(`${outDir}/iphone-6.3/${String(n).padStart(2, '0')}-${s.file}.png`)
+    }
   }
 }
 
