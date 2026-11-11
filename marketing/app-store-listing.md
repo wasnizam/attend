@@ -23,40 +23,55 @@ App Store Connect app: **Dobry: Smart QR Attendance** (Apple ID 6833051828, bund
 
 **Subtitle (29/30):** Class, Event & Staff Clock-In
 
-**Keywords (99/100):**
+**Keywords (98/100):**
 ```
-tracker,register,student,lecturer,teacher,roll,call,check,employee,timesheet,shift,overtime,payroll
+tracker,register,training,student,lecturer,teacher,check,employee,timesheet,shift,overtime,payroll
 ```
 
-**Promotional text (169/170):**
-Attendance in seconds, with no machine to buy and no app for students or staff to install. A QR code that changes every 45 seconds stops friends checking in for friends.
+**Promotional text (170/170):**
+Attendance for classes, training and workplaces. Everyone scans with their own phone: no app, no machine. The QR changes every 45 seconds, so no one checks in for others.
 
 **Description:**
 
-Show a QR code. Everyone scans it with their own phone camera. The list fills itself, and the report is ready when the class, course or shift ends.
+One simple app for every kind of attendance: lecturers taking class attendance, trainers checking in course participants, and employers clocking staff in and out. Show a QR code, everyone scans it with their own phone camera, and the list fills itself.
 
 WHAT MAKES DOBRY DIFFERENT
 
 • Nothing to install for the people checking in
-Students, participants and staff use the camera they already have. No app, no account, no download. Only you need Dobry.
+Students, course participants and staff use the camera they already have. No app, no account, no download. Only you need Dobry.
 
 • No machine to buy
-No fingerprint scanner, no card reader, no kiosk. Any phone, tablet or laptop screen becomes your attendance point.
+No fingerprint scanner, card reader or time clock on the wall. Any phone, tablet or laptop screen becomes your attendance point: in the lecture hall, at the training room door or at the office entrance.
 
 • Hard to cheat
-The QR code changes every 45 seconds, so a photo or link sent to a friend stops working. One phone counts for one person, and an optional location check makes sure people are really in the room.
+The QR code changes every 45 seconds, so a photo or link sent to someone else stops working. One phone counts for one person, and an optional location check makes sure people are really there. No proxy attendance in class, no buddy punching at work.
 
 • It does the paperwork, not just the list
-Most attendance tools stop at a list of names. Dobry applies the 80% attendance rule for you, shows who is at risk, and prepares warning letters, barring lists, certificates and payroll hours.
+Most attendance tools stop at a list of names. Dobry finishes the job:
+– Lecturers: the 80% rule, students at risk, warning letters and the barring list
+– Trainers: attendance certificates and check-in records for training claims
+– Employers: lateness, overtime, leave and payroll-ready hours
 
-• One app for classes, courses and workplaces
-Lecturers, trainers and employers each get the screens they need, in the same simple app.
+• Three uses, one app
+Choose classes, training or workplace when you start, and Dobry shows the screens and words that fit.
 
 • Public holidays handled for you
-Holidays for your country and state are added every year, so no class or shift is wrongly marked absent.
+Holidays for your country and state are added every year, so no class, course or shift is wrongly marked absent.
 
 • Ready in a minute, free to start
-Add a class, press start, show the code. No setup project, no IT department.
+Add a class, course or shift, press start, show the code. No setup project, no IT department.
+
+FOR WORKPLACES
+• A clock-in screen at the entrance: staff scan in and out with their phones
+• Today at a glance: who is in, who is late, who has not arrived
+• Shifts, lateness, overtime, leave and MCs
+• Payroll-ready hours, public holiday rates and payslips
+• A warning when one phone clocks in for someone else
+
+FOR TRAINERS AND COURSE ORGANISERS
+• Check-in for courses, workshops, seminars and events, in the room or online
+• Each participant's check-in time, for training claims and audits
+• Attendance certificates with their own link and QR code, ready to share on LinkedIn
 
 FOR LECTURERS AND TEACHERS
 • Your weekly timetable, with each class ready to start in one tap
@@ -66,20 +81,8 @@ FOR LECTURERS AND TEACHERS
 • Record attendance by hand for a class you missed
 • Export to Excel, CSV or your university's format
 
-FOR TRAINERS AND COURSE ORGANISERS
-• Check-in for courses, workshops and events, in the room or online
-• Attendance certificates with their own link and QR code, ready to share on LinkedIn
-• Check-in times for every participant, for training claims and audits
-
-FOR WORKPLACES
-• A clock-in screen at the entrance: staff scan in and out with their phones
-• Today at a glance: who is in, who is late, who has not arrived
-• Shifts, lateness, overtime, leave and MCs
-• Payroll-ready hours, public holiday rates and payslips
-• A warning when one phone clocks in for someone else
-
 ALSO
-• A dashboard with the trend for every class or team
+• A dashboard with the trend for every class, course or team
 • Works on iPhone and iPad, in light or dark mode
 • English, Malay and Czech
 • Your records stay yours: export them any time
@@ -97,40 +100,55 @@ Privacy: https://dobry.app/privacy
 
 **Subtitle (26/30):** Kelas, Kursus & Punch Card
 
-**Keywords (94/100):**
+**Keywords (96/100):**
 ```
-kedatangan,pelajar,pensyarah,guru,pekerja,staf,syif,cuti,gaji,lebih,masa,imbas,sijil,hrd,absen
+kedatangan,pelajar,pensyarah,guru,pekerja,staf,syif,cuti,gaji,lebih,masa,imbas,sijil,hrd,latihan
 ```
 
-**Promotional text (165/170):**
-Kehadiran dalam beberapa saat, tanpa mesin dan tanpa aplikasi untuk pelajar atau staf. Kod QR bertukar setiap 45 saat, jadi kawan tak boleh daftar masuk untuk kawan.
+**Promotional text (169/170):**
+Kehadiran kelas, latihan dan tempat kerja. Semua imbas dengan telefon sendiri: tiada aplikasi, tiada mesin. QR bertukar setiap 45 saat, jadi tiada siapa boleh menumpang.
 
 **Description:**
 
-Paparkan kod QR. Semua orang imbas dengan kamera telefon sendiri. Senarai terisi sendiri, dan laporan siap sebaik kelas, kursus atau syif tamat.
+Satu aplikasi mudah untuk semua jenis kehadiran: pensyarah mengambil kehadiran kelas, jurulatih mendaftar masuk peserta kursus, dan majikan merekod staf masuk dan keluar kerja. Paparkan kod QR, semua orang imbas dengan kamera telefon sendiri, dan senarai terisi sendiri.
 
 APA YANG MEMBEZAKAN DOBRY
 
 • Tiada pemasangan untuk mereka yang daftar masuk
-Pelajar, peserta dan staf guna kamera yang sedia ada. Tiada aplikasi, tiada akaun, tiada muat turun. Hanya anda yang perlukan Dobry.
+Pelajar, peserta kursus dan staf guna kamera yang sedia ada. Tiada aplikasi, tiada akaun, tiada muat turun. Hanya anda yang perlukan Dobry.
 
 • Tiada mesin untuk dibeli
-Tiada pengimbas cap jari, pembaca kad atau kiosk. Mana-mana skrin telefon, tablet atau komputer riba menjadi tempat daftar kehadiran anda.
+Tiada pengimbas cap jari, pembaca kad atau mesin punch card di dinding. Mana-mana skrin telefon, tablet atau komputer riba menjadi tempat daftar kehadiran: di dewan kuliah, di pintu bilik latihan atau di pintu masuk pejabat.
 
 • Sukar untuk menipu
-Kod QR bertukar setiap 45 saat, jadi gambar atau pautan yang dihantar kepada kawan tidak berfungsi. Satu telefon untuk seorang sahaja, dan semakan lokasi pilihan memastikan mereka benar-benar berada di dalam bilik.
+Kod QR bertukar setiap 45 saat, jadi gambar atau pautan yang dihantar kepada orang lain tidak berfungsi. Satu telefon untuk seorang sahaja, dan semakan lokasi pilihan memastikan mereka benar-benar berada di situ. Tiada "tolong sign" di kelas, tiada punch card untuk kawan di tempat kerja.
 
 • Urus kertas kerja, bukan sekadar senarai
-Kebanyakan sistem kehadiran berhenti pada senarai nama. Dobry menggunakan peraturan kehadiran 80% untuk anda, menunjukkan siapa berisiko, dan menyediakan surat amaran, senarai halangan, sijil dan jam gaji.
+Kebanyakan sistem kehadiran berhenti pada senarai nama. Dobry selesaikan kerjanya:
+– Pensyarah: peraturan 80%, pelajar berisiko, surat amaran dan senarai halangan
+– Jurulatih: sijil kehadiran dan rekod daftar masuk untuk tuntutan latihan
+– Majikan: lewat, lebih masa, cuti dan jam kerja sedia untuk gaji
 
-• Satu aplikasi untuk kelas, kursus dan tempat kerja
-Pensyarah, jurulatih dan majikan masing-masing mendapat skrin yang mereka perlukan, dalam aplikasi mudah yang sama.
+• Tiga kegunaan, satu aplikasi
+Pilih kelas, latihan atau tempat kerja semasa bermula, dan Dobry memaparkan skrin dan istilah yang sesuai.
 
 • Cuti umum diuruskan untuk anda
-Cuti umum negara dan negeri anda ditambah setiap tahun, jadi tiada kelas atau syif ditanda tidak hadir secara salah.
+Cuti umum negara dan negeri anda ditambah setiap tahun, jadi tiada kelas, kursus atau syif ditanda tidak hadir secara salah.
 
 • Sedia dalam seminit, percuma untuk bermula
-Tambah kelas, tekan mula, paparkan kod. Tiada projek pemasangan, tiada jabatan IT.
+Tambah kelas, kursus atau syif, tekan mula, paparkan kod. Tiada projek pemasangan, tiada jabatan IT.
+
+UNTUK TEMPAT KERJA
+• Skrin punch card di pintu masuk: staf imbas masuk dan keluar dengan telefon
+• Hari ini sepintas lalu: siapa hadir, siapa lewat, siapa belum sampai
+• Syif, lewat, kerja lebih masa, cuti dan MC
+• Jam kerja sedia untuk gaji, kadar cuti umum dan slip gaji
+• Amaran apabila satu telefon mendaftar masuk untuk orang lain
+
+UNTUK JURULATIH DAN PENGANJUR KURSUS
+• Daftar masuk kursus, bengkel, seminar dan acara, bersemuka atau dalam talian
+• Masa daftar masuk setiap peserta, untuk tuntutan latihan dan audit
+• Sijil kehadiran dengan pautan dan kod QR sendiri, sedia dikongsi di LinkedIn
 
 UNTUK PENSYARAH DAN GURU
 • Jadual mingguan anda, setiap kelas sedia dimulakan dengan satu ketikan
@@ -140,20 +158,8 @@ UNTUK PENSYARAH DAN GURU
 • Rekod kehadiran secara manual untuk kelas yang terlepas
 • Eksport ke Excel, CSV atau format universiti anda
 
-UNTUK JURULATIH DAN PENGANJUR KURSUS
-• Daftar masuk kursus, bengkel dan acara, bersemuka atau dalam talian
-• Sijil kehadiran dengan pautan dan kod QR sendiri, sedia dikongsi di LinkedIn
-• Masa daftar masuk setiap peserta, untuk tuntutan latihan dan audit
-
-UNTUK TEMPAT KERJA
-• Skrin punch card di pintu masuk: staf imbas masuk dan keluar dengan telefon
-• Hari ini sepintas lalu: siapa hadir, siapa lewat, siapa belum sampai
-• Syif, lewat, kerja lebih masa, cuti dan MC
-• Jam kerja sedia untuk gaji, kadar cuti umum dan slip gaji
-• Amaran apabila satu telefon mendaftar masuk untuk orang lain
-
 JUGA
-• Papan pemuka dengan trend setiap kelas atau pasukan
+• Papan pemuka dengan trend setiap kelas, kursus atau pasukan
 • Untuk iPhone dan iPad, mod cerah atau gelap
 • Bahasa Melayu, Inggeris dan Czech
 • Rekod anda milik anda: eksport bila-bila masa
