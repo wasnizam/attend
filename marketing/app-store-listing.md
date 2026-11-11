@@ -28,41 +28,66 @@ App Store Connect app: **Dobry: Smart QR Attendance** (Apple ID 6833051828, bund
 tracker,register,student,lecturer,teacher,roll,call,check,employee,timesheet,shift,overtime,payroll
 ```
 
-**Promotional text (170):**
-Take attendance in seconds. Show a QR code, students or staff scan it with their own phone, and the list fills itself. No app to install for them, no hardware to buy.
+**Promotional text (169/170):**
+Attendance in seconds, with no machine to buy and no app for students or staff to install. A QR code that changes every 45 seconds stops friends checking in for friends.
 
 **Description:**
 
-Dobry is attendance that takes care of itself. Show a QR code on the screen; everyone scans it with their own phone camera and types their ID. The list fills in live, and the report is ready when the class ends. People who check in need no app and no account.
+Show a QR code. Everyone scans it with their own phone camera. The list fills itself, and the report is ready when the class, course or shift ends.
+
+WHAT MAKES DOBRY DIFFERENT
+
+• Nothing to install for the people checking in
+Students, participants and staff use the camera they already have. No app, no account, no download. Only you need Dobry.
+
+• No machine to buy
+No fingerprint scanner, no card reader, no kiosk. Any phone, tablet or laptop screen becomes your attendance point.
+
+• Hard to cheat
+The QR code changes every 45 seconds, so a photo or link sent to a friend stops working. One phone counts for one person, and an optional location check makes sure people are really in the room.
+
+• It does the paperwork, not just the list
+Most attendance tools stop at a list of names. Dobry applies the 80% attendance rule for you, shows who is at risk, and prepares warning letters, barring lists, certificates and payroll hours.
+
+• One app for classes, courses and workplaces
+Lecturers, trainers and employers each get the screens they need, in the same simple app.
+
+• Public holidays handled for you
+Holidays for your country and state are added every year, so no class or shift is wrongly marked absent.
+
+• Ready in a minute, free to start
+Add a class, press start, show the code. No setup project, no IT department.
 
 FOR LECTURERS AND TEACHERS
-• A QR code that changes every 45 seconds, so a photo sent to a friend does not work
-• One phone, one student, plus an optional location check for the room
-• Your weekly timetable: each class is ready to start with one tap
+• Your weekly timetable, with each class ready to start in one tap
+• Live list of who is in, as they scan
 • Semester reports with the 80% rule: who is at risk, warning letters and the barring list as PDF
-• Excuses and MCs with their evidence, and attendance you missed recorded by hand
+• Excuses and medical certificates with their evidence
+• Record attendance by hand for a class you missed
 • Export to Excel, CSV or your university's format
-• Public holidays for your country and state are taken off the timetable by themselves
 
 FOR TRAINERS AND COURSE ORGANISERS
 • Check-in for courses, workshops and events, in the room or online
-• Attendance certificates with their own link and QR code, ready for LinkedIn
-• Attendance records for training claims, with each participant's check-in time
+• Attendance certificates with their own link and QR code, ready to share on LinkedIn
+• Check-in times for every participant, for training claims and audits
 
 FOR WORKPLACES
 • A clock-in screen at the entrance: staff scan in and out with their phones
+• Today at a glance: who is in, who is late, who has not arrived
 • Shifts, lateness, overtime, leave and MCs
 • Payroll-ready hours, public holiday rates and payslips
-• Flags when a phone clocks in for someone else
+• A warning when one phone clocks in for someone else
 
-WHY DOBRY
-• Works on any phone with a camera; nothing to install for the people checking in
-• Malay and English
+ALSO
+• A dashboard with the trend for every class or team
+• Works on iPhone and iPad, in light or dark mode
+• English, Malay and Czech
 • Your records stay yours: export them any time
 
 Dobry is free to start.
 
-Terms: https://dobry.app/terms · Privacy: https://dobry.app/privacy
+Terms: https://dobry.app/terms
+Privacy: https://dobry.app/privacy
 
 ---
 
@@ -77,39 +102,66 @@ Terms: https://dobry.app/terms · Privacy: https://dobry.app/privacy
 kedatangan,pelajar,pensyarah,guru,pekerja,staf,syif,cuti,gaji,lebih,masa,imbas,sijil,hrd,absen
 ```
 
-**Promotional text:**
-Ambil kehadiran dalam beberapa saat. Paparkan kod QR, pelajar atau staf imbas dengan telefon sendiri, dan senarai terisi sendiri. Tiada aplikasi, tiada mesin.
+**Promotional text (165/170):**
+Kehadiran dalam beberapa saat, tanpa mesin dan tanpa aplikasi untuk pelajar atau staf. Kod QR bertukar setiap 45 saat, jadi kawan tak boleh daftar masuk untuk kawan.
 
 **Description:**
 
-Dobry menguruskan kehadiran untuk anda. Paparkan kod QR di skrin; semua orang imbas dengan kamera telefon sendiri dan taip ID mereka. Senarai terisi secara langsung, dan laporan siap sebaik kelas tamat. Mereka yang mendaftar masuk tidak perlu aplikasi atau akaun.
+Paparkan kod QR. Semua orang imbas dengan kamera telefon sendiri. Senarai terisi sendiri, dan laporan siap sebaik kelas, kursus atau syif tamat.
+
+APA YANG MEMBEZAKAN DOBRY
+
+• Tiada pemasangan untuk mereka yang daftar masuk
+Pelajar, peserta dan staf guna kamera yang sedia ada. Tiada aplikasi, tiada akaun, tiada muat turun. Hanya anda yang perlukan Dobry.
+
+• Tiada mesin untuk dibeli
+Tiada pengimbas cap jari, pembaca kad atau kiosk. Mana-mana skrin telefon, tablet atau komputer riba menjadi tempat daftar kehadiran anda.
+
+• Sukar untuk menipu
+Kod QR bertukar setiap 45 saat, jadi gambar atau pautan yang dihantar kepada kawan tidak berfungsi. Satu telefon untuk seorang sahaja, dan semakan lokasi pilihan memastikan mereka benar-benar berada di dalam bilik.
+
+• Urus kertas kerja, bukan sekadar senarai
+Kebanyakan sistem kehadiran berhenti pada senarai nama. Dobry menggunakan peraturan kehadiran 80% untuk anda, menunjukkan siapa berisiko, dan menyediakan surat amaran, senarai halangan, sijil dan jam gaji.
+
+• Satu aplikasi untuk kelas, kursus dan tempat kerja
+Pensyarah, jurulatih dan majikan masing-masing mendapat skrin yang mereka perlukan, dalam aplikasi mudah yang sama.
+
+• Cuti umum diuruskan untuk anda
+Cuti umum negara dan negeri anda ditambah setiap tahun, jadi tiada kelas atau syif ditanda tidak hadir secara salah.
+
+• Sedia dalam seminit, percuma untuk bermula
+Tambah kelas, tekan mula, paparkan kod. Tiada projek pemasangan, tiada jabatan IT.
 
 UNTUK PENSYARAH DAN GURU
-• Kod QR yang bertukar setiap 45 saat, jadi gambar yang dihantar kepada kawan tidak berfungsi
-• Satu telefon, seorang pelajar, serta semakan lokasi bilik jika mahu
-• Jadual mingguan anda: setiap kelas sedia dimulakan dengan satu ketikan
+• Jadual mingguan anda, setiap kelas sedia dimulakan dengan satu ketikan
+• Senarai langsung siapa yang hadir, sebaik mereka imbas
 • Laporan semester dengan peraturan 80%: siapa berisiko, surat amaran dan senarai halangan dalam PDF
-• Alasan dan MC berserta bukti, dan kehadiran kelas yang terlepas boleh direkod secara manual
+• Alasan dan MC berserta bukti
+• Rekod kehadiran secara manual untuk kelas yang terlepas
 • Eksport ke Excel, CSV atau format universiti anda
-• Cuti umum negara dan negeri anda dikeluarkan daripada jadual secara automatik
 
 UNTUK JURULATIH DAN PENGANJUR KURSUS
 • Daftar masuk kursus, bengkel dan acara, bersemuka atau dalam talian
-• Sijil kehadiran dengan pautan dan kod QR sendiri, sedia untuk LinkedIn
-• Rekod kehadiran untuk tuntutan latihan, dengan masa setiap peserta
+• Sijil kehadiran dengan pautan dan kod QR sendiri, sedia dikongsi di LinkedIn
+• Masa daftar masuk setiap peserta, untuk tuntutan latihan dan audit
 
 UNTUK TEMPAT KERJA
-• Skrin daftar masuk di pintu: staf imbas masuk dan keluar dengan telefon
+• Skrin punch card di pintu masuk: staf imbas masuk dan keluar dengan telefon
+• Hari ini sepintas lalu: siapa hadir, siapa lewat, siapa belum sampai
 • Syif, lewat, kerja lebih masa, cuti dan MC
 • Jam kerja sedia untuk gaji, kadar cuti umum dan slip gaji
 • Amaran apabila satu telefon mendaftar masuk untuk orang lain
 
-KENAPA DOBRY
-• Berfungsi pada mana-mana telefon berkamera; tiada pemasangan untuk mereka yang mendaftar masuk
-• Bahasa Melayu dan Inggeris
+JUGA
+• Papan pemuka dengan trend setiap kelas atau pasukan
+• Untuk iPhone dan iPad, mod cerah atau gelap
+• Bahasa Melayu, Inggeris dan Czech
 • Rekod anda milik anda: eksport bila-bila masa
 
 Dobry percuma untuk bermula.
+
+Terma: https://dobry.app/terms
+Privasi: https://dobry.app/privacy
 
 ---
 
@@ -185,7 +237,16 @@ Malay captions: 1 Kehadiran QR dalam beberapa saat · 2 Pelajar imbas dengan tel
 ## For App Review
 
 - **Sign-in for the reviewer:** create a demo account yourself (a lecturer account with one class and a few sessions), and put its email and password in App Review Information. Do not use your own account.
-- **Notes:** "Dobry is an attendance service. The app opens the same service as dobry.app. To try check-in, start a session in the demo account and scan the QR code shown on screen with another device, or open the check-in link shown under the code. Account deletion: Account → Delete account."
+- **Notes:**
+
+  Dobry is an attendance service for lecturers, trainers and workplaces. Please sign in with the demo account in Sign-In Information.
+
+  To try check-in: on the Today screen, open a class and tap Start Attendance; a QR code appears. On a second device, scan it with the camera, or open Dobry and tap "Scan QR to check in" on the sign-in screen. The name appears on the first device's live list.
+
+  Built for the device: a built-in QR scanner using the camera, Sign in with Apple and Google, reports and certificates saved or shared through the iOS share sheet, haptic feedback on check-in, a screen for when there is no connection, an onboarding screen, iPad layouts and dark mode.
+
+  Account deletion: Account → Delete account.
+
 - **Sign in with Apple** is offered next to Google, as guideline 4.8 requires.
 - **Account deletion** is in the app (guideline 5.1.1(v)).
 - **Watch out for guideline 4.2 (minimum functionality):** Apple sometimes rejects apps that only show a website. Dobry has native sign-in (Apple, Google), the phone's status bar and haptics, and will have push notifications; mention these in the notes if asked.
