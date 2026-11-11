@@ -200,10 +200,69 @@ Description: the English (U.K.) one, with "lecturers" → "instructors and profe
 evidence,docházkový,systém,student,učitel,zaměstnanec,směna,přesčas,mzdy,školení,prezence,práce
 ```
 
-**Promotional text:**
-Docházka během pár vteřin. Ukažte QR kód, studenti nebo zaměstnanci ho naskenují vlastním telefonem a seznam se vyplní sám. Bez aplikace a bez docházkového terminálu.
+**Promotional text (170/170):**
+Docházka pro výuku, školení i firmy. Každý se přihlásí vlastním telefonem: bez aplikace, bez terminálu. QR kód se mění každých 45 sekund, takže nikdo nepíchne za druhého.
 
-Description: use the Czech wording from the dobry.app Czech landing page (already written there).
+**Description:**
+
+Jedna jednoduchá aplikace pro každou docházku: vyučující zapisují docházku na výuce, lektoři prezenci účastníků kurzů a zaměstnavatelé příchody a odchody zaměstnanců. Ukažte QR kód, každý ho naskenuje fotoaparátem vlastního telefonu a seznam se vyplní sám.
+
+ČÍM SE DOBRY LIŠÍ
+
+• Kdo se přihlašuje, nic neinstaluje
+Studenti, účastníci kurzů i zaměstnanci použijí fotoaparát, který už mají. Žádná aplikace, žádný účet, nic ke stažení. Dobry potřebujete jen vy.
+
+• Žádný terminál ke koupi
+Žádná čtečka otisků, karet ani píchačky na zdi. Docházkovým místem se stane jakýkoli telefon, tablet nebo notebook: v posluchárně, u dveří školicí místnosti i u vchodu do kanceláře.
+
+• Těžko obejitelné
+QR kód se mění každých 45 sekund, takže fotka nebo odkaz poslaný někomu jinému přestane fungovat. Jeden telefon platí za jednoho člověka a volitelná kontrola polohy ověří, že je opravdu na místě. Žádné podpisy za spolužáka, žádné píchání za kolegu.
+
+• Udělá papírování, ne jen seznam
+Většina docházkových nástrojů skončí u seznamu jmen. Dobry dotáhne práci do konce:
+– Vyučující: pravidlo 80 %, ohrožení studenti, varovné dopisy a seznam vyloučených
+– Lektoři: potvrzení o účasti a záznamy prezence pro dotace a audity
+– Zaměstnavatelé: pozdní příchody, přesčasy, dovolená a hodiny připravené pro mzdy
+
+• Tři použití, jedna aplikace
+Na začátku zvolíte výuku, školení nebo firmu a Dobry ukáže obrazovky a pojmy, které se k tomu hodí.
+
+• Státní svátky vyřešené za vás
+Svátky vaší země a regionu se doplní každý rok, takže žádná hodina, kurz ani směna nebude chybně označena jako absence.
+
+• Připraveno za minutu, zdarma na začátek
+Přidejte hodinu, kurz nebo směnu, stiskněte start a ukažte kód. Žádný zaváděcí projekt, žádné IT oddělení.
+
+PRO FIRMY
+• Docházkový displej u vchodu: zaměstnanci si píchají příchod a odchod telefonem
+• Dnešek na první pohled: kdo je v práci, kdo přišel pozdě a kdo ještě nedorazil
+• Směny, pozdní příchody, přesčasy, dovolená a nemocenská
+• Odpracované hodiny pro mzdy, příplatky za svátky a výplatní pásky
+• Upozornění, když jeden telefon píchá za někoho jiného
+
+PRO LEKTORY A POŘADATELE KURZŮ
+• Prezence na kurzech, workshopech, seminářích a akcích, na místě i online
+• Čas příchodu každého účastníka pro dotace a audity
+• Potvrzení o účasti s vlastním odkazem a QR kódem, připravená ke sdílení na LinkedIn
+
+PRO VYUČUJÍCÍ A UČITELE
+• Týdenní rozvrh: každou hodinu spustíte jedním klepnutím
+• Živý seznam přítomných, jak se přihlašují
+• Semestrální přehledy s pravidlem 80 %: kdo je ohrožen, varovné dopisy a seznam vyloučených v PDF
+• Omluvenky s doklady
+• Ruční zápis docházky za hodinu, kterou jste zmeškali
+• Export do Excelu, CSV nebo formátu vaší školy
+
+DÁLE
+• Přehled s vývojem každé třídy, kurzu nebo týmu
+• Pro iPhone i iPad, ve světlém i tmavém režimu
+• Čeština, angličtina a malajština
+• Vaše data patří vám: kdykoli je vyexportujete
+
+Dobry můžete začít používat zdarma.
+
+Podmínky: https://dobry.app/terms
+Soukromí: https://dobry.app/privacy
 
 ---
 
@@ -213,13 +272,74 @@ Description: use the Czech wording from the dobry.app Czech landing page (alread
 
 **Subtitle (30/30):** Absen Kelas, Pelatihan & Kerja
 
-**Keywords (89/100):**
+**Keywords (99/100):**
 ```
-kehadiran,presensi,siswa,mahasiswa,dosen,guru,karyawan,shift,lembur,gaji,cuti,scan,daftar
+kehadiran,presensi,siswa,mahasiswa,dosen,guru,karyawan,shift,lembur,gaji,cuti,scan,pelatihan,kursus
 ```
 
-**Promotional text:**
-Absensi dalam hitungan detik. Tampilkan kode QR, siswa atau karyawan memindainya dengan ponsel sendiri, dan daftar terisi otomatis. Tanpa aplikasi, tanpa mesin.
+**Promotional text (168/170):**
+Absensi untuk kelas, pelatihan dan tempat kerja. Semua memindai dengan ponsel sendiri: tanpa aplikasi, tanpa mesin. QR berganti tiap 45 detik, jadi tak ada titip absen.
+
+**Description:**
+
+Satu aplikasi sederhana untuk semua jenis absensi: dosen mencatat kehadiran kelas, pelatih mendata peserta kursus, dan pemberi kerja mencatat jam masuk dan pulang karyawan. Tampilkan kode QR, semua orang memindainya dengan kamera ponsel sendiri, dan daftar terisi otomatis.
+
+APA YANG MEMBEDAKAN DOBRY
+
+• Peserta tidak perlu memasang apa pun
+Mahasiswa, peserta kursus dan karyawan memakai kamera yang sudah mereka punya. Tanpa aplikasi, tanpa akun, tanpa unduhan. Hanya Anda yang memerlukan Dobry.
+
+• Tidak perlu membeli mesin
+Tanpa mesin sidik jari, pembaca kartu atau mesin absen di dinding. Layar ponsel, tablet atau laptop apa pun menjadi titik absensi: di ruang kuliah, di pintu ruang pelatihan atau di pintu masuk kantor.
+
+• Sulit dicurangi
+Kode QR berganti setiap 45 detik, jadi foto atau tautan yang dikirim ke orang lain tidak berfungsi. Satu ponsel untuk satu orang, dan pemeriksaan lokasi opsional memastikan mereka benar-benar hadir. Tidak ada titip absen di kelas maupun di kantor.
+
+• Mengurus administrasinya, bukan sekadar daftar
+Kebanyakan aplikasi absensi berhenti di daftar nama. Dobry menyelesaikan pekerjaannya:
+– Dosen: aturan kehadiran 80%, mahasiswa berisiko, surat peringatan dan daftar larangan ujian
+– Pelatih: sertifikat kehadiran dan catatan check-in untuk klaim pelatihan
+– Pemberi kerja: keterlambatan, lembur, cuti dan jam kerja siap untuk penggajian
+
+• Tiga kegunaan, satu aplikasi
+Pilih kelas, pelatihan atau tempat kerja saat mulai, dan Dobry menampilkan layar dan istilah yang sesuai.
+
+• Hari libur nasional diurus otomatis
+Hari libur negara dan provinsi Anda ditambahkan setiap tahun, jadi tidak ada kelas, kursus atau shift yang salah ditandai tidak hadir.
+
+• Siap dalam semenit, gratis untuk memulai
+Tambahkan kelas, kursus atau shift, tekan mulai, tampilkan kodenya. Tanpa proyek pemasangan, tanpa tim IT.
+
+UNTUK TEMPAT KERJA
+• Layar absen di pintu masuk: karyawan memindai saat masuk dan pulang dengan ponsel
+• Hari ini sekilas: siapa yang hadir, siapa yang terlambat, siapa yang belum datang
+• Shift, keterlambatan, lembur, cuti dan sakit
+• Jam kerja siap untuk penggajian, tarif hari libur dan slip gaji
+• Peringatan saat satu ponsel absen untuk orang lain
+
+UNTUK PELATIH DAN PENYELENGGARA KURSUS
+• Check-in untuk kursus, lokakarya, seminar dan acara, tatap muka atau daring
+• Waktu check-in setiap peserta, untuk klaim pelatihan dan audit
+• Sertifikat kehadiran dengan tautan dan kode QR sendiri, siap dibagikan di LinkedIn
+
+UNTUK DOSEN DAN GURU
+• Jadwal mingguan: setiap kelas siap dimulai dengan satu ketukan
+• Daftar hadir langsung, begitu mereka memindai
+• Laporan semester dengan aturan 80%: siapa yang berisiko, surat peringatan dan daftar larangan ujian dalam PDF
+• Izin dan surat sakit beserta buktinya
+• Catat absensi secara manual untuk kelas yang terlewat
+• Ekspor ke Excel, CSV atau format kampus Anda
+
+LAINNYA
+• Dasbor dengan tren setiap kelas, kursus atau tim
+• Untuk iPhone dan iPad, mode terang atau gelap
+• Antarmuka dalam bahasa Inggris, Melayu dan Ceko
+• Data Anda milik Anda: ekspor kapan saja
+
+Dobry gratis untuk memulai.
+
+Ketentuan: https://dobry.app/terms
+Privasi: https://dobry.app/privacy
 
 ---
 
