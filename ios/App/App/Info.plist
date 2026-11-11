@@ -31,10 +31,14 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Dobry uses the camera to scan the QR code on your lecturer’s or the door’s screen, so you can check in.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Dobry checks your location only when a class, course or workplace asks for it, to confirm you are really there when you check in.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
